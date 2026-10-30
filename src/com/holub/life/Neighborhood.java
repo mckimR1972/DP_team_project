@@ -420,7 +420,11 @@ public final class Neighborhood implements Cell
 	}
 
 	public boolean isAlive()
-	{	return true;
+	{	for( int row = 0; row < gridSize; ++row )
+			for( int column = 0; column < gridSize; ++column )
+				if( grid[row][column].isAlive() )
+					return true;
+		return false;
 	}
 
 	public int widthInCells()
