@@ -97,25 +97,27 @@ public boolean isAlive() {
 
 ### 실행 방법
 
-JDK 17을 준비한 뒤, 저장소 루트(`pom.xml`이 있는 폴더)에서 실행한다.
+JDK 17을 준비한 뒤, 저장소 루트(`build.gradle`이 있는 폴더)에서 실행한다.
 
 macOS / Linux:
 
 ```sh
-./mvnw test
+./gradlew clean test
 ```
 
 Windows PowerShell:
 
 ```powershell
-.\mvnw.cmd test
+.\gradlew.bat clean test
 ```
 
-Maven Wrapper가 필요한 Maven과 테스트 라이브러리를 받으므로 첫 실행에는 인터넷 연결이 필요하다. IDE에서는 `pom.xml`을 Maven 프로젝트로 열고 테스트 클래스를 실행할 수 있다.
+Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 첫 실행에는 인터넷 연결이 필요하다. IDE에서는 저장소를 Gradle 프로젝트로 열고 테스트 클래스를 실행할 수 있다. Java Toolchain 설정으로 컴파일과 테스트에 JDK 17을 사용한다.
 
-- 실행 환경: JDK 17, Maven 3.9.16, JUnit Jupiter 6.0.3, Mockito 5.23.0.
+- 실행 환경: JDK 17, Gradle 9.5.1, JUnit Jupiter 6.0.3, Mockito 5.23.0.
 - 게임 소스: `src/`, 테스트 소스: `test/`.
-- 실행 결과 파일: `target/surefire-reports/`. 빌드 결과인 `target/`은 Git에 포함하지 않는다.
+- HTML 테스트 보고서: `build/reports/tests/test/index.html`. 테스트 실행 후 브라우저로 열어 전체 결과와 각 테스트의 결과를 확인할 수 있다.
+- XML 테스트 결과: `build/test-results/test/`.
+- 빌드 결과인 `build/`와 Gradle 작업 캐시인 `.gradle/`은 Git에 포함하지 않는다.
 
 ### 테스트 목적과 기대 결과
 
@@ -141,10 +143,10 @@ Maven Wrapper가 필요한 Maven과 테스트 라이브러리를 받으므로 �
 
 ### 수정 전후 실행 결과
 
-2026-10-31에 같은 JUnit 테스트를 다음 두 소스 버전에 실행했다.
+2026-10-31에 Gradle 9.5.1 / JDK 17 환경에서 같은 JUnit 테스트를 다음 두 소스 버전에 다시 실행했다. 아래 표는 두 버전을 모두 Gradle로 실행한 결과이다.
 
-- 수정 전: 원본 소스 커밋 `cdcedf3`의 별도 복사본에 동일한 테스트와 Maven 설정을 적용.
-- 수정 후: 오류 수정 커밋 `d3f4478`의 소스. 테스트를 위해 게임 소스 코드를 추가 변경하지 않음.
+- 수정 전: 원본 소스 커밋 `cdcedf3`의 별도 복사본에 동일한 테스트와 Gradle 설정을 적용.
+- 수정 후: 오류 수정 커밋 `d3f4478`의 소스. 이번 Gradle 전환에서 게임 소스와 JUnit 테스트 코드를 변경하지 않음.
 
 | 테스트 클래스 | 검사 수 | 수정 전 통과 / 실패 | 수정 후 통과 / 실패 |
 | --- | ---: | ---: | ---: |
@@ -161,9 +163,6 @@ Maven Wrapper가 필요한 Maven과 테스트 라이브러리를 받으므로 �
 
 수정 후에는 모든 결과가 기대값과 일치했다. 두 실행 모두 테스트 실행 오류와 건너뛴 검사는 0개였으며, 수정 전 실패는 위 동작의 검증 실패였다. 기존에도 정상 동작하던 8개 검사는 수정 후에도 통과했다.
 
-```text
-Tests run: 32, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESS
-```
+수정 후 코드에서 `./gradlew clean test --no-daemon --console=plain`을 실행하여 `BUILD SUCCESSFUL`을 확인했다. Gradle XML 보고서의 집계 결과는 **32개 실행, 실패 0개, 오류 0개, 건너뜀 0개**이다.
 
-도구 사용 안내: [JUnit 공식 문서](https://docs.junit.org/current/user-guide/), [Maven Wrapper 공식 문서](https://maven.apache.org/tools/wrapper/).
+도구 사용 안내: [JUnit 공식 문서](https://docs.junit.org/current/user-guide/), [Gradle 테스트 공식 문서](https://docs.gradle.org/current/userguide/java_testing.html), [Gradle Wrapper 공식 문서](https://docs.gradle.org/current/userguide/gradle_wrapper.html).
