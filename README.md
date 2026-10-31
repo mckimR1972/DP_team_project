@@ -93,36 +93,77 @@ public boolean isAlive() {
 
 하위 객체가 `Resident`이면 단일 셀의 상태를 확인하고, `Neighborhood`이면 그 내부를 재귀적으로 확인한다. 따라서 중첩된 셀 묶음에서도 같은 기준으로 동작한다.
 
-## 검증 현황
+## JUnit 테스트
 
-### 완료한 검증
+### 실행 방법
 
-수정 당시 Java 17로 전체 Java 소스 14개를 컴파일하고, 임시 Java 검증 프로그램으로 다음 항목을 확인했다.
+JDK 17을 준비한 뒤, 저장소 루트(`pom.xml`이 있는 폴더)에서 실행한다.
 
-- `Resident`: 생존/사망 상태 각각에서 살아 있는 이웃 수 0~8개에 대한 다음 상태와 `transition()` 반환값.
-- `Neighborhood`: 단일/중첩 셀 묶음의 빈 상태, 각 위치의 셀을 살리거나 다시 죽인 상태, `clear()` 후 상태.
-- 스냅샷: `createMemento()` → `flush()` 경로의 좌표 중복 여부와 저장/복원 후 보드 상태 일치 여부.
-- 세대 진행: 블록, 블링커, 글라이더가 각각 20세대 동안 별도로 계산한 기본 규칙의 결과와 일치하는지.
+macOS / Linux:
 
-위 검증은 모두 통과했다. 기존 소스의 deprecated API 및 unchecked 연산에 대한 컴파일 경고는 남아 있다.
+```sh
+./mvnw test
+```
 
-이 검증은 JUnit이 아닌 임시 Java 프로그램으로 수행했으며, 검증 프로그램은 저장소에 포함되어 있지 않다. `Universe.doStore()`의 파일 선택창을 포함한 실제 UI 저장 경로는 자동 실행하지 않았다. 따라서 스냅샷 검증 통과를 실제 UI 저장 경로 전체의 테스트 통과로 해석하지 않는다.
+Windows PowerShell:
 
-### 추가할 JUnit 테스트
+```powershell
+.\mvnw.cmd test
+```
 
-현재 저장소에는 아래 JUnit 테스트가 아직 구현되어 있지 않다. 테스트 메서드 이름은 영어 `camelCase`로 작성하고, 검증 대상과 기대 동작을 표현한다. 실제 게임 메서드인 `transition()`, `isAlive()`, `doStore()`의 이름을 변경하는 것은 아니다.
+Maven Wrapper가 필요한 Maven과 테스트 라이브러리를 받으므로 첫 실행에는 인터넷 연결이 필요하다. IDE에서는 `pom.xml`을 Maven 프로젝트로 열고 테스트 클래스를 실행할 수 있다.
 
-| 테스트 메서드 이름(예정) | 검증 내용 | 수정 전/후 기대 결과 |
-| --- | --- | --- |
-| `transitionReturnsFalseWhenUnchanged` | 사망→사망, 생존→생존일 때 `false` 반환 | 실패 → 통과 |
-| `transitionReturnsTrueWhenChanged` | 사망→생존, 생존→사망일 때 `true` 반환 | 실패 → 통과 |
-| `isAliveReturnsFalseForEmptyNeighborhood` | 모든 하위 셀이 죽어 있으면 `false` 반환 | 실패 → 통과 |
-| `isAliveReturnsFalseForEmptyNestedNeighborhood` | 중첩된 셀 묶음도 모두 죽어 있으면 `false` 반환 | 실패 → 통과 |
-| `isAliveReturnsTrueWithLivingChild` | 하위 셀 중 하나라도 살아 있으면 `true` 반환 | 통과 → 통과; 정상 동작 유지 확인 |
-| `saveWritesEachLiveCellOnce` | 실제 저장 경로로 기록한 파일에 살아 있는 셀의 좌표가 한 번씩만 포함됨 | 실패 → 통과 |
+- 실행 환경: JDK 17, Maven 3.9.16, JUnit Jupiter 6.0.3, Mockito 5.23.0.
+- 게임 소스: `src/`, 테스트 소스: `test/`.
+- 실행 결과 파일: `target/surefire-reports/`. 빌드 결과인 `target/`은 Git에 포함하지 않는다.
 
-`transition()` 테스트는 최종 생존 상태뿐 아니라 반환값도 검사해야 원래 오류를 발견할 수 있다.
+### 테스트 목적과 기대 결과
 
-저장 테스트는 실제 저장 경로를 실행한 뒤 파일 안의 좌표 항목 개수와 중복 여부를 검사해야 한다. 저장 후 불러온 화면만 비교하면 중복 좌표가 있어도 같은 보드로 보일 수 있다. 또한 `createMemento()`만 검사하는 테스트는 기존 코드에서도 통과하므로, `doStore()`의 추가 `STORE` 호출 오류를 검출하지 못한다.
+입력별 실행 횟수를 포함하여 총 32개를 검사한다. 테스트 메서드는 영어 이름으로 작성한다.
 
-현재 `doStore()`는 파일 선택창과 파일 쓰기가 결합되어 있다. 코드 구조를 유지한다면 UI를 포함한 통합 테스트가 필요하며, 이후 파일 처리 책임을 분리할 때 실제 저장 처리를 JUnit에서 직접 호출할 수 있도록 구성할 수 있다.
+| 테스트 클래스 / 메서드 | 준비 및 실행 | 기대 결과 | 현재 코드 실행 결과 |
+| --- | --- | --- | --- |
+| `ResidentTest.transitionReturnsFalseWhenUnchanged` | 죽은 셀의 이웃 수가 3개가 아닌 경우, 살아 있는 셀의 이웃 수가 2·3개인 경우 | `transition()`이 `false`를 반환하고 생존 상태 유지 | 10개 모두 통과 |
+| `ResidentTest.transitionReturnsTrueWhenChanged` | 죽은 셀의 이웃 수가 3개인 경우, 살아 있는 셀의 이웃 수가 2·3개가 아닌 경우 | `transition()`이 `true`를 반환하고 생존 상태 변경 | 8개 모두 통과 |
+| `NeighborhoodTest.isAliveReturnsFalseForEmptyNeighborhood` / `isAliveReturnsFalseForEmptyNestedNeighborhood` | 단일/중첩 셀 묶음을 빈 상태로 생성 | `isAlive()`가 `false` 반환 | 2개 모두 통과 |
+| `NeighborhoodTest.isAliveReturnsTrueWithLivingChild` / `isAliveReturnsTrueWithLivingNestedChild` | 단일/중첩 셀 묶음의 모서리와 내부 위치에 셀 하나를 살림 | 위치와 중첩 여부에 관계없이 `true` 반환 | 6개 모두 통과 |
+| `NeighborhoodTest.isAliveReturnsFalseAfterLastLivingChildDies` | 마지막 생존 셀을 클릭하여 죽임 | `false` 반환 | 통과 |
+| `NeighborhoodTest.isAliveReturnsTrueWhileAnotherChildRemainsAlive` | 서로 다른 위치의 두 셀 중 하나만 죽임 | 다른 셀이 살아 있으므로 `true` 반환 | 통과 |
+| `NeighborhoodTest.isAliveReturnsFalseAfterClear` | 살아 있는 셀이 있는 보드에 `clear()` 호출 | `false` 반환 | 통과 |
+| `UniverseStoreTest.saveWritesEachLiveCellOnce` | 실제 Store 동작으로 살아 있는 셀 1개 / 4개를 파일에 저장 | 좌표 항목이 각각 1개 / 4개이고 실제 생존 좌표와 일치 | 2개 모두 통과 |
+| `UniverseStoreTest.saveWritesNoCoordinatesForEmptyBoard` | 빈 보드를 실제 Store 동작으로 저장 | 저장된 좌표 항목이 0개 | 통과 |
+
+`ResidentTest`는 살아 있는 이웃 수 0~8개와 현재 생존/사망 상태를 조합한 18개 경우를 확인한다. 다음 상태를 계산하는 동안 현재 상태가 유지되는지, `transition()`의 반환값과 적용된 생존 상태가 올바른지를 검사한다.
+
+`UniverseStoreTest`는 등록된 실제 Store 메뉴 콜백을 실행하여 `Universe.doStore()`가 만든 파일을 읽는다. `createMemento()`만 별도로 호출하는 테스트가 아니므로 `doStore()`의 중복 `STORE` 호출을 검출할 수 있다. 파일의 좌표 항목 개수와 좌표 집합을 함께 검사하여 중복뿐 아니라 잘못된 좌표 저장도 확인한다.
+
+저장 테스트에서는 창을 띄우지 않도록 Mockito로 메뉴 등록, 파일 선택 결과, 시계만 대체한다. 실제 보드, 마우스 입력 처리, Store 콜백, `doStore()`, 스냅샷 및 파일 쓰기는 원래 코드를 실행한다. Swing 작업과 해당 테스트 대체 객체의 사용은 이벤트 처리 스레드(EDT)에서 수행하고, 테스트마다 보드를 초기화한다. 파일 선택창 자체의 화면 동작은 이 테스트 범위에 포함하지 않는다.
+
+### 수정 전후 실행 결과
+
+2026-10-31에 같은 JUnit 테스트를 다음 두 소스 버전에 실행했다.
+
+- 수정 전: 원본 소스 커밋 `cdcedf3`의 별도 복사본에 동일한 테스트와 Maven 설정을 적용.
+- 수정 후: 오류 수정 커밋 `d3f4478`의 소스. 테스트를 위해 게임 소스 코드를 추가 변경하지 않음.
+
+| 테스트 클래스 | 검사 수 | 수정 전 통과 / 실패 | 수정 후 통과 / 실패 |
+| --- | ---: | ---: | ---: |
+| `ResidentTest` | 18 | 0 / 18 | 18 / 0 |
+| `NeighborhoodTest` | 11 | 7 / 4 | 11 / 0 |
+| `UniverseStoreTest` | 3 | 1 / 2 | 3 / 0 |
+| **합계** | **32** | **8 / 24** | **32 / 0** |
+
+수정 전에는 다음과 같은 실패가 발생했다.
+
+- 상태가 유지되는 셀에서 기대값 `false` 대신 `true`, 상태가 바뀌는 셀에서 기대값 `true` 대신 `false` 반환.
+- 빈 셀 묶음, 마지막 생존 셀을 죽인 보드, `clear()`한 보드에서 기대값 `false` 대신 `true` 반환.
+- 셀 1개 저장 시 좌표 항목이 기대값 1개 대신 2개, 셀 4개 저장 시 기대값 4개 대신 8개 기록.
+
+수정 후에는 모든 결과가 기대값과 일치했다. 두 실행 모두 테스트 실행 오류와 건너뛴 검사는 0개였으며, 수정 전 실패는 위 동작의 검증 실패였다. 기존에도 정상 동작하던 8개 검사는 수정 후에도 통과했다.
+
+```text
+Tests run: 32, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+도구 사용 안내: [JUnit 공식 문서](https://docs.junit.org/current/user-guide/), [Maven Wrapper 공식 문서](https://maven.apache.org/tools/wrapper/).
