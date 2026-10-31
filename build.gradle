@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.holub'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+// Preserve the existing source and test directories.
+sourceSets {
+    main.java.srcDirs = ['src']
+    test.java.srcDirs = ['test']
+}
+
+configurations {
+    mockitoAgent
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:6.0.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    testImplementation 'org.mockito:mockito-core:5.23.0'
+    mockitoAgent('org.mockito:mockito-core:5.23.0') {
+        transitive = false
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+    systemProperty 'java.awt.headless', 'true'
+    // Static mocking replaces the file chooser, menus and clock in the Store test.
+    jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}"
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
+}

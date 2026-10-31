@@ -194,7 +194,6 @@ public class Universe extends JPanel
 			Clock.instance().stop();		// stop the game
 
 			Storable memento = outermostCell.createMemento();
-			outermostCell.transfer( memento, new Point(0,0), Cell.STORE );
 			memento.flush(out);
 
 			out.close();
