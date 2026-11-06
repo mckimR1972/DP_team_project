@@ -462,6 +462,13 @@ public final class Neighborhood implements Cell
 			}
 			upperLeft.translate(-myWidth, subcellWidth );
 		}
+		// A restored board must recompute empty neighbors too: new births
+		// can cross a nested Neighborhood boundary on the very next tick.
+		if (load) {
+			amActive = true;
+			activeEdges.add(Direction.ALL);
+			oneLastRefreshRequired = true;
+		}
 		return amActive;
 	}
 
