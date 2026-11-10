@@ -92,6 +92,44 @@ class UniverseStoreTest {
         assertTrue(savedCoordinates.isEmpty());
     }
 
+    @Test
+    void draggingFromALiveCellErases() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            mouse(MouseEvent.MOUSE_PRESSED, 1, 1);
+            mouse(MouseEvent.MOUSE_DRAGGED, 2, 1);
+            mouse(MouseEvent.MOUSE_DRAGGED, 3, 1);
+            mouse(MouseEvent.MOUSE_DRAGGED, 4, 1);
+            mouse(MouseEvent.MOUSE_RELEASED, 4, 1);
+            mouse(MouseEvent.MOUSE_PRESSED, 2, 1);
+            mouse(MouseEvent.MOUSE_DRAGGED, 3, 1);
+        });
+
+        assertEquals(
+            new HashSet<>(List.of(new Point(1, 1), new Point(4, 1))),
+            new HashSet<>(storeAndRead(List.of()))
+        );
+    }
+
+    @Test
+    void draggingOffTheBoardStopsAtTheEdge() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            mouse(MouseEvent.MOUSE_PRESSED, 62, 0);
+            mouse(MouseEvent.MOUSE_DRAGGED, 70, 0);
+        });
+
+        assertEquals(
+            new HashSet<>(List.of(new Point(62, 0), new Point(63, 0))),
+            new HashSet<>(storeAndRead(List.of()))
+        );
+    }
+
+    private static void mouse(int eventId, int column, int row) {
+        universe.dispatchEvent(new MouseEvent(
+            universe, eventId, 0L, 0,
+            column * 8 + 1, row * 8 + 1, 1, false, MouseEvent.BUTTON1
+        ));
+    }
+
     private Collection<?> storeAndRead(List<Point> liveCells) throws Exception {
         Path destination = directory.resolve("board.life");
         SwingUtilities.invokeAndWait(() -> {
