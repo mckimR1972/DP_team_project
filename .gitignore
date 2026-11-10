@@ -1,3 +1,5 @@
 *.class
-build/
-templates/
+/build/
+/templates/
+/target/
+/.gradle/

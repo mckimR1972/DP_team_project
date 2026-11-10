@@ -14,7 +14,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'JAR creation failed.' }
     if ($Test -or $UiTest) {
         New-Item -ItemType Directory -Force 'build/test-classes' | Out-Null
-        $lifeTests = @(Get-ChildItem 'test' -Recurse -Filter '*.java' | ForEach-Object FullName)
+        # JUnit tests (NeighborhoodTest, ...) need Gradle's libraries; run them with gradlew test.
+        $lifeTests = @(Get-ChildItem 'test' -Recurse -Filter '*.java' |
+            Where-Object { -not (Select-String -Path $_.FullName -Pattern 'org\.junit' -Quiet) } |
+            ForEach-Object FullName)
         & javac -encoding UTF-8 --release 17 -cp build/classes -d build/test-classes $lifeTests
         if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
         & java -ea '-Djava.awt.headless=true' -cp 'build/classes;build/test-classes' com.holub.life.PatternFeatureTest

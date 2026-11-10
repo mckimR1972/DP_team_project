@@ -137,7 +137,7 @@ public class Universe extends JPanel
 		MenuSite.addLine( this, "Grid", "Clear",
 			new ActionListener()
 			{	public void actionPerformed(ActionEvent e)
-				{	patternTools.cancel();
+				{	if (patternTools.isEditing()) patternTools.cancel();	// Clear itself does not stop the clock
 					patternTools.boardChanged();
 					freezingTools.reset();				// [Freezing]
 					outermostCell.clear();
@@ -264,7 +264,6 @@ public class Universe extends JPanel
 			Clock.instance().stop();		// stop the game
 
 			Storable memento = outermostCell.createMemento();
-			outermostCell.transfer( memento, new Point(0,0), Cell.STORE );
 			memento.flush(out);
 
 			out.close();
