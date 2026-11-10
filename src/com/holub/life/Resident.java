@@ -102,6 +102,16 @@ public final class Resident implements Cell
 	{	amAlive = !amAlive;
 	}
 
+	/** [Freezing] Replace only the computed next state. amAlive (the
+	 *  value neighbors read in this generation) is left alone.
+	 */
+	public boolean holdNextState(Point location, boolean alive)
+	{	assert location.x == 0 && location.y == 0;
+		boolean overridden = willBeAlive != alive;
+		willBeAlive = alive;
+		return overridden;
+	}
+
 	public void	   clear()			{amAlive = willBeAlive = false; }
 	public boolean isAlive()		{return amAlive;			    }
 	public Cell    create()			{return new Resident();			}

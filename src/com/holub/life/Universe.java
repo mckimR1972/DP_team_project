@@ -28,6 +28,9 @@ import com.holub.life.Resident;
 
 public class Universe extends JPanel
 {	private 		final Cell  	outermostCell;
+	private final PatternTools patternTools;
+	private final FreezingTools freezingTools;	// [Freezing]
+	private JTabbedPane sideControls;			// [Freezing] right panel: capture tab + Freezing tab
 	private static	final Universe 	theInstance = new Universe();
 
 	/** The default height and width of a Neighborhood in cells.
@@ -90,13 +93,41 @@ public class Universe extends JPanel
 		setMaximumSize	( PREFERRED_SIZE );
 		setMinimumSize	( PREFERRED_SIZE );
 		setOpaque		( true			 );
+		patternTools = new PatternTools(this, outermostCell);
+
+		// [Freezing] Starting an area selection ends pattern editing and
+		// clears its undo history (an undo must not overwrite frozen cells).
+		freezingTools = new FreezingTools( this, new FreezingManager(outermostCell),
+			() -> {	if (patternTools.isEditing()) patternTools.cancel();
+					patternTools.boardChanged();
+				  } );
+		patternTools.setPlacementGuard( area -> freezingTools.manager().overlapsFrozen(area) );
+
+		// [Freezing] Esc ends whichever editing mode is on.
+		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "cancel-editing");
+		getActionMap().put("cancel-editing", new AbstractAction()
+		{	public void actionPerformed(ActionEvent e)
+			{	if (freezingTools.isEditing()) freezingTools.cancel();
+				else patternTools.cancel();
+			}
+		});
 
 		addMouseListener					//{=Universe.mouse}
 		(	new MouseAdapter()
 			{	public void mousePressed(MouseEvent e)
-				{	Rectangle bounds = getBounds();
+				{	if (patternTools.isEditing() || freezingTools.isEditing()
+							|| !SwingUtilities.isLeftMouseButton(e)) return;
+					Rectangle bounds = getBounds();
 					bounds.x = 0;
 					bounds.y = 0;
+					if (!bounds.contains(e.getPoint())) return;
+					int unit = bounds.width / outermostCell.widthInCells();		// [Freezing]
+					if (freezingTools.manager().isFrozen(
+							new Point(e.getX() / unit, e.getY() / unit)))
+					{	freezingTools.blockedEdit();
+						return;
+					}
+					patternTools.boardChanged();
 					outermostCell.userClicked(e.getPoint(),bounds);
 					repaint();
 				}
@@ -106,7 +137,10 @@ public class Universe extends JPanel
 		MenuSite.addLine( this, "Grid", "Clear",
 			new ActionListener()
 			{	public void actionPerformed(ActionEvent e)
-				{	outermostCell.clear();
+				{	if (patternTools.isEditing()) patternTools.cancel();	// Clear itself does not stop the clock
+					patternTools.boardChanged();
+					freezingTools.reset();				// [Freezing]
+					outermostCell.clear();
 					repaint();
 				}
 			}
@@ -142,14 +176,24 @@ public class Universe extends JPanel
 		Clock.instance().addClockListener //{=Universe.clock.subscribe}
 		(	new Clock.Listener()
 			{	public void tick()
-				{	if( outermostCell.figureNextState
+				{	if (patternTools.isEditing() || freezingTools.isEditing()) return;
+					patternTools.boardChanged();
+
+					// [Freezing] The B3/S23 computation and transition are
+					// the original calls. Between them, every Freezing region
+					// asks its State object whether to hold the snapshot.
+					FreezingManager freezing = freezingTools.manager();
+					freezing.beginGeneration();
+					boolean unstable = outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
-						   )
-					  )
+						   );
+					boolean held = freezing.beforeTransition(outermostCell);
+					if( unstable || held )
 					{	if( outermostCell.transition() )
 							refreshNow();
 					}
+					freezing.afterGeneration();			// countdown, Frozen -> Normal
 				}
 			}
 		);
@@ -163,12 +207,38 @@ public class Universe extends JPanel
 	{	return theInstance;
 	}
 
+	JPanel patternControls() { return patternTools.controls(); }
+	JPanel freezingControls() { return freezingTools.controls(); }	// [Freezing]
+	FreezingManager freezing() { return freezingTools.manager(); }	// [Freezing]
+
+	/** [Freezing] Right panel: the existing capture panel and the Freezing
+	 *  panel as separate tabs. Switching tabs ends any editing mode.
+	 */
+	JTabbedPane sideControls()
+	{	if (sideControls == null)
+		{	sideControls = new JTabbedPane();
+			sideControls.addTab("패턴 캡처", patternControls());
+			sideControls.addTab("Freezing", freezingControls());
+			// Same height as the board, so the tab header does not leave an empty strip under it.
+			sideControls.setPreferredSize(new Dimension(
+					sideControls.getPreferredSize().width, getPreferredSize().height));
+			sideControls.addChangeListener(e -> {
+				if (patternTools.isEditing()) patternTools.cancel();
+				freezingTools.cancel();
+			});
+		}
+		return sideControls;
+	}
+
 	private void doLoad()
 	{	try
 		{
 			FileInputStream in = new FileInputStream(
 			   Files.userSelected(".",".life","Life File","Load"));
 
+			patternTools.cancel();
+			patternTools.boardChanged();
+			freezingTools.reset();			// [Freezing]
 			Clock.instance().stop();		// stop the game and
 			outermostCell.clear();			// clear the board.
 
@@ -210,8 +280,9 @@ public class Universe extends JPanel
 	 *  (The size is passed into the outermost <code>Cell</code>.)
 	 */
 
-	public void paint(Graphics g)
+	protected void paintComponent(Graphics g)
 	{
+		super.paintComponent(g);
 		Rectangle panelBounds = getBounds();
 		Rectangle clipBounds  = g.getClipBounds();
 
@@ -220,36 +291,13 @@ public class Universe extends JPanel
 		panelBounds.x = 0;
 		panelBounds.y = 0;
 		outermostCell.redraw(g, panelBounds, true);		//{=Universe.redraw1}
+		if (freezingTools != null) freezingTools.paintOverlay((Graphics2D) g);	// [Freezing]
+		if (patternTools != null) patternTools.paintOverlay((Graphics2D) g);
 	}
 
-	/** Force a screen refresh by queing a request on
-	 *  the Swing event queue. This is an example of the
-	 *  Active Object pattern (not covered by the Gang of Four).
-	 *  This method is called on every clock tick. Note that
-	 *  the redraw() method on a given <code>Cell</code>
-	 *  does nothing if the <code>Cell</code> doesn't
-	 *  have to be refreshed.
-	 */
+	/** Repaint through Swing so the board and editing overlay stay together. */
 
 	private void refreshNow()
-	{	SwingUtilities.invokeLater
-		(	new Runnable()
-			{	public void run()
-				{	Graphics g = getGraphics();
-					if( g == null )		// Universe not displayable
-						return;
-					try
-					{
-						Rectangle panelBounds = getBounds();
-						panelBounds.x = 0;
-						panelBounds.y = 0;
-						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
-					}
-					finally
-					{	g.dispose();
-					}
-				}
-			}
-		);
+	{	repaint();
 	}
 }

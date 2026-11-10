@@ -419,6 +419,22 @@ public final class Neighborhood implements Cell
 		rememberThatCellAtEdgeChangedState(row, column);
 	}
 
+	/** [Freezing] Delegate to the subcell that holds the location. If the
+	 *  pending state was overridden, stay active so the block is computed
+	 *  again on the next tick (needed for the cell to resume normal
+	 *  evolution as soon as the Freezing is released).
+	 */
+	public boolean holdNextState(Point location, boolean alive)
+	{	int subcellWidth = grid[0][0].widthInCells();
+		boolean overridden =
+			grid[location.y / subcellWidth][location.x / subcellWidth]
+				.holdNextState( new Point( location.x % subcellWidth,
+										   location.y % subcellWidth ), alive );
+		if( overridden )
+			amActive = true;
+		return overridden;
+	}
+
 	public boolean isAlive()
 	{	for( int row = 0; row < gridSize; ++row )
 			for( int column = 0; column < gridSize; ++column )
@@ -465,6 +481,13 @@ public final class Neighborhood implements Cell
 				upperLeft.translate( subcellWidth, 0);
 			}
 			upperLeft.translate(-myWidth, subcellWidth );
+		}
+		// A restored board must recompute empty neighbors too: new births
+		// can cross a nested Neighborhood boundary on the very next tick.
+		if (load) {
+			amActive = true;
+			activeEdges.add(Direction.ALL);
+			oneLastRefreshRequired = true;
 		}
 		return amActive;
 	}
