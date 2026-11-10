@@ -104,6 +104,10 @@ public final class Resident implements Cell
 
 	public void	   clear()			{amAlive = willBeAlive = false; }
 	public boolean isAlive()		{return amAlive;			    }
+	public boolean isAliveAt(int row, int column)
+	{	assert row==0 && column==0;
+		return amAlive;
+	}
 	public Cell    create()			{return new Resident();			}
 	public int 	   widthInCells()	{return 1;}
 
