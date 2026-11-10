@@ -95,17 +95,31 @@ public class Universe extends JPanel
 		// 같은 상태로 만든다. 그래서 한 번 끌면 그리거나 지운다.
 
 		MouseAdapter brush = new MouseAdapter()		//{=Universe.mouse}
-		{	private boolean paintsAlive;
+		{	private Point	lastCell;
+			private boolean paintsAlive;
 
 			public void mousePressed(MouseEvent e)
-			{	Point cell  = cellAt( e.getPoint() );
-				paintsAlive = !outermostCell.isAliveAt(cell.y, cell.x);
-				setCell( cell, paintsAlive );
+			{	lastCell	= cellAt( e.getPoint() );
+				paintsAlive = !outermostCell.isAliveAt(lastCell.y, lastCell.x);
+				setCell( lastCell, paintsAlive );
 				repaint();
 			}
 
 			public void mouseDragged(MouseEvent e)
-			{	setCell( cellAt(e.getPoint()), paintsAlive );
+			{	Point cell = cellAt( e.getPoint() );
+
+				// 빠르게 끌면 칸을 건너뛰므로 마지막 두 마우스 위치
+				// 사이의 칸을 모두 채운다.
+				int columns = cell.x - lastCell.x;
+				int rows	= cell.y - lastCell.y;
+				int steps	= Math.max( Math.abs(columns), Math.abs(rows) );
+
+				for( int step = 1; step <= steps; ++step )
+					setCell( new Point( lastCell.x + columns * step / steps,
+										lastCell.y + rows    * step / steps ),
+							 paintsAlive );
+
+				lastCell = cell;
 				repaint();
 			}
 		};

@@ -93,6 +93,23 @@ class UniverseStoreTest {
     }
 
     @Test
+    void draggingDrawsACellForEveryPositionPassed() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            mouse(MouseEvent.MOUSE_PRESSED, 2, 3);
+            mouse(MouseEvent.MOUSE_DRAGGED, 6, 3);   // 세 칸을 건너뜀
+            mouse(MouseEvent.MOUSE_DRAGGED, 6, 5);
+        });
+
+        assertEquals(
+            new HashSet<>(List.of(
+                new Point(2, 3), new Point(3, 3), new Point(4, 3), new Point(5, 3),
+                new Point(6, 3), new Point(6, 4), new Point(6, 5)
+            )),
+            new HashSet<>(storeAndRead(List.of()))
+        );
+    }
+
+    @Test
     void draggingFromALiveCellErases() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             mouse(MouseEvent.MOUSE_PRESSED, 1, 1);
