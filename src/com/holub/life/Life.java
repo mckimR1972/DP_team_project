@@ -27,7 +27,7 @@ public final class Life extends JFrame
 		setDefaultCloseOperation	( EXIT_ON_CLOSE 		);
 		getContentPane().setLayout	( new BorderLayout()	);
 		getContentPane().add( Universe.instance(), BorderLayout.CENTER); //{=life.java.install}
-		getContentPane().add( Universe.instance().patternControls(), BorderLayout.EAST);
+		getContentPane().add( Universe.instance().sideControls(), BorderLayout.EAST);	// [Freezing] tabs
 
 		setResizable(false);
 		pack();

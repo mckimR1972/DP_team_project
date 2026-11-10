@@ -19,9 +19,13 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
         & java -ea '-Djava.awt.headless=true' -cp 'build/classes;build/test-classes' com.holub.life.PatternFeatureTest
         if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+        & java -ea '-Djava.awt.headless=true' -cp 'build/classes;build/test-classes' com.holub.life.FreezingFeatureTest
+        if ($LASTEXITCODE -ne 0) { throw 'Freezing tests failed.' }
         if ($UiTest) {
             & java -ea -cp 'build/classes;build/test-classes' com.holub.life.PatternUiTest
             if ($LASTEXITCODE -ne 0) { throw 'Swing integration tests failed.' }
+            & java -ea -cp 'build/classes;build/test-classes' com.holub.life.FreezingUiTest
+            if ($LASTEXITCODE -ne 0) { throw 'Freezing Swing tests failed.' }
         }
     }
     Write-Output 'Ready: build/HolubLife.jar'

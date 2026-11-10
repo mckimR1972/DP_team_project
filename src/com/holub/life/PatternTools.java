@@ -34,6 +34,8 @@ final class PatternTools {
                 if (pattern.isAlive(x, y)) g.fillRect(left + x * unit, top + y * unit, unit, unit);
         }
     };
+    /** [Freezing] Rejects placements into a frozen area. Set by Universe. */
+    private java.util.function.Predicate<Rectangle> placementBlocked = area -> false;
     private Mode mode = Mode.DRAW;
     private Point anchor;
     private Point hover;
@@ -116,6 +118,10 @@ final class PatternTools {
                         message("보드 밖으로 나갑니다. 안쪽에 배치하세요.");
                         return;
                     }
+                    if (blocked(pattern, point)) {
+                        message("Freezing 영역과 겹칩니다. 다른 곳에 배치하세요.");
+                        return;
+                    }
                     boolean changed = editor.place(pattern, point);
                     undo.setEnabled(editor.canUndo());
                     message(changed ? "배치했습니다. 다시 클릭하면 반복 배치합니다. Esc로 종료."
@@ -145,6 +151,10 @@ final class PatternTools {
     }
 
     JPanel controls() { return controls; }
+    void setPlacementGuard(java.util.function.Predicate<Rectangle> guard) { placementBlocked = guard; }
+    private boolean blocked(PatternTemplate pattern, Point origin) {
+        return placementBlocked.test(new Rectangle(origin.x, origin.y, pattern.width(), pattern.height()));
+    }
     boolean isEditing() { return mode != Mode.DRAW; }
     void boardChanged() {
         editor.clearHistory();
@@ -237,7 +247,8 @@ final class PatternTools {
                     selection.width * unit - 2, selection.height * unit - 2);
         } else if (mode == Mode.PLACE && hover != null) {
             PatternTemplate pattern = list.getSelectedValue();
-            Color color = editor.fits(pattern, hover) ? new Color(20, 130, 100) : new Color(195, 45, 45);
+            Color color = editor.fits(pattern, hover) && !blocked(pattern, hover)
+                    ? new Color(20, 130, 100) : new Color(195, 45, 45);
             g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 130));
             for (int y = 0; y < pattern.height(); y++) for (int x = 0; x < pattern.width(); x++)
                 if (pattern.isAlive(x, y)) g.fillRect((hover.x + x) * unit, (hover.y + y) * unit, unit, unit);
