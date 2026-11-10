@@ -86,6 +86,18 @@ public interface Cell
 
 	void clear();
 
+	/** [Freezing] Override the next state that the most recent
+	 *  {@link #figureNextState} computed for the unitary cell at
+	 *  <code>location</code> (x = column, y = row, relative to the
+	 *  upper-left corner of this Cell). The following
+	 *  {@link #transition} then moves the cell into
+	 *  <code>alive</code> instead of the computed state. The Life rules
+	 *  themselves are not touched: every cell is still computed from the
+	 *  same previous generation, and only the result is replaced.
+	 *  @return true if the override changed the pending next state.
+	 */
+	boolean holdNextState( Point location, boolean alive );
+
 	/**
 	 *	The Cell.Memento interface stores the state
 	 *	of a Cell and all its subcells for future restoration.
@@ -147,6 +159,7 @@ public interface Cell
 		public void 	 clear()		   	{						  }
 		public int 		 widthInCells()  	{return 0;				  }
 		public boolean	 transition()		{return false;			  }
+		public boolean	 holdNextState(Point p, boolean a)	{return false;}
 
 		public void	userClicked(Point h, Rectangle s				){}
 		public void redraw 		(Graphics g, Rectangle here,
