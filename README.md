@@ -1,6 +1,10 @@
 # DP_team_project
 설계 패턴 팀프로젝트, life game  기능 확장
 
+## Life Game 실행 방법 
+로컬 코드 컴파일 : .\gradlew classes
+BUILD SUCCESSFUL 출력이 나오면 : java -cp build/classes/java/main com.holub.life.Life
+
 ## 기본 오류 수정
 
 소스 코드 수정 커밋: `d3f4478` (`fix: correct cell state reporting and remove duplicate save`)
