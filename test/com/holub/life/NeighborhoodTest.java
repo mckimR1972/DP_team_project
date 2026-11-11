@@ -81,4 +81,15 @@ class NeighborhoodTest {
         board.userClicked(new Point(x * 8 + 1, y * 8 + 1),
                           new Rectangle(0, 0, width, width));
     }
+
+    @Test
+    void isAliveAtFindsResidentThroughNestedNeighborhoods() {
+        Neighborhood board = new Neighborhood(2, new Neighborhood(2, new Resident()));
+
+        // Each cell is 10 pixels on a 40-pixel surface; click row 3, column 2.
+        board.userClicked(new Point(25, 35), new Rectangle(0, 0, 40, 40));
+
+        assertTrue(board.isAliveAt(3, 2));
+        assertFalse(board.isAliveAt(2, 3));
+    }
 }

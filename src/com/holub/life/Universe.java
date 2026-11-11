@@ -5,6 +5,10 @@ import java.io.*;
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
+import java.util.BitSet;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
 
 import com.holub.io.Files;
 import com.holub.ui.MenuSite;
@@ -28,6 +32,8 @@ import com.holub.life.Resident;
 
 public class Universe extends JPanel
 {	private 		final Cell  	outermostCell;
+	private final Set<BoardChangeListener> boardListeners = new LinkedHashSet<>();
+	private long generation;
 	private static	final Universe 	theInstance = new Universe();
 
 	/** The default height and width of a Neighborhood in cells.
@@ -97,7 +103,10 @@ public class Universe extends JPanel
 				{	Rectangle bounds = getBounds();
 					bounds.x = 0;
 					bounds.y = 0;
+					if (!SwingUtilities.isLeftMouseButton(e)
+							|| !bounds.contains(e.getPoint())) return;
 					outermostCell.userClicked(e.getPoint(),bounds);
+					notifyBoardChanged(BoardChangeEvent.Kind.EDIT);
 					repaint();
 				}
 			}
@@ -107,6 +116,8 @@ public class Universe extends JPanel
 			new ActionListener()
 			{	public void actionPerformed(ActionEvent e)
 				{	outermostCell.clear();
+					generation = 0;
+					notifyBoardChanged(BoardChangeEvent.Kind.CLEAR);
 					repaint();
 				}
 			}
@@ -139,20 +150,7 @@ public class Universe extends JPanel
 			}
 		);
 
-		Clock.instance().addClockListener //{=Universe.clock.subscribe}
-		(	new Clock.Listener()
-			{	public void tick()
-				{	if( outermostCell.figureNextState
-						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
-							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
-						   )
-					  )
-					{	if( outermostCell.transition() )
-							refreshNow();
-					}
-				}
-			}
-		);
+		Clock.instance().addClockListener(this::advanceOneGeneration);
 	}
 
 	/** Singleton Accessor. The Universe object itself is manufactured
@@ -163,27 +161,100 @@ public class Universe extends JPanel
 	{	return theInstance;
 	}
 
-	private void doLoad()
-	{	try
-		{
-			FileInputStream in = new FileInputStream(
-			   Files.userSelected(".",".life","Life File","Load"));
+    /** Register on the EDT. Only a newly registered observer receives INITIAL. */
+    public void addBoardChangeListener(BoardChangeListener listener) {
+        requireEventDispatchThread();
+        if (boardListeners.add(Objects.requireNonNull(listener, "listener"))) {
+            listener.onBoardChanged(createBoardChangeEvent(BoardChangeEvent.Kind.INITIAL));
+        }
+    }
 
-			Clock.instance().stop();		// stop the game and
-			outermostCell.clear();			// clear the board.
+    /** Removing an absent listener is harmless. Call on the EDT. */
+    public void removeBoardChangeListener(BoardChangeListener listener) {
+        requireEventDispatchThread();
+        boardListeners.remove(Objects.requireNonNull(listener, "listener"));
+    }
 
-			Storable memento = outermostCell.createMemento();
-			memento.load( in );
-			outermostCell.transfer( memento, new Point(0,0), Cell.LOAD );
+    /** Complete one generation before publishing its state, even for a stable board. */
+    public void advanceOneGeneration() {
+        requireEventDispatchThread();
+        if (outermostCell.figureNextState(
+                Cell.DUMMY, Cell.DUMMY, Cell.DUMMY, Cell.DUMMY,
+                Cell.DUMMY, Cell.DUMMY, Cell.DUMMY, Cell.DUMMY)) {
+            outermostCell.transition();
+        }
+        generation++;
+        notifyBoardChanged(BoardChangeEvent.Kind.GENERATION);
+        repaint();
+    }
 
-			in.close();
-		}
-		catch( IOException theException )
-		{	JOptionPane.showMessageDialog( null, "Read Failed!",
-					"The Game of Life", JOptionPane.ERROR_MESSAGE);
-		}
-		repaint();
-	}
+    /**
+     * Publish after a complete board operation on the EDT. Future template tools
+     * can use this after applying all cells. This method does not change the board
+     * or advance the generation. Observers must not modify the board in callbacks.
+     * Subscription changes during delivery take effect for the next broadcast.
+     */
+    public void notifyBoardChanged(BoardChangeEvent.Kind kind) {
+        requireEventDispatchThread();
+        Objects.requireNonNull(kind, "kind");
+        if (boardListeners.isEmpty()) return;
+
+        BoardChangeEvent event = createBoardChangeEvent(kind);
+        for (BoardChangeListener listener : boardListeners.toArray(new BoardChangeListener[0])) {
+            listener.onBoardChanged(event);
+        }
+    }
+
+    private BoardChangeEvent createBoardChangeEvent(BoardChangeEvent.Kind kind) {
+        return new BoardChangeEvent(kind, generation, outermostCell.widthInCells(),
+                captureAliveCells());
+    }
+
+    private BitSet captureAliveCells() {
+        int size = outermostCell.widthInCells();
+        BitSet aliveCells = new BitSet(size * size);
+        for (int row = 0; row < size; row++) {
+            for (int column = 0; column < size; column++) {
+                if (outermostCell.isAliveAt(row, column)) {
+                    aliveCells.set(row * size + column);
+                }
+            }
+        }
+        return aliveCells;
+    }
+
+    private static void requireEventDispatchThread() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            throw new IllegalStateException("Board operations must run on the Swing EDT");
+        }
+    }
+
+    private void doLoad() {
+        File source;
+        try {
+            source = Files.userSelected(".", ".life", "Life File", "Load");
+        } catch (FileNotFoundException cancelled) {
+            // The existing file chooser signals cancellation with this exception.
+            return;
+        }
+
+        // Read completely before clearing the board: a failed read changes nothing.
+        Storable memento = outermostCell.createMemento();
+        try (FileInputStream in = new FileInputStream(source)) {
+            memento.load(in);
+        } catch (IOException exception) {
+            JOptionPane.showMessageDialog(null, "Read Failed!",
+                    "The Game of Life", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        Clock.instance().stop();
+        outermostCell.clear();
+        outermostCell.transfer(memento, new Point(0, 0), Cell.LOAD);
+        generation = 0;
+        notifyBoardChanged(BoardChangeEvent.Kind.LOAD);
+        repaint();
+    }
 
 	private void doStore()
 	{	try
@@ -222,34 +293,4 @@ public class Universe extends JPanel
 		outermostCell.redraw(g, panelBounds, true);		//{=Universe.redraw1}
 	}
 
-	/** Force a screen refresh by queing a request on
-	 *  the Swing event queue. This is an example of the
-	 *  Active Object pattern (not covered by the Gang of Four).
-	 *  This method is called on every clock tick. Note that
-	 *  the redraw() method on a given <code>Cell</code>
-	 *  does nothing if the <code>Cell</code> doesn't
-	 *  have to be refreshed.
-	 */
-
-	private void refreshNow()
-	{	SwingUtilities.invokeLater
-		(	new Runnable()
-			{	public void run()
-				{	Graphics g = getGraphics();
-					if( g == null )		// Universe not displayable
-						return;
-					try
-					{
-						Rectangle panelBounds = getBounds();
-						panelBounds.x = 0;
-						panelBounds.y = 0;
-						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
-					}
-					finally
-					{	g.dispose();
-					}
-				}
-			}
-		);
-	}
 }

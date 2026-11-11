@@ -427,6 +427,12 @@ public final class Neighborhood implements Cell
 		return false;
 	}
 
+	public boolean isAliveAt(int row, int column)
+	{	int subcellWidth = grid[0][0].widthInCells();
+		return grid[row / subcellWidth][column / subcellWidth]
+					.isAliveAt( row % subcellWidth, column % subcellWidth );
+	}
+
 	public int widthInCells()
 	{	return gridSize * grid[0][0].widthInCells();
 	}
@@ -465,6 +471,13 @@ public final class Neighborhood implements Cell
 				upperLeft.translate( subcellWidth, 0);
 			}
 			upperLeft.translate(-myWidth, subcellWidth );
+		}
+		// Restored residents have matching current/next state, so they report no
+		// disruptive edges. Invalidate the cached activity of every loaded block
+		// to also recompute empty neighbors across sub-neighborhood boundaries.
+		if (load)
+		{	amActive = true;
+			activeEdges.add(Direction.ALL);
 		}
 		return amActive;
 	}

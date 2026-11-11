@@ -15,7 +15,7 @@ public final class Life extends JFrame
 	private static JComponent universe;
 
 	public static void main( String[] arguments )
-	{	new Life();
+	{	SwingUtilities.invokeLater(Life::new);
 	}
 
 	private Life()

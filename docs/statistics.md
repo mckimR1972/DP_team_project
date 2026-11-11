@@ -1,193 +1,110 @@
 # 통계 기능 설계 및 구현 기록
 
-이 문서는 통계 기능의 현재 설계와 단계별 구현 이력을 함께 관리한다.
-기능이 변경되면 **현재 설계**를 최신 코드에 맞게 수정하고, **단계별 변경 기록**에 해당 단계의 변경 내용과 검증 결과를 추가한다.
-이전 단계의 검증 결과는 당시 커밋과 실행 환경의 기록으로 보존한다.
+현재 설계와 검증 요약을 먼저 정리하고, 상세 테스트와 변경 기록은 접기 영역에서 관리한다.
 
 ## 현재 설계
 
 ### 구현 범위
 
-현재 완료한 범위는 1단계인 공통 이벤트·리스너와 기본 통계 계산이다.
+Universe가 게임판의 작업 완료 상태를 발행하고 Statistics가 받아 **세대 번호·생존 셀 수·생존 비율·세대별 탄생·사망 수**를 계산한다. 자동 진행·단일 진행·클릭·Clear·Load를 연결했으며, JUnit에서 실제 Statistics를 등록해 검증했다.
 
-게임판 작업 완료 후 **현재 상태만 전달**하는 계약과, 이를 받아 기본 통계를 계산하는 코드가 구현되어 있다.
-현재 구현은 Observer의 수신 인터페이스와 통계 Observer를 독립적으로 검증하는 단계다.
-Universe의 이벤트 발행, 전체 세대 번호 관리, 상태 수집, 화면 연결은 다음 단계에서 구현한다.
+아직 구현하거나 연결하지 않은 내용:
 
-색별 집계·파이 차트, 프리즈 처리, 템플릿 실행·Undo 기능은 이번 통계 브랜치의 구현 범위에 포함하지 않는다.
-현재 이벤트에는 생존 상태만 있으며 셀 나이나 색상 데이터는 없다.
+- **통계 화면:** StatisticsPanel·오른쪽 통계 탭과 Life의 Statistics 생성·구독 코드는 다음 작업이다.
+- **다른 담당 기능:** 템플릿·Undo·프리즈·사운드·색상 실행 코드는 합치지 않았다. TEMPLATE·TEMPLATE_UNDO는 이벤트 계약과 단위 테스트만 있다.
+- **색별 통계:** 이벤트에 나이·색상 정보가 없어 색별 집계·파이 차트는 미구현이다. 프리즈된 생존 셀도 나이가 증가한다는 정책은 색상·프리즈 통합 시 확인한다.
 
-### 클래스와 메서드
+### 클래스와 주요 메서드
 
-#### BoardChangeListener
-
-`src/com/holub/life/BoardChangeListener.java`
-
-| 메서드 | 역할 |
+| 클래스 | 주요 메서드·데이터와 역할 |
 | --- | --- |
-| `onBoardChanged(BoardChangeEvent event)` | 전체 작업 완료 후의 현재 상태를 받는 공통 콜백 |
+| BoardChangeEvent | kind()·generation()·boardSize()로 작업 종류·세대·크기를 조회하고, copyAliveCells()로 생존 상태의 독립된 BitSet을 반환한다. |
+| BoardChangeListener | onBoardChanged(event): 작업 완료 상태를 받는 Observer 계약이다. |
+| Statistics | 생성자에서 결과 콜백을 받는다. onBoardChanged()가 calculate()로 계산한 뒤 비교 기준과 결과를 갱신하고 콜백을 호출한다. current()는 최근 결과를 Optional로 반환하며 첫 이벤트 전에는 비어 있다. |
+| Statistics.Summary | 불변 결과: generation(전달받은 세대), livingCells(생존 수), livingRatio(백분율 0~100), births·deaths(탄생·사망), hasGenerationDelta(변화량 계산 여부). |
+| Universe — 구독 | addBoardChangeListener()는 중복 등록을 막고 새 구독자에게만 INITIAL을 전달한다. removeBoardChangeListener()는 없는 구독자를 해제해도 안전하다. |
+| Universe — 진행 | advanceOneGeneration()이 상태 계산·필요한 transition·세대 증가·완료 알림·repaint를 수행한다. 안정된 패턴과 빈 보드도 세대가 증가한다. |
+| Universe — 발행 | captureAliveCells()로 상태를 수집하고 createBoardChangeEvent()로 이벤트를 만든다. notifyBoardChanged(kind)는 같은 이벤트를 구독자들에게 전달하며 보드·세대 번호를 바꾸지 않는다. |
+| Universe — 불러오기 | doLoad()는 파일을 다 읽은 후 보드를 교체한다. 취소·읽기 실패는 기존 상태를 유지한다. |
+| Cell 계층 | isAliveAt(row, column)으로 셀 좌표를 조회한다. Neighborhood는 좌표를 하위 Cell로 변환·위임하고 Resident는 자신의 상태를, DUMMY는 false를 반환한다. |
+| Clock·Life | Clock의 Swing Timer가 tick()을 호출하고 Universe의 공통 진행 경로로 연결된다. Life.main()은 invokeLater(Life::new)로 EDT에서 앱을 구성한다. |
 
-`Statistics`가 구현한다. 추후 사운드도 같은 계약을 구현할 수 있다.
-알림 등록·해제와 발행은 Universe 연결 단계에서 추가한다.
+생존 좌표는 `row * boardSize + column` 비트로 표현한다. BoardChangeEvent는 입력·조회 시 BitSet을 복사하며 Cell 객체나 이전 상태를 노출하지 않는다. null·음수 세대·잘못된 보드 크기·범위 밖 비트는 거부한다.
 
-#### BoardChangeEvent
+isAliveAt 구현과 중첩 조회 테스트는 사운드 브랜치의 `6ff3e81`을 재사용했다. 유효한 셀 행·열을 사용하며 Resident의 조회 좌표는 (0,0)이다. 별도로 Neighborhood.transfer(..., LOAD)의 계산 캐시를 무효화해 로드 후 빈 인접 묶음도 다시 계산하도록 수정했다.
 
-`src/com/holub/life/BoardChangeEvent.java`
+### 실행과 연동 규칙
 
-| 항목 | 역할 |
-| --- | --- |
-| 생성자 `(Kind, long, int, BitSet)` | 작업 종류, 세대 번호, 보드 크기, 생존 상태를 검증하고 보관 |
-| `kind()` | 작업 종류 조회 |
-| `generation()` | 완료 상태의 전체 세대 번호 조회 |
-| `boardSize()` | 정사각형 보드 한 변의 개별 셀 수 조회 |
-| `copyAliveCells()` | 생존 상태의 독립된 복사본 반환 |
+```text
+Clock.tick() → Universe.advanceOneGeneration()
+  → 상태 계산·반영 → 세대 증가 → notifyBoardChanged(GENERATION)
+  → isAliveAt으로 전체 상태 수집 → BoardChangeEvent
+  → Statistics 계산·비교 기준 갱신 → 결과 콜백
+```
 
-살아 있는 셀은 `row * boardSize + column` 위치의 비트로 표현한다.
-이벤트 생성 시 입력 BitSet을 복사하고, 조회 시에도 다시 복사한다.
-이벤트를 받은 관찰자가 자신의 복사본을 바꿔도 다른 관찰자의 상태에 영향을 주지 않는다.
-
-세대 번호는 0 이상이어야 한다. 보드 크기는 양수이고 전체 칸 수가 int 인덱스 범위에 들어와야 한다.
-보드 범위 밖의 생존 비트와 null 입력은 거부한다.
-
-| Kind | 의미 |
-| --- | --- |
-| `INITIAL` | 최초 등록 또는 현재 상태 재동기화 |
-| `GENERATION` | 한 세대 진행 완료 |
-| `EDIT` | 일반 셀 편집 완료 |
-| `TEMPLATE` | 템플릿 배치 완료 |
-| `TEMPLATE_UNDO` | 템플릿 배치 되돌리기 완료 |
-| `CLEAR` | 보드 초기화 완료 |
-| `LOAD` | 파일 상태 적용 완료 |
-
-이벤트는 현재 상태만 담는다. 이전 상태, 변경 가능한 Cell 객체, Undo 기록은 담지 않는다.
-작업 종류를 정의한 것이며, 실제 작업에서 이벤트를 보내는 연결까지 구현한 것은 아니다.
-
-#### Statistics
-
-`src/com/holub/life/Statistics.java`
-
-| 메서드 | 역할 |
-| --- | --- |
-| `Statistics(Consumer<Summary> onUpdated)` | 계산 결과를 전달할 콜백 등록 |
-| `onBoardChanged(event)` | 통계 계산, 비교 기준 교체, 결과 콜백 호출 |
-| `current()` | 최근 결과를 `Optional<Summary>`로 조회. 첫 이벤트 전에는 비어 있음 |
-| `calculate(event, currentAlive)` | 내부 계산 메서드 |
-
-`Summary`는 Statistics 내부의 불변 record다.
-
-| 필드 | 의미 |
-| --- | --- |
-| `generation` | 이벤트로 받은 세대 번호. Statistics가 별도로 증가시키지 않음 |
-| `livingCells` | 현재 생존 셀 수 |
-| `livingRatio` | 전체 보드 칸 중 생존 셀의 비율, 단위는 백분율(0~100) |
-| `births` | 이번 세대의 실제 탄생 수 |
-| `deaths` | 이번 세대의 실제 사망 수 |
-| `hasGenerationDelta` | 탄생·사망을 한 세대 변화로 계산했는지 여부 |
-
-`hasGenerationDelta == false`이면 births와 deaths의 0은 미계산 값을 채우는 자리다.
-화면에서는 숫자 0 대신 `—` 등의 미계산 표시를 사용해야 한다.
-실제로 변화가 없는 세대는 `hasGenerationDelta == true`, births/deaths 모두 0이다.
-
-### 계산 규칙
-
-1. 생존 수와 비율은 모든 이벤트에서 현재 상태로 갱신한다.
-2. GENERATION이고, 직전 상태가 있으며, 보드 크기가 같고, 세대 번호가 정확히 1 증가했을 때만 탄생·사망을 계산한다.
-3. 탄생은 현재 상태에서 직전 생존 집합을 뺀 셀 수, 사망은 직전 상태에서 현재 생존 집합을 뺀 셀 수다.
-4. 계산용 비트 연산은 임시 복사본에서 수행한다.
-5. 이벤트 종류와 관계없이 전달된 현재 상태를 다음 비교 기준으로 교체한다.
-6. 최근 결과와 비교 기준을 갱신한 뒤 결과 콜백을 한 번 호출한다.
-
-세대 누락·역행·중복이나 보드 크기 변경이 있으면 현재 통계는 표시하되 한 세대 변화량은 계산하지 않고 기준을 다시 잡는다.
-예를 들어 9세대 직후 12세대를 받았을 때 그 차이를 1세대의 탄생·사망으로 표시하지 않는다.
-
-템플릿 배치 후 기준을 교체해야 다음 세대에서 배치된 셀을 자연 탄생으로 중복 집계하지 않는다.
-Clear/Load의 세대 번호는 발행 측 정책을 따른다. Statistics는 이벤트 값을 그대로 사용한다.
-
-직전 상태는 하나만 보관한다. 이벤트 처리가 끝나면 방금 받은 상태가 다음 비교 기준이 된다.
-과거 상태를 누적하는 Undo 기능이 아니다.
-
-이벤트는 작업이 끝난 순서대로 하나씩 전달해야 한다. Statistics 자체는 동시 호출을 조정하지 않는다.
-계산 결과 콜백은 이벤트를 처리하는 호출 흐름에서 실행된다. Swing 화면에 연결할 때는 UI 갱신을 EDT에서 수행하도록 연결해야 한다.
-
-### 설계 결정
-
-| 결정 | 이유 |
-| --- | --- |
-| 공통 이벤트와 Listener 사용 | 발행자가 통계나 사운드의 구체적인 구현을 알 필요가 없도록 하기 위한 Observer 계약 |
-| 현재 상태만 전달 | 발행 측에서 관찰자별 비교 기준을 관리하지 않도록 함 |
-| Statistics가 직전 상태 보관 | 탄생·사망 계산에 필요한 비교 책임을 통계에 둠 |
-| 계산과 표시 분리 | Swing 창 없이 통계를 테스트하고, 이후 숫자·차트 표시를 같은 결과에 연결 |
-| 이벤트와 결과의 불변 데이터 | 다른 관찰자나 표시 코드가 전달된 상태를 변경하지 못하도록 함 |
-
-현재 구현은 Universe의 Subject 역할까지 연결한 완성된 Observer 실행 경로가 아니다.
-이벤트를 직접 전달하는 JUnit 테스트로 수신·계산 계약을 먼저 확인했다.
-
-### 다음 연결 단계
-
-Universe가 게임판 작업 전체를 마친 뒤 이벤트를 한 번 만들고 등록된 Listener들에게 전달한다.
-전체 세대 번호는 공통 실행 경로에서 관리하고, Statistics는 증가시키지 않는다.
-현재 생존 상태 수집은 사운드 측의 `isAliveAt(row, column)` 계약과 맞춘다.
-
-색상과 파이 차트는 이후 단계에서 공통 색상 정책의 결과를 전달받도록 확장한다.
-프리즈된 생존 셀도 나이가 증가한다는 팀 정책은 색상·프리즈 통합 시 검증한다.
-
-## 단계별 변경 기록
-
-### 1단계: 공통 이벤트와 기본 통계 계산
-
-- 구현 및 검증일: 2026-11-11
-- 작업 브랜치: `feature/statistics`
-- 기준 커밋: `c49ca39` (`dev`의 기본 오류 수정 PR #1 병합)
-- 구현 커밋: `2aeff06` (`feat: add board change events and basic statistics`)
-
-#### 변경 전후
-
-| 대상 | 변경 전 | 변경 후 |
+| 작업 | 알림 | 세대 번호 |
 | --- | --- | --- |
-| 게임판 완료 데이터 | 공통 전달 타입 없음 | `BoardChangeEvent`가 작업 종류·세대 번호·크기·현재 생존 상태를 전달 |
-| 알림 수신 계약 | 통계용 수신 계약 없음 | `BoardChangeListener.onBoardChanged(event)` 추가 |
-| 통계 계산 | 독립 집계 객체 없음 | `Statistics`가 이벤트만으로 계산 |
-| 통계 검증 | 통계 테스트 없음 | 이벤트 13개·통계 23개의 JUnit 검사 추가 |
-| 기존 게임 실행 | Universe·Clock·Cell 계층이 진행과 표시 담당 | 이번 단계에서는 기존 실행 코드 변경 없음 |
+| 새 구독자 등록 | 해당 구독자에게만 INITIAL | 현재 값 |
+| 자동 진행·단일 진행 | 완료 후 GENERATION 한 번 | 1 증가 |
+| 보드 안의 왼쪽 클릭 | 편집 후 EDIT 한 번 | 유지 |
+| Clear | 초기화 후 CLEAR 한 번 | 0 |
+| Load 성공 | 상태 적용 후 LOAD 한 번 | 0 |
+| Load 취소·읽기 IOException / Store | 없음 | 유지 |
+| 템플릿 배치·Undo — 아직 미연동 | TEMPLATE·TEMPLATE_UNDO 계약만 정의 | 실제 발행 경로 미연결 |
 
-#### 신규 JUnit 검증 범위
+저장 형식에 세대 번호가 없어 Load 성공 시 0으로 시작한다. Load 성공·Store는 Clock을 멈추고, Clear는 자동 진행을 멈추지 않는다.
 
-이번 단계에서 추가한 테스트는 `BoardChangeEventTest`와 `StatisticsTest`의 **36개 검사**다.
-이벤트 생성·검증·복사와, 전달받은 현재 상태에 대한 통계 계산을 독립적으로 검증했다.
+- **EDT 실행:** Universe의 등록·해제·advanceOneGeneration·notifyBoardChanged와 Clock의 tick·startTicking·stop은 EDT 밖에서 호출하면 IllegalStateException을 던진다. 외부 스레드의 요청은 invokeLater 등으로 전달한다.
+- **연동 방법:** 보드 변경을 같은 EDT 작업에서 모두 끝낸 뒤 알림을 한 번 보낸다. 향후 템플릿도 이 규칙을 따르며, 세대 진행은 advanceOneGeneration()을 사용한다. 콜백은 짧게 처리하고 게임판을 다시 변경하지 않는다.
+- **구독 관리:** 일반 발행은 구독자가 없으면 수집을 생략한다. 발행 시작 시 구독자 목록을 복사하므로 콜백 중 해제는 다음 발행부터 반영된다.
+- **타이머 동작:** 양수 간격은 자동 진행, 0 이하는 정지다. 현재 첫 지연은 0이고 속도 변경 시 동일 Timer를 재시작한다. 지연 알림은 병합하며 세대는 실제 완료 횟수로 센다. 메뉴 선택 중에는 tick을 건너뛴다.
 
-`StatisticsTest`의 `event(...)` 보조 함수는 테스트에 지정한 생존 셀 번호로 `BitSet`을 만들고,
-이를 담은 `BoardChangeEvent`를 생성한다. 테스트는 이 이벤트를 `Statistics.onBoardChanged(...)`에 직접 전달한다.
-**템플릿 배치·Undo를 실제로 실행하거나 다른 담당자의 기능과 연동한 테스트가 아니다.**
-`EDIT`, `TEMPLATE`, `TEMPLATE_UNDO`는 직접 만든 이벤트의 종류이며, 해당 이벤트를 받은 통계가 비교 기준을 갱신하는지 확인한다.
-`CLEAR`·`LOAD`도 같은 방식으로 데이터를 직접 전달하며 실제 메뉴 처리나 파일 읽기를 실행하지 않는다.
+### 통계 계산 규칙
 
-블링커 검사는 가로·세로 생존 배치를 직접 전달해 탄생·사망을 계산한다.
-세대 진행이나 Life 규칙을 실행하지 않으며, 일부 입력은 집합 차이 계산만 확인하기 위해 인위적으로 구성했다.
-세대 번호 역시 테스트에서 지정하므로, 세대 번호 증가 기능 자체를 검증한 것은 아니다.
+1. 모든 이벤트에서 생존 수·비율과 전달받은 세대 번호를 갱신한다. 통계 전용 타이머는 없다.
+2. GENERATION이고 이전 상태가 있으며, 보드 크기가 같고 세대 번호가 정확히 1 증가했을 때만 탄생·사망을 계산한다. 탄생은 현재 생존 집합에서 이전 집합을 뺀 수, 사망은 그 반대다. 계산에는 복사본을 사용한다.
+3. 계산하지 못한 경우 hasGenerationDelta는 false이며 births·deaths의 0은 미계산 값이다. 화면은 `—` 등으로 표시한다. 실제 변화가 없는 세대는 true와 0으로 구분한다.
+4. 모든 이벤트의 현재 상태를 다음 비교 기준으로 교체한다. 편집 후 다음 세대도 새 기준으로 비교하며, 세대 누락·역행·중복이나 크기 변경 시 변화량을 계산하지 않고 기준을 다시 잡는다. 직전 상태 하나만 보관하므로 Undo 이력은 아니다.
 
-기존 Gradle Wrapper와 JUnit Jupiter 설정을 그대로 사용했다.
-새 테스트는 Universe를 생성하거나 Mockito로 정적 메서드를 대체하지 않아,
-이번 단계에서 `forkEvery` 등 테스트 실행 설정을 변경할 필요가 없었다.
+### 설계 선택
 
-실행 환경:
+| 선택 | 이유 |
+| --- | --- |
+| Observer | Universe는 Subject, BoardChangeListener는 수신 계약, Statistics는 Observer다. Universe가 통계·사운드의 구체적인 구현을 알 필요가 없다. |
+| 현재 상태 전달·계산과 표시 분리 | Statistics가 비교 기준과 집계를 담당하고 불변 Summary를 전달한다. 발행 측에서 관찰자별 계산을 하지 않으며 화면 없이 테스트할 수 있다. |
+| 불변 이벤트·결과 | 관찰자나 화면이 받은 데이터를 바꿔 다른 관찰자의 상태를 훼손하지 못하게 한다. |
+| 공통 isAliveAt 재사용 | 통계 전용 조회 계약을 Cell에 추가하지 않고 사운드와 공유한다. Universe에서 한 번 수집해 모든 관찰자에게 전달한다. |
+| LinkedHashSet 구독 관리 | 기존 Publisher 대신 중복 등록 방지·없는 구독자 해제·명확한 리스너 타입을 지원한다. |
 
-- 검증일 및 대상: 2026-11-11, 구현 커밋 `2aeff06`
-- macOS, Amazon Corretto JDK 17.0.19
-- Gradle 9.5.1, JUnit Jupiter 6.0.3
-- 명령: `./gradlew clean test --no-daemon --console=plain` (전체 테스트 실행)
-- Gradle 실행과 Java Toolchain에 JDK 17 사용
+**Swing Timer 선택 이유:** 통계는 세대 진행뿐 아니라 클릭·Clear 등의 완료 시에도 갱신된다. 게임판 전체를 읽는 중 상태가 바뀌거나 Statistics의 이전 상태 갱신이 겹치지 않도록 변경·수집·동기 알림을 EDT에서 순차 처리하고, Clock의 자동 진행도 여기에 맞췄다. 이벤트 복사는 수집 완료 후의 값을 보호하므로 수집 과정의 일관성도 필요하다. 기존 Timer에 EDT 전달이나 공통 잠금을 추가하는 대안도 있지만, 현재 Swing 구조에서는 Swing Timer가 간단하다. Statistics 자체는 타이머에 의존하지 않는다. 모든 연동 기능이 EDT 규칙을 지켜야 하며, 계산이 길어지면 UI 응답이 늦어질 수 있다. [Swing Timer 공식 문서](https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/javax/swing/Timer.html)
 
-| 신규 테스트 클래스 | 검사 수 | 통과 | 실패·오류·건너뜀 |
-| --- | ---: | ---: | --- |
-| BoardChangeEventTest | 13 | 13 | 모두 0 |
-| StatisticsTest | 23 | 23 | 모두 0 |
-| 신규 통계 관련 합계 | 36 | 36 | 모두 0 |
+## 검증 요약과 상세 테스트
 
-기존 오류 수정 회귀 검사 32개도 모두 통과했다(전체 68개 통과, 실패·오류·건너뜀 0). 기존 검증의 상세 내용은 [README](../README.md)를 참고한다.
+아래는 **2026-11-11 구현 검증 당시의 결과**다. 이번 문서 정리에서는 Java 소스·테스트를 변경하지 않아 JUnit을 재실행하지 않았다.
 
-검사 수에는 파라미터별 실행을 포함한다.
-Gradle 출력의 `BUILD SUCCESSFUL`과 `build/test-results/test/TEST-*.xml`의 집계를 대조했다.
-아래 두 표는 신규 테스트의 검증 내용 전체이며, 각 행에 표시한 실행은 모두 통과했다.
+- 환경: macOS, Amazon Corretto JDK 17.0.19, Gradle 9.5.1, JUnit Jupiter 6.0.3
+- 실행: 최초 `./gradlew clean test --no-daemon --console=plain`, 수정 후 `./gradlew test --no-daemon --console=plain`
+- BUILD SUCCESSFUL과 XML 검사 수를 대조했다. 검사 수에는 파라미터별 실행을 포함한다. 실제 창을 띄우지 않는 headless 검사다.
+
+| 통계·연결 관련 검사 | 실행 수 | 결과 |
+| --- | ---: | --- |
+| BoardChangeEventTest — 기존 통계 이벤트 단위 검사 | 13 | 모두 통과 |
+| StatisticsTest — 기존 통계 계산 단위 검사 | 23 | 모두 통과 |
+| UniverseEventsTest — 이번에 작성한 실제 보드 연결 검사 | 18 | 모두 통과 |
+| ClockIntegrationTest — 이번에 작성한 실제 시계 연결 검사 | 6 | 모두 통과 |
+| NeighborhoodTest의 isAliveAt 중첩 조회 — 사운드에서 재사용 | 1 | 통과 |
+| 통계·연결 관련 합계 | 61 | 모두 통과 |
+
+기존 오류 수정 회귀 검사 32개도 모두 통과했다(전체 93개 통과, 실패·오류·건너뜀 0). 기존 검증의 상세 내용은 [README](../README.md)를 참고한다.
+
+**검증 범위 구분:** 통계 단위 테스트는 이벤트를 직접 생성하고, UniverseEventsTest·ClockIntegrationTest는 실제 보드·시계를 실행한다. 템플릿·Undo·프리즈·색상·사운드 실제 연동과 통계 화면은 검증하지 않았다.
+
+<details>
+<summary>이벤트·통계 단위 테스트 36개 — 입력과 기대 결과</summary>
+
+StatisticsTest는 테스트에서 지정한 좌표로 BitSet과 BoardChangeEvent를 만들어 onBoardChanged()에 직접 전달한다. **템플릿 배치·Undo를 실제로 실행한 검사가 아니다.** EDIT·CLEAR·LOAD도 이 클래스에서는 직접 만든 이벤트이며 실제 메뉴·파일 처리를 실행하지 않는다.
+
+블링커 모양·세대 번호도 직접 지정한다. 일부 입력은 집합 차이 계산을 확인하기 위한 상태이며 Life 규칙이나 세대 증가 자체를 실행하지 않는다. Universe 생성이나 정적 메서드 대체 없이 통계 계산을 검증한다.
 
 #### BoardChangeEventTest: 13개 검사
 
@@ -231,16 +148,117 @@ Gradle 출력의 `BUILD SUCCESSFUL`과 `build/test-results/test/TEST-*.xml`의 �
 | 이벤트 누락 거부 | null 이벤트 입력 시 NullPointerException, 결과는 발행하지 않음 | 1 |
 | 합계 | | 23 |
 
-HTML 보고서: `build/reports/tests/test/index.html`.
-빌드 산출물과 보고서는 Git에 포함하지 않는다.
+</details>
 
-이 결과는 이벤트 수신·통계 계산의 단위 테스트 결과다.
-실제 Clock 호출, Universe의 세대 번호 관리와 알림 횟수, 편집·템플릿·Undo·프리즈·색상 기능 연동, 화면 표시는 아직 검증하지 않았다.
-해당 항목은 이후 통합 단계에서 별도 검증한다.
+<details>
+<summary>UniverseEventsTest 18개 — 실제 게임판 연결</summary>
 
-### 문서 정리: 2026-11-11
+LifeTestSupport는 테스트 사이에 실제 Universe·Clock Singleton을 함께 사용하되 매번 정지·초기화하고 구독을 해제하도록 준비한다.
+메뉴 등록 UI, 파일 선택 창, 오류 알림 창만 대체한다. 실제 Clock, Cell, Statistics, 직렬화·파일 처리는 대체하지 않는다.
+기존 UniverseStoreTest도 같은 준비 코드를 사용하도록 바꿨으며 저장 중복 검사의 입력과 기대 결과는 유지했다.
+Gradle 실행 설정이나 forkEvery는 바꾸지 않았다.
 
-- 단계별로 파일을 늘리는 대신 이 문서에서 현재 설계와 단계별 변경 기록을 관리하도록 정리했다.
-- 개발 중에는 README를 작업 시작 시점의 `dev` 기준인 `c49ca39` 내용으로 유지한다. 앞서 추가한 통계 안내와 링크는 제거했다.
-- 이 문서의 검증 설명은 신규 통계 테스트를 중심으로 정리하고, 이벤트를 직접 구성하는 단위 테스트의 범위를 명시했다.
-- Java 소스와 테스트 코드는 변경하지 않았다. 문서 구조·경로·참조와 README의 기준 커밋 일치 여부를 확인했다. 문서만 변경했으므로 JUnit은 다시 실행하지 않았다.
+아래 18개 검사는 모두 통과했다.
+
+| 검사 내용 | 기대 결과 |
+| --- | --- |
+| 최초 등록 | EDT에서 INITIAL 한 번, 세대 0, 크기 64, 빈 생존 상태 |
+| 중복 등록·새 구독자 | 중복 초기 알림 없음, 새 구독이 기존 구독자를 초기화하지 않음, 발행마다 한 번씩 수신 |
+| 해제·재등록 | 해제 후 알림 없음, 재등록 시 진행된 현재 세대로 INITIAL 수신 |
+| 클릭 좌표와 토글 | 비대칭 좌표·보드 경계 좌표를 row × 64 + column으로 저장, 다시 클릭하면 사망 상태 반영 |
+| 무효 마우스 입력 | 보드 밖 클릭과 오른쪽 버튼은 상태 변경·알림 없음 |
+| 실제 블링커 진행 | 하위 묶음 경계를 가로질러 정확한 가로·세로 배치 교대, 진행마다 탄생 2·사망 2 |
+| 안정된 블록 | 동일 배치로 3세대 진행, 매번 번호 증가·탄생 0·사망 0 |
+| 빈 보드 | 빈 상태에서도 진행마다 번호 증가·완료 알림 |
+| 진행 후 실제 편집 | 고립 셀 추가 직후 비교 기준 갱신, 다음 실제 세대에서 사망 1 |
+| Clear | 빈 상태·세대 0을 한 번 발행, 다음 진행은 1세대 |
+| 실제 파일 Load | 복원 상태를 한 번 발행, 세대 0, 다음 세대의 경계 탄생·사망과 정확한 좌표 확인 |
+| 파일 읽기 오류 | 직렬화 헤더가 잘못된 파일에서 오류 알림, 기존 보드·세대·통계 유지, 완료 이벤트 없음 |
+| Load 취소 | 기존 보드 유지, 완료 이벤트와 오류 창 없음 |
+| Store | 파일 출력 성공, 세대 유지, 보드 알림 없음 |
+| 이벤트 공유·상태 보호 | 관찰자들은 같은 이벤트를 받지만 복사본 변경으로 다른 관찰자나 과거 이벤트를 훼손하지 못함 |
+| 발행 중 해제 | 현재 발행은 일관된 구독자 목록을 사용하고 다음 발행부터 해제 반영 |
+| EDT 밖 요청 | 등록·해제·세대 진행·명시적 알림 호출을 IllegalStateException으로 거부 |
+| 필수 인자 누락 | null 리스너·작업 종류를 거부 |
+
+</details>
+
+<details>
+<summary>ClockIntegrationTest 6개·isAliveAt 조회 1개 — 실행과 기대 결과</summary>
+
+아래 6개 검사는 모두 통과했다.
+
+| 검사 내용 | 기대 결과 |
+| --- | --- |
+| 실제 단일 진행 메뉴 콜백 | 공통 세대 진행 경로를 거쳐 EDT에서 1세대 알림 |
+| 자동 Swing Timer | 실제 타이머가 세대 1·2·3을 EDT에서 순서대로 발행하고 정지 후 추가 진행 없음 |
+| 첫 알림 전 Halt | 대기 중인 자동 진행이 취소되어 세대 알림 없음 |
+| 실행 속도 교체 | 새 간격으로 진행하고 이전 예약이 남아 추가 세대를 만들지 않음 |
+| 메뉴 선택 중 tick | 선택 중에는 진행하지 않고 선택 해제 후 다음 tick에서 진행 |
+| EDT 밖 시계 제어 | tick·startTicking·stop을 IllegalStateException으로 거부 |
+
+자동 타이머 검사는 CountDownLatch와 EDT의 일회성 지연 표식으로 완료·정지를 확인하며, EDT를 Thread.sleep으로 막지 않는다.
+재사용한 isAliveAt 검사는 4×4 중첩 보드의 (3,2)를 살리고 (2,3)은 죽어 있음을 확인해 행·열 및 중첩 좌표 변환을 검증한다.
+템플릿·Undo 실행, 프리즈·색상·사운드 연동과 실제 통계 화면은 이번 검사에 포함하지 않았다.
+
+</details>
+
+HTML 보고서: `build/reports/tests/test/index.html`. 빌드 산출물과 보고서는 Git에 포함하지 않는다.
+
+## 변경 기록
+
+<details>
+<summary>2026-11-11 · 공통 이벤트와 기본 통계 계산 (2aeff06)</summary>
+
+- 구현 및 검증일: 2026-11-11, 브랜치 feature/statistics
+- 기준: c49ca39(dev의 기본 오류 수정 PR #1 병합)
+- 구현 커밋: 2aeff06 — feat: add board change events and basic statistics
+
+| 대상 | 변경 전 | 변경 후 |
+| --- | --- | --- |
+| 게임판 완료 데이터 | 공통 전달 타입 없음 | `BoardChangeEvent`가 작업 종류·세대 번호·크기·현재 생존 상태를 전달 |
+| 알림 수신 계약 | 통계용 수신 계약 없음 | `BoardChangeListener.onBoardChanged(event)` 추가 |
+| 통계 계산 | 독립 집계 객체 없음 | `Statistics`가 이벤트만으로 계산 |
+| 통계 검증 | 통계 테스트 없음 | 이벤트 13개·통계 23개의 JUnit 검사 추가 |
+| 기존 게임 실행 | Universe·Clock·Cell 계층이 진행과 표시 담당 | 이 커밋에서는 기존 실행 코드 변경 없음 |
+
+당시에는 Universe·Clock 실행 코드를 바꾸지 않고 이벤트·계산 테스트 36개를 추가했다. 기존 Gradle Wrapper·JUnit 설정으로 `./gradlew clean test --no-daemon --console=plain`을 실행해 통과했고 BUILD SUCCESSFUL과 XML을 대조했다. 실행 환경은 위 요약과 같으며 forkEvery 등 실행 설정은 변경하지 않았다. 이 커밋의 검증은 직접 생성한 이벤트에 한정되며 실제 게임판 연결은 이후 변경이다.
+
+</details>
+
+<details>
+<summary>2026-11-11 · 실제 게임판 알림·세대 진행 연결</summary>
+
+- 구현 및 검증일: 2026-11-11, 브랜치 feature/statistics
+- 작업 기준: fddfcef. 아래는 해당 기준 이후 구현한 변경 내용이다.
+- 재사용: 사운드 브랜치 6ff3e81의 Cell 계층 isAliveAt과 중첩 조회 테스트. 사운드 기능 전체를 합친 것은 아니다.
+
+| 기존 코드 | 현재 코드 | 달라진 동작 |
+| --- | --- | --- |
+| 공통 보드 알림 발행 없음 | Universe.add/removeBoardChangeListener, notifyBoardChanged | 등록 시 현재 상태 전달, 작업 완료 시 공통 이벤트 전달 |
+| Cell.isAlive만 사용 | Cell.isAliveAt 및 Universe.captureAliveCells | 실제 개별 좌표를 읽어 전체 생존 상태 수집 |
+| Universe 생성자 안 Clock.Listener.tick의 직접 계산 | Universe.advanceOneGeneration | 상태 반영·세대 증가·완료 알림의 순서 통일 |
+| 클릭 처리의 userClicked → repaint | userClicked → EDIT 발행 → repaint | 편집 직후 생존 통계와 비교 기준 갱신 |
+| Clear의 clear → repaint | clear → 세대 0 → CLEAR 발행 → repaint | 초기화된 보드와 세대 동시 반영 |
+| doLoad에서 clear 후 파일 읽기 | 파일 읽기 성공 → clear·transfer → 세대 0 → LOAD 발행 | 취소·읽기 실패로 기존 보드가 지워지는 문제 방지 |
+| Neighborhood.transfer의 로드 후 기존 활동 표시 | 로드한 모든 묶음의 amActive·activeEdges 무효화 | 다음 세대에서 빈 인접 묶음도 재계산 |
+| java.util.TimerTask와 별도 스레드 | javax.swing.Timer | 자동 진행과 상태 수집을 EDT에서 실행 |
+| getGraphics를 사용하는 refreshNow | repaint | 보드 갱신을 Swing 그리기 요청으로 통일 |
+
+테스트에서 발견한 Load 경계 오류는 행 7의 열 7·8·9에 있는 블링커를 파일에서 복원한 뒤 확인했다.
+수정 전 첫 진행에서 탄생이 기대값 2 대신 1로 계산됐고, 수정 후에는 행 6·7·8의 열 8이 살아 있는 정확한 배치와 탄생 2·사망 2를 확인했다.
+
+신규 UniverseEventsTest 18개·ClockIntegrationTest 6개와 재사용한 조회 검사 1개를 추가했다. 초기 실행에서 발견한 문제를 수정한 뒤 전체 테스트를 재실행했으며 결과와 기대값은 위 검증 영역에 보존한다. Universe.refreshNow()의 직접 그리기는 repaint()로, Life.main()은 EDT에서 생성하도록 변경했다.
+
+</details>
+
+<details>
+<summary>2026-11-11 · 문서 구조와 설계 설명 정리</summary>
+
+- 2026-11-11: 단계별 파일 대신 docs/statistics.md에서 현재 설계와 변경 기록을 함께 관리하도록 정리했다. README는 작업 시작 시점 dev(c49ca39)의 내용으로 유지하고 이전 통계 링크를 제거했다.
+- 신규 통계 테스트를 중심으로 검증 내용을 작성하고, 직접 만든 템플릿·Undo 이벤트와 실제 기능 연동을 구분했다.
+- 통계 상태 수집·이전 상태 갱신의 일관성을 위한 Swing Timer 선택 이유와 대안을 문서화했다.
+- 이번 정리에서는 중복된 현재 설계를 합치고 테스트 상세·변경 기록을 접기 영역으로 옮겼다. 테스트 입력·기대 결과와 변경 전후 표는 보존했다.
+- 문서 정리 작업에서는 Java 소스·테스트·빌드 설정을 변경하거나 JUnit을 재실행하지 않았다. Markdown 구조·참조 경로·공백 오류와 기존 파일 보존 여부를 확인했다. 커밋과 push는 하지 않았다.
+
+</details>

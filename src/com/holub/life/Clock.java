@@ -3,8 +3,6 @@ package com.holub.life;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
-import java.util.*;
-import java.util.Timer;		// overrides java.awt.timer
 import com.holub.ui.MenuSite;
 import com.holub.tools.Publisher;
 
@@ -27,15 +25,16 @@ import com.holub.tools.Publisher;
  */
 
 public class Clock
-{	private Timer			clock		= new Timer();
-	private TimerTask		tick		= null;
+{	private final Timer clock = new Timer(0, event -> tick());
 
 	// The clock can't be an everything-is-static singleton because
 	// it creates a menu, and it can't do that until the menus
 	// are established.
 	//
 	private Clock()
-	{	createMenus();
+	{	clock.setInitialDelay(0);
+		clock.setCoalesce(true);
+		createMenus();
 	}
 
 	private static Clock instance;
@@ -57,16 +56,11 @@ public class Clock
 	 */
 
 	public void startTicking( int millisecondsBetweenTicks )
-	{	if(tick != null)
-		{	tick.cancel();
-			tick=null;
-		}
-
+	{	requireEventDispatchThread();
+		clock.stop();
 		if( millisecondsBetweenTicks > 0 )
-		{	tick =	new TimerTask()
-					{	public void run(){ tick(); }
-					};
-			clock.scheduleAtFixedRate( tick, 0, millisecondsBetweenTicks);
+		{	clock.setDelay(millisecondsBetweenTicks);
+			clock.start();
 		}
 	}
 
@@ -139,7 +133,8 @@ public class Clock
 	 *  stopped. (Life uses this for single stepping.)
 	 */
 	public void tick()
-	{	publisher.publish
+	{	requireEventDispatchThread();
+		publisher.publish
 		(	new Publisher.Distributor()
 			{	public void deliverTo( Object subscriber )
 				{	if( !menuIsActive() )
@@ -174,4 +169,10 @@ public class Clock
 					MenuSelectionManager.defaultManager().getSelectedPath();
 		return ( path != null && path.length > 0 );
 	}
+    /** Timer callbacks, menu actions and explicit clock control share the EDT. */
+    private static void requireEventDispatchThread() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            throw new IllegalStateException("Clock operations must run on the Swing EDT");
+        }
+    }
 }

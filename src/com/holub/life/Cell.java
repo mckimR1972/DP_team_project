@@ -64,6 +64,11 @@ public interface Cell
 	 */
 	boolean isAlive();
 
+	/** Return true if the resident at the indicated position, relative
+	 *  to the upper-left corner of this cell, is alive.
+	 */
+	boolean isAliveAt( int row, int column );
+
 	/** Return the specified width plus the current cell's width
 	 */
 	int widthInCells();
@@ -142,6 +147,7 @@ public interface Cell
 
 		public Cell		 edge(int r, int c)	{return this;  			  }
 		public boolean	 isAlive()		   	{return false; 			  }
+		public boolean	 isAliveAt(int r, int c)	{return false;	  }
 		public Cell 	 create()	   	   	{return this;			  }
 		public Direction isDisruptiveTo()	{return Direction.NONE;	  }
 		public void 	 clear()		   	{						  }
