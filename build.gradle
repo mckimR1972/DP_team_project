@@ -45,6 +45,9 @@ tasks.withType(Test).configureEach {
     systemProperty 'java.awt.headless', 'true'
     // Static mocking replaces the file chooser, menus and clock in the Store test.
     jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}"
+    // Universe is a singleton that registers its menus and clock listener only
+    // once per JVM, so every test class that captures them needs its own JVM.
+    forkEvery = 1
     testLogging {
         events 'passed', 'skipped', 'failed'
     }
