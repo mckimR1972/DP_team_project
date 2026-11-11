@@ -121,7 +121,7 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 
 ### 테스트 목적과 기대 결과
 
-아래 표는 기본 오류 수정 회귀 테스트 32개에 대한 기록이다. 테스트 메서드는 영어 이름으로 작성한다.
+입력별 실행 횟수를 포함하여 총 32개를 검사한다. 테스트 메서드는 영어 이름으로 작성한다.
 
 | 테스트 클래스 / 메서드 | 준비 및 실행 | 기대 결과 | 현재 코드 실행 결과 |
 | --- | --- | --- | --- |
@@ -166,12 +166,3 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 수정 후 코드에서 `./gradlew clean test --no-daemon --console=plain`을 실행하여 `BUILD SUCCESSFUL`을 확인했다. Gradle XML 보고서의 집계 결과는 **32개 실행, 실패 0개, 오류 0개, 건너뜀 0개**이다.
 
 도구 사용 안내: [JUnit 공식 문서](https://docs.junit.org/current/user-guide/), [Gradle 테스트 공식 문서](https://docs.gradle.org/current/userguide/java_testing.html), [Gradle Wrapper 공식 문서](https://docs.gradle.org/current/userguide/gradle_wrapper.html).
-
-## 통계 기능 1단계
-
-공통 `BoardChangeEvent`·`BoardChangeListener`와 독립적인 `Statistics` 계산을 추가했다.
-현재 생존 수·생존 비율·세대 번호와, 연속된 세대 진행의 탄생·사망을 계산한다.
-Universe의 이벤트 발행과 통계 화면은 다음 단계에서 연결한다.
-
-변경 전후, 클래스·메서드 역할, 이벤트 처리 규칙, 검증 범위는 [통계 기능 1단계 문서](docs/statistics-phase1.md)에 정리했다.
-2026-11-11 검증: 신규 JUnit 36개와 기존 회귀 검사 32개, 총 **68개 통과** (실패·오류·건너뜀 0).
