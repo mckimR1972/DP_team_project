@@ -11,7 +11,7 @@
 | 번호 | 변경 | 바뀌는 파일 | 상태 |
 | --- | --- | --- | --- |
 | 1 | 테스트 클래스마다 JVM 분리 | `build.gradle` | 반영 (2026-11-11) |
-| 2 | 색 규칙 타입 3개 | `CellColorPolicy.java`, `FixedColorPolicy.java`, `CyclingColorPolicy.java` (새 파일) | 예정 |
+| 2 | 색 규칙 타입 3개 | `CellColorPolicy.java`, `FixedColorPolicy.java`, `CyclingColorPolicy.java` (새 파일) | 반영 (2026-11-11) |
 | 3 | Resident의 나이 계산과 색 규칙 | `Resident.java` | 예정 |
 | 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java` | 예정 |
 | 5 | Universe의 Color 메뉴 | `Universe.java` | 예정 |
@@ -121,3 +121,47 @@ assertNotNull(gridActions.get("Clear"));     // 기록이 없으면 여기서 �
 - 바꾼 뒤 `--warning-mode all`로 실행했을 때 사용 중단(deprecation) 경고는 없었다.
 - 테스트용 JVM 수는 `--info` 출력에서 `Gradle Test Executor` 프로세스가 시작된 횟수로 셌다.
 - 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, 2026-11-11.
+
+## 2. 색 규칙 타입 3개
+
+### 요약
+
+색 규칙을 Strategy 패턴으로 분리하는 데 필요한 타입 3개를 추가했다. 이 변경에서는 게임 코드가 아직 새 타입을 쓰지 않으므로 게임 동작은 그대로다. 변경 3에서 Resident가, 변경 4와 5에서 Universe가 이 타입을 쓴다.
+
+| 파일 | GoF Strategy에서의 역할 | 내용 |
+| --- | --- | --- |
+| `src/com/holub/life/CellColorPolicy.java` (새 파일) | Strategy | `colorOf(int age)`: 나이에 따른 살아 있는 셀의 색. `changesWithAge()`: 나이에 따라 색이 바뀌는 규칙인지 |
+| `src/com/holub/life/FixedColorPolicy.java` (새 파일) | ConcreteStrategy | 나이와 상관없이 한 가지 색. 원본의 빨강을 유지할 때 쓴다 |
+| `src/com/holub/life/CyclingColorPolicy.java` (새 파일) | ConcreteStrategy | period 세대마다 다음 색, 마지막 색 다음에는 처음 색 |
+| `test/com/holub/life/CellColorPolicyTest.java` (새 파일) | 테스트 | 아래 테스트 5개 |
+
+### 바꾼 이유
+
+설계 문서 5절 결정 2(색을 정하는 구조)와 6절 "색 규칙 클래스의 세부 사항"을 따른다.
+
+- 두 구현은 불변 객체다. `final` 클래스이고 필드는 `private final`이며, `CyclingColorPolicy`는 색 배열을 복사해 보관한다. 4,096개 셀이 규칙 객체 하나를 함께 쓰기 때문이다.
+- 잘못된 값은 생성자에서 `IllegalArgumentException`으로 거부한다. 검사하지 않으면 그릴 때가 되어서야 예외가 나거나, null 색이 오류 없이 엉뚱한 색으로 칠해진다.
+- `CyclingColorPolicy`는 색이 2개 이상이어야 한다. 색이 1개면 색이 바뀌지 않는데도 `changesWithAge()`가 true가 되기 때문이다.
+- setter, getter, `equals()` 등은 쓰는 곳이 없어 만들지 않았다. 테스트는 게임이 쓰는 생성자, `colorOf()`, `changesWithAge()`만 쓴다.
+
+### 테스트
+
+| 테스트 메서드 | 확인 내용 | 실행 수 |
+| --- | --- | --- |
+| `fixedPolicyReturnsTheSameColorForEveryAge` | 나이 0, 9, 10, 30, 1000에서 모두 빨강 | 5 |
+| `cyclingPolicyStepsEveryTenGenerationsAndWrapsAround` | 나이 0·9는 빨강, 10·19는 파랑, 20·29는 초록, 30은 다시 빨강, 1000은 파랑 | 8 |
+| `onlyTheCyclingPolicyChangesWithAge` | 고정 색 규칙은 `changesWithAge()`가 false, 순환 규칙은 true | 1 |
+| `cyclingPolicyKeepsItsOwnCopyOfTheColors` | 생성자에 넘긴 배열을 나중에 바꿔도 색이 그대로 | 1 |
+| `policiesRejectInvalidArguments` | 고정 색 null, 간격 0, 간격 −10, 색 0개, 색 1개, 색 배열 null, null 색 포함에서 모두 `IllegalArgumentException` | 7 |
+
+### 검증
+
+| 항목 | 결과 |
+| --- | --- |
+| 전체 테스트 (`gradlew test --rerun`) | 54개 통과 (기존 32개, 새 22개), 실패 0 |
+| 테스트용 JVM 수 | 4개 (테스트 클래스마다 1개) |
+| 결함을 일부러 넣은 사본 | 색 배열을 복사하지 않게 하고 색 1개를 허용하게 바꾸자, `cyclingPolicyKeepsItsOwnCopyOfTheColors`와 "only one color" 경우 2개만 실패 |
+
+- `--warning-mode all`로 실행했을 때 Gradle 사용 중단(deprecation) 경고는 없었다.
+- 결함을 넣은 확인은 시험용 사본에서만 했고, 저장소의 코드는 바꾸지 않았다.
+- 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, 2026-11-11.
