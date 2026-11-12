@@ -92,6 +92,23 @@ class UniverseStoreTest {
         assertTrue(savedCoordinates.isEmpty());
     }
 
+    @Test
+    void liveCellsSnapshotIsIndexedByRowThenColumn() throws Exception {
+        SwingUtilities.invokeAndWait(() -> mouse(MouseEvent.MOUSE_PRESSED, 5, 2));
+
+        boolean[][] cells = universe.liveCells();
+
+        assertTrue(cells[2][5]);
+        assertEquals(false, cells[5][2]);
+    }
+
+    private static void mouse(int eventId, int column, int row) {
+        universe.dispatchEvent(new MouseEvent(
+            universe, eventId, 0L, 0,
+            column * 8 + 1, row * 8 + 1, 1, false, MouseEvent.BUTTON1
+        ));
+    }
+
     private Collection<?> storeAndRead(List<Point> liveCells) throws Exception {
         Path destination = directory.resolve("board.life");
         SwingUtilities.invokeAndWait(() -> {

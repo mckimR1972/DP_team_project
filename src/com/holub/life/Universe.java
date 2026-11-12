@@ -163,6 +163,23 @@ public class Universe extends JPanel
 	{	return theInstance;
 	}
 
+	/** 판의 가로(=세로) 셀 수를 반환한다. */
+	public int widthInCells()
+	{	return outermostCell.widthInCells();
+	}
+
+	/** 판의 스냅샷을 [행][열] 순서로 반환한다. */
+	public boolean[][] liveCells()
+	{	int width = outermostCell.widthInCells();
+		boolean[][] cells = new boolean[width][width];
+
+		for( int row = 0; row < width; ++row )
+			for( int column = 0; column < width; ++column )
+				cells[row][column] = outermostCell.isAliveAt(row, column);
+
+		return cells;
+	}
+
 	private void doLoad()
 	{	try
 		{
@@ -244,7 +261,7 @@ public class Universe extends JPanel
 						panelBounds.x = 0;
 						panelBounds.y = 0;
 						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
-					}
+									}
 					finally
 					{	g.dispose();
 					}
