@@ -14,7 +14,7 @@
 | 2 | 색 규칙 타입 3개 | `CellColorPolicy.java`, `FixedColorPolicy.java`, `CyclingColorPolicy.java` (새 파일) | 반영 (2026-11-11) |
 | 3 | Resident의 나이 계산과 색 규칙 | `Resident.java` | 반영 (2026-11-12) |
 | 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
-| 5 | Universe의 Color 메뉴 | `Universe.java` | 예정 |
+| 5 | Universe의 Color 메뉴 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
 
 번호는 설계 문서 6절 "구현 순서"의 번호와 같다.
 
@@ -425,6 +425,120 @@ Universe가 매 틱 `transition()`을 불러, 생사가 바뀌지 않는 틱에�
 | 30틱 | 빨강 | 빨강 |
 
 대조 사본에서는 멈춘 블록이 다시 그려지지 않아 화면이 빨강에 머물렀다. 이 변경의 빌드에서는 틱마다 판 전체를 다시 그려 나이에 맞는 색이 나왔다.
+
+- `--warning-mode all`로 실행했을 때 Gradle 사용 중단(deprecation) 경고는 없었다.
+- 결함을 넣은 확인과 실제 창 확인은 시험용 사본에서만 했고, 저장소의 코드는 바꾸지 않았다.
+- 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, Windows 11, 2026-11-12.
+
+## 5. Universe의 Color 메뉴
+
+### 요약
+
+Grid, Go 메뉴 뒤에 Color 메뉴를 추가했다. Single Color를 고르면 원본 빨강의 고정 규칙으로, Cycle by Generation을 고르면 10세대마다 빨강 → 파랑 → 초록으로 도는 규칙으로 바뀐다. 처음에는 원본 빨강이므로 프로그램을 켠 직후의 화면은 dev와 같다. 이 변경으로 기능이 완성된다.
+
+| 파일 | GoF Strategy에서의 역할 | 내용 |
+| --- | --- | --- |
+| `src/com/holub/life/Universe.java` | Client | Color 메뉴 항목 2개. 고른 항목에 맞는 규칙 객체(ConcreteStrategy)를 만들어 `useColorPolicy()`로 Resident에 넘기고 판을 바로 다시 그린다 |
+| `src/com/holub/life/Resident.java` | Context | 원본 상수 `LIVE_COLOR`의 `private`을 떼어 Universe가 원본 빨강으로 쓰게 함 |
+| `test/com/holub/life/UniverseColorTest.java` | 테스트 | 아래 테스트 2개 추가 |
+
+### 바꾼 이유
+
+설계 문서 1절(기능 정의)과 6절 "Resident와 Universe 변경의 세부 사항"의 "색 전환을 둘 곳", "메뉴 이름과 선택 표시", "원본 빨강을 둘 곳"을 따른다.
+
+- 색 전환은 원본의 Grid, Go 메뉴처럼 `MenuSite.addLine()`으로 등록하는 Color 메뉴에 둔다. 다른 팀원 기능이 쓰는 창 오른쪽 패널은 아직 dev에 없다. 그 UI가 dev에 들어오면 팀과 이야기해 위치를 다시 정한다. 규칙을 바꾸는 코드는 `useColorPolicy()` 호출 하나라서 옮기기 쉽다.
+- 메뉴는 시계 리스너를 등록한 다음에 추가한다. 시계가 처음 만들어질 때 Go 메뉴가 생기므로, 그 뒤에 추가해야 Color 메뉴가 Go 뒤에 온다.
+- 지금 고른 항목은 메뉴에 표시하지 않는다. `MenuSite.addLine()`은 일반 메뉴 항목만 만들고, 원본의 Go 메뉴도 지금 속도를 표시하지 않는다.
+- 원본 빨강은 Resident의 원본 상수 `LIVE_COLOR` 한 곳에만 둔다. 처음 값, Single Color, 순환의 첫 색이 모두 이 상수를 쓰므로 세 곳이 어긋날 수 없다.
+- `useColorPolicy()`는 규칙을 바꾼 뒤 `repaint()`로 판을 바로 다시 그린다. 시계가 멈춰 있어도 고른 규칙의 색이 바로 보이게 하기 위해서다.
+- 다시 그릴 범위는 변경 4에서 Universe가 매 틱 `Resident.colorChangesWithAge()`로 묻게 했으므로, 메뉴에서는 규칙만 바꾸면 된다.
+
+### 변경 내용
+
+```diff
+// Resident.java
+@@ -22,3 +22,3 @@ public final class Resident implements Cell
+ 	private static final Color BORDER_COLOR = Colors.DARK_YELLOW;
+-	private static final Color LIVE_COLOR 	= Color.RED;
++	static final Color LIVE_COLOR			= Color.RED;	// Universe's Color menu uses it too
+ 	private static final Color DEAD_COLOR   = Colors.LIGHT_YELLOW;
+
+// Universe.java
+@@ -166,2 +166,35 @@ public class Universe extends JPanel
+ 		);
++
++		// The Color menu is added after the clock subscription above,
++		// which creates the Go menu, so that it comes after Grid and Go.
++
++		MenuSite.addLine
++		(	this, "Color", "Single Color",
++			new ActionListener()
++			{	public void actionPerformed(ActionEvent e)
++				{	useColorPolicy( new FixedColorPolicy( Resident.LIVE_COLOR ) );
++				}
++			}
++		);
++
++		MenuSite.addLine
++		(	this, "Color", "Cycle by Generation",
++			new ActionListener()
++			{	public void actionPerformed(ActionEvent e)
++				{	// The original red, then a blue and a green that stay easy
++					// to tell apart, also with red-green color blindness.
++
++					useColorPolicy( new CyclingColorPolicy
++						( 10, Resident.LIVE_COLOR, new Color(0x0072B2), new Color(0x009E73) ) );
++				}
++			}
++		);
++	}
++
++	/** Make every cell use the given color rule from now on, and
++	 *  redraw the board with it right away.
++	 */
++	private void useColorPolicy( CellColorPolicy policy )
++	{	Resident.setColorPolicy( policy );
++		repaint();
+ 	}
+```
+
+### 테스트
+
+| 테스트 클래스 | 테스트 메서드 | 확인 내용 | 실행 수 |
+| --- | --- | --- | --- |
+| `UniverseColorTest` | `ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor` | 원본 규칙으로 25틱을 보낸 뒤 Color > Cycle by Generation을 고르면 틱 없이 바로 초록 | 1 |
+| `UniverseColorTest` | `singleColorBringsBackTheOriginalRed` | 순환으로 20틱이 지나 초록인 블록이 Color > Single Color를 고르면 바로 빨강, 10틱 뒤에도 빨강 | 1 |
+
+- 두 테스트는 Universe가 실제로 등록한 메뉴 콜백을 불러 항목을 고른다(변경 4의 UniverseColorTest와 같은 준비 방법).
+- 테스트 준비 단계(`@BeforeEach`, `@AfterEach`)는 메뉴를 거치지 않고 `Resident.setColorPolicy()`로 규칙을 되돌린다. 메뉴가 고장 났을 때 메뉴 테스트만 실패하게 하기 위해서다.
+
+### 검증
+
+| 항목 | 결과 |
+| --- | --- |
+| 전체 테스트 (`gradlew test --rerun`) | 67개 통과 (기존 32개, `CellColorPolicyTest` 22개, `CellAgeColorTest` 8개, `DefaultCellColorTest` 1개, `UniverseColorTest` 4개), 실패 0 |
+| 테스트용 JVM 수 | 7개 (테스트 클래스마다 1개) |
+
+바꾼 줄마다 결함을 하나씩 넣은 사본에서 전체 테스트를 돌린 결과다.
+
+| 바꾼 줄 | 넣은 결함 | 실패한 테스트 |
+| --- | --- | --- |
+| Single Color 항목의 규칙 | 원본 빨강 대신 파랑 | `singleColorBringsBackTheOriginalRed` |
+| Cycle by Generation 항목의 색 순서 | 파랑과 초록의 순서를 바꿈 | `ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor`, `singleColorBringsBackTheOriginalRed` |
+| Cycle by Generation 항목의 간격 | 10 대신 20 | `ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor`, `singleColorBringsBackTheOriginalRed` |
+| `useColorPolicy()`의 `Resident.setColorPolicy()` | 호출을 지움 | `ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor`, `singleColorBringsBackTheOriginalRed` |
+| `useColorPolicy()`의 `repaint()` | 호출을 지움 | 없음. 아래 실제 창 확인으로 대신함 |
+
+메뉴를 고른 순간 판을 다시 그리는지(`repaint()`)와 Color 메뉴가 Go 뒤에 생기는지는 JUnit으로 확인할 수 없다. 테스트는 색을 읽을 때 직접 `paint()`를 부르고, 시계를 대신 넣어 Go 메뉴가 생기지 않기 때문이다. 그래서 시험용 사본으로 실제 게임 창을 띄워 확인했다. 마우스 이벤트로 2×2 블록을 놓고 `Clock.instance().tick()`으로 25틱을 보낸 뒤, 시계를 멈춘 채 메뉴 항목을 골랐다. `paint()`는 부르지 않았고, 화면에 실제로 그려진 픽셀을 `java.awt.Robot`으로 읽었다.
+
+| 확인 | 이 변경의 빌드 | 대조: `useColorPolicy()`에서 `repaint()`를 지운 사본 |
+| --- | --- | --- |
+| 메뉴 순서 | Grid, Go, Color (Color: Single Color, Cycle by Generation) | 같음 |
+| 25틱 뒤, 아무것도 고르기 전 | 빨강 | 빨강 |
+| Cycle by Generation을 고른 직후 | 초록 | 빨강 |
+| Single Color를 고른 직후 | 빨강 | 빨강 |
+
+대조 사본에서는 메뉴를 골라도 다음 틱까지 판이 다시 그려지지 않아, 나이 25인 블록이 빨강에 머물렀다.
 
 - `--warning-mode all`로 실행했을 때 Gradle 사용 중단(deprecation) 경고는 없었다.
 - 결함을 넣은 확인과 실제 창 확인은 시험용 사본에서만 했고, 저장소의 코드는 바꾸지 않았다.

@@ -20,7 +20,7 @@ import com.holub.life.Universe;
 public final class Resident implements Cell
 {
 	private static final Color BORDER_COLOR = Colors.DARK_YELLOW;
-	private static final Color LIVE_COLOR 	= Color.RED;
+	static final Color LIVE_COLOR			= Color.RED;	// Universe's Color menu uses it too
 	private static final Color DEAD_COLOR   = Colors.LIGHT_YELLOW;
 
 	/** The color rule that every live cell is drawn with. It starts as

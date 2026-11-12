@@ -164,6 +164,39 @@ public class Universe extends JPanel
 				}
 			}
 		);
+
+		// The Color menu is added after the clock subscription above,
+		// which creates the Go menu, so that it comes after Grid and Go.
+
+		MenuSite.addLine
+		(	this, "Color", "Single Color",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	useColorPolicy( new FixedColorPolicy( Resident.LIVE_COLOR ) );
+				}
+			}
+		);
+
+		MenuSite.addLine
+		(	this, "Color", "Cycle by Generation",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	// The original red, then a blue and a green that stay easy
+					// to tell apart, also with red-green color blindness.
+
+					useColorPolicy( new CyclingColorPolicy
+						( 10, Resident.LIVE_COLOR, new Color(0x0072B2), new Color(0x009E73) ) );
+				}
+			}
+		);
+	}
+
+	/** Make every cell use the given color rule from now on, and
+	 *  redraw the board with it right away.
+	 */
+	private void useColorPolicy( CellColorPolicy policy )
+	{	Resident.setColorPolicy( policy );
+		repaint();
 	}
 
 	/** Singleton Accessor. The Universe object itself is manufactured

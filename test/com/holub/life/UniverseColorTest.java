@@ -96,6 +96,33 @@ class UniverseColorTest {
         assertEquals(Color.RED, colorAt(0, 0));
     }
 
+    @Test
+    void ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            placeBlock();
+            tick(25);                                      // 25 generations with the original red
+            select("Color > Cycle by Generation");
+        });
+
+        assertEquals(GREEN, colorAt(0, 0));                // age 25, without another tick
+    }
+
+    @Test
+    void singleColorBringsBackTheOriginalRed() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            select("Color > Cycle by Generation");
+            placeBlock();
+            tick(20);
+        });
+        assertEquals(GREEN, colorAt(0, 0));
+
+        SwingUtilities.invokeAndWait(() -> select("Color > Single Color"));
+        assertEquals(Color.RED, colorAt(0, 0));            // right away
+
+        SwingUtilities.invokeAndWait(() -> tick(10));
+        assertEquals(Color.RED, colorAt(0, 0));            // and it stays red
+    }
+
     private static void placeBlock() {                     // 2 x 2 block: a pattern that never changes
         click(0, 0); click(1, 0); click(0, 1); click(1, 1);
     }
