@@ -142,17 +142,61 @@ public class Universe extends JPanel
 		Clock.instance().addClockListener //{=Universe.clock.subscribe}
 		(	new Clock.Listener()
 			{	public void tick()
-				{	if( outermostCell.figureNextState
+				{	outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
-						   )
-					  )
-					{	if( outermostCell.transition() )
-							refreshNow();
-					}
+						   );
+
+					// Transition on every tick, even when no cell will be
+					// born or die, so that the cells of a stable pattern
+					// still grow one generation older.
+
+					boolean changed = outermostCell.transition();
+
+					// A color that depends on age can change on any tick,
+					// so then every cell is redrawn. Otherwise only the
+					// parts of the board that changed are redrawn, as before.
+
+					if( Resident.colorChangesWithAge() )
+						refreshNow( true );
+					else if( changed )
+						refreshNow( false );
 				}
 			}
 		);
+
+		// The Color menu is added after the clock subscription above,
+		// which creates the Go menu, so that it comes after Grid and Go.
+
+		MenuSite.addLine
+		(	this, "Color", "Single Color",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	useColorPolicy( new FixedColorPolicy( Resident.LIVE_COLOR ) );
+				}
+			}
+		);
+
+		MenuSite.addLine
+		(	this, "Color", "Cycle by Generation",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	// The original red, then a blue and a green that stay easy
+					// to tell apart, also with red-green color blindness.
+
+					useColorPolicy( new CyclingColorPolicy
+						( 10, Resident.LIVE_COLOR, new Color(0x0072B2), new Color(0x009E73) ) );
+				}
+			}
+		);
+	}
+
+	/** Make every cell use the given color rule from now on, and
+	 *  redraw the board with it right away.
+	 */
+	private void useColorPolicy( CellColorPolicy policy )
+	{	Resident.setColorPolicy( policy );
+		repaint();
 	}
 
 	/** Singleton Accessor. The Universe object itself is manufactured
@@ -229,9 +273,11 @@ public class Universe extends JPanel
 	 *  the redraw() method on a given <code>Cell</code>
 	 *  does nothing if the <code>Cell</code> doesn't
 	 *  have to be refreshed.
+	 *  @param drawAll true to redraw every cell, even the
+	 *  			ones that did not change.
 	 */
 
-	private void refreshNow()
+	private void refreshNow( final boolean drawAll )
 	{	SwingUtilities.invokeLater
 		(	new Runnable()
 			{	public void run()
@@ -243,7 +289,7 @@ public class Universe extends JPanel
 						Rectangle panelBounds = getBounds();
 						panelBounds.x = 0;
 						panelBounds.y = 0;
-						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
+						outermostCell.redraw(g, panelBounds, drawAll); //{=Universe.redraw2}
 					}
 					finally
 					{	g.dispose();
