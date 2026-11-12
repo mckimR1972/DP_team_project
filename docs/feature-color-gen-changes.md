@@ -12,8 +12,8 @@
 | --- | --- | --- | --- |
 | 1 | 테스트 클래스마다 JVM 분리 | `build.gradle` | 반영 (2026-11-11) |
 | 2 | 색 규칙 타입 3개 | `CellColorPolicy.java`, `FixedColorPolicy.java`, `CyclingColorPolicy.java` (새 파일) | 반영 (2026-11-11) |
-| 3 | Resident의 나이 계산과 색 규칙 | `Resident.java` | 예정 |
-| 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java` | 예정 |
+| 3 | Resident의 나이 계산과 색 규칙 | `Resident.java` | 반영 (2026-11-12) |
+| 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java`, `Resident.java` | 예정 |
 | 5 | Universe의 Color 메뉴 | `Universe.java` | 예정 |
 
 번호는 설계 문서 6절 "구현 순서"의 번호와 같다.
@@ -165,3 +165,121 @@ assertNotNull(gridActions.get("Clear"));     // 기록이 없으면 여기서 �
 - `--warning-mode all`로 실행했을 때 Gradle 사용 중단(deprecation) 경고는 없었다.
 - 결함을 넣은 확인은 시험용 사본에서만 했고, 저장소의 코드는 바꾸지 않았다.
 - 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, 2026-11-11.
+
+## 3. Resident의 나이 계산과 색 규칙
+
+### 요약
+
+셀마다 나이를 세고, 살아 있는 셀을 모든 셀이 함께 쓰는 색 규칙의 색으로 그리게 했다. 색 규칙의 처음 값은 원본 빨강의 고정 규칙이고 게임 안에 규칙을 바꾸는 곳이 아직 없으므로, 게임 화면은 dev와 같다.
+
+| 파일 | GoF Strategy에서의 역할 | 내용 |
+| --- | --- | --- |
+| `src/com/holub/life/Resident.java` | Context | 모든 셀이 함께 쓰는 색 규칙 참조(static)와 `setColorPolicy()`, 셀마다의 `age`, `transition()`의 나이 계산, `redraw()`가 규칙에서 받는 색, `userClicked()`와 `transfer()` Load의 `age = 0` |
+| `test/com/holub/life/CellAgeColorTest.java` (새 파일) | 테스트 | 아래 테스트 7개 |
+| `test/com/holub/life/DefaultCellColorTest.java` (새 파일) | 테스트 | 아래 테스트 1개 |
+
+### 바꾼 이유
+
+설계 문서 5절 결정 1(나이를 세는 곳), 결정 3(모든 셀이 색 규칙을 함께 쓰는 방법), 결정 4(나이는 저장하지 않음)와 6절 "Resident와 Universe 변경의 세부 사항"을 따른다.
+
+- 나이는 확정 단계인 `transition()`에서 센다. 확정 전후 모두 살아 있으면 1 늘리고, 아니면 0으로 만든다. `transition()`의 반환값(생사가 바뀌었는가)은 그대로다.
+- 색 규칙 참조는 Resident 클래스에 하나만 둔다(static). 그래서 `new Resident()`, `create()`, 판을 만드는 코드는 그대로다.
+- `setColorPolicy()`는 같은 패키지에서만 부를 수 있고 null을 거부한다. 부르는 곳이 같은 패키지의 Universe와 테스트뿐이기 때문이다.
+- 색 규칙 참조에는 아직 `volatile`을 붙이지 않았다. 지금은 규칙을 바꾸는 쪽과 읽는 쪽이 모두 판을 그리는 스레드다. 시계 스레드가 규칙을 읽기 시작하는 변경 4에서 붙인다.
+- 나이를 0으로 되돌리는 곳은 셀이 살아나는 길마다 한 곳씩이다. 태어날 때는 `transition()`의 계산, 클릭은 `userClicked()`, 불러오기는 `transfer()`의 Load다. `clear()`는 dev 그대로 둔다. 죽은 셀의 나이는 그리지도 저장하지도 않고, 다시 살아날 때 위 세 곳 중 하나가 0으로 덮어쓰기 때문이다.
+- `setColorPolicy()`는 변경 5에서 Color 메뉴가 부르기 전까지 테스트만 부른다. 테스트만을 위한 메서드가 아니라, 변경 5의 Color 메뉴가 쓸 메서드를 먼저 넣은 것이다.
+
+이 변경 뒤의 동작은 다음과 같다.
+
+- 처음 값이 원본 빨강의 고정 규칙이므로 화면은 dev와 같다.
+- Universe는 아직 dev처럼 생사가 바뀔 셀이 있는 틱에만 `transition()`을 부른다. 그래서 판 전체가 멈추면 나이도 멈춘다. 색이 고정이라 화면에는 드러나지 않으며, 변경 4에서 매 틱 부르게 바꾼다.
+
+### 변경 내용
+
+```diff
+@@ -25,4 +25,22 @@ public final class Resident implements Cell
+ 
++	/** The color rule that every live cell is drawn with. It starts as
++	 *  the original fixed red, so the board looks the same as before
++	 *  until another rule is chosen.
++	 */
++	private static CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
++
++	/** Make every cell use the given color rule from now on. Call this
++	 *  on the thread that draws the board (the Swing event thread in the
++	 *  game).
++	 *  @throws IllegalArgumentException if policy is null.
++	 */
++	static void setColorPolicy( CellColorPolicy policy )
++	{	if( policy == null )
++			throw new IllegalArgumentException( "null color policy" );
++		colorPolicy = policy;
++	}
++
+ 	private boolean amAlive 	= false;
+ 	private boolean willBeAlive	= false;
++	private int		age			= 0;	// generations this cell has been alive; 0 when born
+ 
+@@ -81,2 +99,3 @@ public final class Resident implements Cell
+ 	{	boolean changed = amAlive != willBeAlive;
++		age = (amAlive && willBeAlive) ? age + 1 : 0;	// survivors grow older; others start over
+ 		amAlive = willBeAlive;
+@@ -87,3 +106,3 @@ public final class Resident implements Cell
+     {   g = g.create();
+-		g.setColor(amAlive ? LIVE_COLOR : DEAD_COLOR );
++		g.setColor(amAlive ? colorPolicy.colorOf(age) : DEAD_COLOR );
+ 		g.fillRect(here.x+1, here.y+1, here.width-1, here.height-1);
+@@ -102,2 +121,3 @@ public final class Resident implements Cell
+ 	{	amAlive = !amAlive;
++		age = 0;				// a cell revived by a click starts over
+ 	}
+@@ -117,3 +137,4 @@ public final class Resident implements Cell
+ 		if( doLoad )
+-		{	if( amAlive = willBeAlive = memento.isAlive(upperLeft) )
++		{	age = 0;							// ages are not saved
++			if( amAlive = willBeAlive = memento.isAlive(upperLeft) )
+ 				return true;
+```
+
+### 테스트
+
+| 테스트 클래스 | 테스트 메서드 | 확인 내용 | 실행 수 |
+| --- | --- | --- | --- |
+| `CellAgeColorTest` | `stillLifeChangesColorEveryTenGenerationsAndWrapsAround` | 2×2 블록이 9틱까지 빨강, 10틱에 파랑, 20틱에 초록, 30틱에 다시 빨강 | 1 |
+| `CellAgeColorTest` | `survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver` | 간격이 1인 규칙에서 블링커의 살아남은 칸은 나이가 1, 2로 늘고, 태어난 칸과 다시 태어난 칸은 나이 0, 죽은 칸은 죽은 칸 색 | 1 |
+| `CellAgeColorTest` | `cellRevivedByClickStartsAtAgeZero` | 초록이 된 블록의 한 칸을 두 번 눌러 죽였다 살리면 그 칸만 빨강 | 1 |
+| `CellAgeColorTest` | `storeThenLoadKeepsCellsAndRestartsColor` | 초록이 된 블록을 Store → Load하면 같은 네 칸이 빨강으로 복원되고, 10틱 뒤 파랑 | 1 |
+| `CellAgeColorTest` | `cellClickedAfterClearStartsRed` | Clear 뒤 살아 있는 셀 0개, 다시 클릭한 칸은 빨강 | 1 |
+| `CellAgeColorTest` | `lifeRuleIsUnchanged` | 무작위 판 32개(설계 문서의 실험과 같은 무늬 4종 × 시드 8개) × 100세대가 매 세대 Life 규칙을 직접 계산한 결과와 같음 | 1 |
+| `CellAgeColorTest` | `setColorPolicyRejectsNullAndKeepsThePreviousPolicy` | null이면 `IllegalArgumentException`, 그 뒤에도 이전 규칙으로 그림 | 1 |
+| `DefaultCellColorTest` | `liveCellsStayRedWhenNoColorPolicyIsChosen` | 색 규칙을 한 번도 정하지 않은 판의 블록이 25세대 동안 빨강 | 1 |
+
+- 색은 게임이 쓰는 `redraw()`로 판을 이미지에 그린 뒤 셀 한가운데 픽셀에서 읽는다. 살아 있는 셀은 Grid > Store와 같은 `transfer()` 경로로 읽는다. 게임 코드에 테스트용 조회 메서드는 넣지 않았다.
+- `CellAgeColorTest`는 테스트마다 색 규칙을 원래의 고정 빨강으로 되돌린다(`@AfterEach`). 그래서 Resident의 처음 값은 규칙을 한 번도 바꾸지 않는 `DefaultCellColorTest`에서 확인한다. Gradle이 테스트 클래스마다 JVM을 새로 띄우므로(변경 1) 다른 테스트가 바꾼 규칙이 남아 있지 않다.
+
+### 검증
+
+| 항목 | 결과 |
+| --- | --- |
+| 전체 테스트 (`gradlew test --rerun`) | 62개 통과 (기존 32개, `CellColorPolicyTest` 22개, 새 8개), 실패 0 |
+| 테스트용 JVM 수 | 6개 (테스트 클래스마다 1개) |
+| 새 테스트 시간 | `CellAgeColorTest` 약 2.5초(그중 `lifeRuleIsUnchanged` 약 1.9초), `DefaultCellColorTest` 약 0.3초 |
+
+추가한 줄마다 결함을 하나씩 넣은 사본에서 전체 테스트를 돌린 결과다. 8가지 결함 모두 실패하는 테스트가 하나 이상 있었고, 기존 테스트 32개와 `CellColorPolicyTest`는 어느 결함에서도 실패하지 않았다.
+
+| 바꾼 줄 | 넣은 결함 | 실패한 테스트 |
+| --- | --- | --- |
+| 색 규칙의 처음 값 | 고정 빨강 대신 순환 규칙으로 시작 | `liveCellsStayRedWhenNoColorPolicyIsChosen` |
+| `setColorPolicy()`의 null 검사 | 검사를 지움 | `setColorPolicyRejectsNullAndKeepsThePreviousPolicy` |
+| `setColorPolicy()`의 대입 | 대입을 지움(규칙이 바뀌지 않음) | `lifeRuleIsUnchanged`를 뺀 `CellAgeColorTest` 6개 |
+| `transition()`의 나이 계산 | 줄을 지움(나이가 늘지 않음) | `lifeRuleIsUnchanged`를 뺀 `CellAgeColorTest` 6개 |
+| `transition()`의 나이 계산 | 새로 태어난 셀이 나이 1부터 시작 | `survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver` |
+| `redraw()`의 색 | 규칙 대신 원래 빨강으로 그림 | `lifeRuleIsUnchanged`를 뺀 `CellAgeColorTest` 6개 |
+| `userClicked()`의 `age = 0` | 줄을 지움 | `cellRevivedByClickStartsAtAgeZero`, `cellClickedAfterClearStartsRed` |
+| `transfer()` Load의 `age = 0` | 줄을 지움 | `storeThenLoadKeepsCellsAndRestartsColor` |
+
+`lifeRuleIsUnchanged`는 특정 줄이 아니라 생사 규칙이 그대로인지를 지키는 테스트다. 위 결함은 모두 색에만 영향을 주므로 이 테스트는 통과했다.
+
+- `--warning-mode all`로 실행했을 때 Gradle 사용 중단(deprecation) 경고는 없었다.
+- 결함을 넣은 확인은 시험용 사본에서만 했고, 저장소의 코드는 바꾸지 않았다.
+- 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, 2026-11-12.

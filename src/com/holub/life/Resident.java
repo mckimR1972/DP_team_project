@@ -23,8 +23,26 @@ public final class Resident implements Cell
 	private static final Color LIVE_COLOR 	= Color.RED;
 	private static final Color DEAD_COLOR   = Colors.LIGHT_YELLOW;
 
+	/** The color rule that every live cell is drawn with. It starts as
+	 *  the original fixed red, so the board looks the same as before
+	 *  until another rule is chosen.
+	 */
+	private static CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
+
+	/** Make every cell use the given color rule from now on. Call this
+	 *  on the thread that draws the board (the Swing event thread in the
+	 *  game).
+	 *  @throws IllegalArgumentException if policy is null.
+	 */
+	static void setColorPolicy( CellColorPolicy policy )
+	{	if( policy == null )
+			throw new IllegalArgumentException( "null color policy" );
+		colorPolicy = policy;
+	}
+
 	private boolean amAlive 	= false;
 	private boolean willBeAlive	= false;
+	private int		age			= 0;	// generations this cell has been alive; 0 when born
 
 	private boolean isStable(){return amAlive == willBeAlive; }
 
@@ -79,13 +97,14 @@ public final class Resident implements Cell
 
 	public boolean transition()
 	{	boolean changed = amAlive != willBeAlive;
+		age = (amAlive && willBeAlive) ? age + 1 : 0;	// survivors grow older; others start over
 		amAlive = willBeAlive;
 		return changed;
 	}
 
 	public void redraw(Graphics g, Rectangle here, boolean drawAll)
     {   g = g.create();
-		g.setColor(amAlive ? LIVE_COLOR : DEAD_COLOR );
+		g.setColor(amAlive ? colorPolicy.colorOf(age) : DEAD_COLOR );
 		g.fillRect(here.x+1, here.y+1, here.width-1, here.height-1);
 
 		// Doesn't draw a line on the far right and bottom of the
@@ -100,6 +119,7 @@ public final class Resident implements Cell
 
 	public void userClicked(Point here, Rectangle surface)
 	{	amAlive = !amAlive;
+		age = 0;				// a cell revived by a click starts over
 	}
 
 	public void	   clear()			{amAlive = willBeAlive = false; }
@@ -115,7 +135,8 @@ public final class Resident implements Cell
 	{
 		Memento memento = (Memento)blob;
 		if( doLoad )
-		{	if( amAlive = willBeAlive = memento.isAlive(upperLeft) )
+		{	age = 0;							// ages are not saved
+			if( amAlive = willBeAlive = memento.isAlive(upperLeft) )
 				return true;
 		}
 		else if( amAlive )  					// store only live cells
