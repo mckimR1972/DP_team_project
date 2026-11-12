@@ -25,19 +25,26 @@ public final class Resident implements Cell
 
 	/** The color rule that every live cell is drawn with. It starts as
 	 *  the original fixed red, so the board looks the same as before
-	 *  until another rule is chosen.
+	 *  until another rule is chosen. Universe reads it on the clock
+	 *  thread (through colorChangesWithAge()) while it is changed on
+	 *  another thread, so it is volatile.
 	 */
-	private static CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
+	private static volatile CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
 
-	/** Make every cell use the given color rule from now on. Call this
-	 *  on the thread that draws the board (the Swing event thread in the
-	 *  game).
+	/** Make every cell use the given color rule from now on.
 	 *  @throws IllegalArgumentException if policy is null.
 	 */
 	static void setColorPolicy( CellColorPolicy policy )
 	{	if( policy == null )
 			throw new IllegalArgumentException( "null color policy" );
 		colorPolicy = policy;
+	}
+
+	/** Return true if a cell's color can change just because the cell
+	 *  grows older. Universe then redraws every cell on every tick.
+	 */
+	static boolean colorChangesWithAge()
+	{	return colorPolicy.changesWithAge();
 	}
 
 	private boolean amAlive 	= false;

@@ -19,7 +19,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CellAgeColorTest {
     private static final int CELL = 8;                     // one cell is 8 pixels wide
@@ -154,6 +156,15 @@ class CellAgeColorTest {
 
         assertThrows(IllegalArgumentException.class, () -> Resident.setColorPolicy(null));
         assertEquals(BLUE, colorAt(10, 10));               // still drawn with the cycling rule
+    }
+
+    @Test
+    void colorChangesWithAgeFollowsTheCurrentPolicy() {   // Universe redraws every cell while this is true
+        useCyclingColors();
+        assertTrue(Resident.colorChangesWithAge());
+
+        Resident.setColorPolicy(new FixedColorPolicy(Color.RED));
+        assertFalse(Resident.colorChangesWithAge());
     }
 
     private static void useCyclingColors() {               // the rule the game cycles with

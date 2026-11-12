@@ -142,14 +142,25 @@ public class Universe extends JPanel
 		Clock.instance().addClockListener //{=Universe.clock.subscribe}
 		(	new Clock.Listener()
 			{	public void tick()
-				{	if( outermostCell.figureNextState
+				{	outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
-						   )
-					  )
-					{	if( outermostCell.transition() )
-							refreshNow();
-					}
+						   );
+
+					// Transition on every tick, even when no cell will be
+					// born or die, so that the cells of a stable pattern
+					// still grow one generation older.
+
+					boolean changed = outermostCell.transition();
+
+					// A color that depends on age can change on any tick,
+					// so then every cell is redrawn. Otherwise only the
+					// parts of the board that changed are redrawn, as before.
+
+					if( Resident.colorChangesWithAge() )
+						refreshNow( true );
+					else if( changed )
+						refreshNow( false );
 				}
 			}
 		);
@@ -229,9 +240,11 @@ public class Universe extends JPanel
 	 *  the redraw() method on a given <code>Cell</code>
 	 *  does nothing if the <code>Cell</code> doesn't
 	 *  have to be refreshed.
+	 *  @param drawAll true to redraw every cell, even the
+	 *  			ones that did not change.
 	 */
 
-	private void refreshNow()
+	private void refreshNow( final boolean drawAll )
 	{	SwingUtilities.invokeLater
 		(	new Runnable()
 			{	public void run()
@@ -243,7 +256,7 @@ public class Universe extends JPanel
 						Rectangle panelBounds = getBounds();
 						panelBounds.x = 0;
 						panelBounds.y = 0;
-						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
+						outermostCell.redraw(g, panelBounds, drawAll); //{=Universe.redraw2}
 					}
 					finally
 					{	g.dispose();

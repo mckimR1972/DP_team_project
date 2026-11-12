@@ -13,7 +13,7 @@
 | 1 | 테스트 클래스마다 JVM 분리 | `build.gradle` | 반영 (2026-11-11) |
 | 2 | 색 규칙 타입 3개 | `CellColorPolicy.java`, `FixedColorPolicy.java`, `CyclingColorPolicy.java` (새 파일) | 반영 (2026-11-11) |
 | 3 | Resident의 나이 계산과 색 규칙 | `Resident.java` | 반영 (2026-11-12) |
-| 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java`, `Resident.java` | 예정 |
+| 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
 | 5 | Universe의 Color 메뉴 | `Universe.java` | 예정 |
 
 번호는 설계 문서 6절 "구현 순서"의 번호와 같다.
@@ -283,3 +283,149 @@ assertNotNull(gridActions.get("Clear"));     // 기록이 없으면 여기서 �
 - `--warning-mode all`로 실행했을 때 Gradle 사용 중단(deprecation) 경고는 없었다.
 - 결함을 넣은 확인은 시험용 사본에서만 했고, 저장소의 코드는 바꾸지 않았다.
 - 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, 2026-11-12.
+
+## 4. Universe의 틱 처리와 화면 갱신
+
+### 요약
+
+Universe가 매 틱 `transition()`을 불러, 생사가 바뀌지 않는 틱에도 셀의 나이가 늘게 했다. 지금 색 규칙이 나이에 따라 색을 바꾸면(`Resident.colorChangesWithAge()`가 true) 매 틱 판 전체를 다시 그리고, 아니면 dev처럼 바뀐 곳만 다시 그린다. 게임 안에서 색 순환을 켜는 Color 메뉴는 아직 없으므로 화면은 dev와 같다.
+
+| 파일 | GoF Strategy에서의 역할 | 내용 |
+| --- | --- | --- |
+| `src/com/holub/life/Universe.java` | Client | 시계 리스너의 틱 처리: 매 틱 `transition()`을 부르고, `Resident.colorChangesWithAge()`로 다시 그릴 범위를 정한다. `refreshNow()`가 판 전체를 그릴지를 인자로 받는다 |
+| `src/com/holub/life/Resident.java` | Context | `colorChangesWithAge()` 추가(같은 패키지 전용), 색 규칙 참조에 `volatile` |
+| `test/com/holub/life/UniverseColorTest.java` (새 파일) | 테스트 | 아래 테스트 2개 |
+| `test/com/holub/life/CellAgeColorTest.java` | 테스트 | 아래 테스트 1개 추가 |
+
+### 바꾼 이유
+
+설계 문서 5절 결정 1(나이를 세는 곳)과 6절 "Resident와 Universe 변경의 세부 사항"을 따른다.
+
+- dev의 틱 처리는 생사가 바뀔 셀이 있을 때만 `transition()`을 부르고, 생사가 바뀐 블록만 다시 그린다. 그러면 2×2 블록처럼 멈춘 패턴은 나이가 늘지 않고 다시 그려지지도 않아서, 색 순환을 켜도 색이 바뀌지 않는다(설계 문서 4절).
+- 그래서 매 틱 `transition()`을 부르고, 색이 나이에 따라 바뀌는 규칙일 때만 판 전체를 다시 그린다. 고정 색일 때는 dev와 같은 방식으로 갱신한다.
+- 다시 그릴 범위는 Universe가 따로 저장하지 않고, 매 틱 `Resident.colorChangesWithAge()`로 지금 규칙에 묻는다. 값을 하나만 두므로 색 규칙과 다시 그리는 방식이 어긋날 수 없다.
+- 틱 처리는 시계 스레드에서 돈다. 이제 다른 스레드가 색 규칙 참조를 읽으므로 `volatile`을 붙였다.
+- 매 틱 `transition()`을 불러도 생사와 화면은 dev와 같다. 설계 문서 3절의 실험(판 100개 × 300틱, 150틱에 Store → Load)에서 색 순환을 끈 판은 매 세대 살아 있는 셀과 매 틱 화면이 dev와 같았다.
+
+이 변경 뒤의 동작은 다음과 같다.
+
+- 게임 안에서 색 순환을 켤 방법이 아직 없어 화면은 dev와 같다. Color 메뉴는 변경 5에서 넣는다.
+- 판이 멈춰 있어도 셀의 나이는 매 틱 는다. 색이 고정이라 화면에는 드러나지 않는다.
+
+### 변경 내용
+
+```diff
+// Universe.java
+@@ -144,10 +144,21 @@ public class Universe extends JPanel
+ 			{	public void tick()
+-				{	if( outermostCell.figureNextState
++				{	outermostCell.figureNextState
+ 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
+ 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
+-						   )
+-					  )
+-					{	if( outermostCell.transition() )
+-							refreshNow();
+-					}
++						   );
++
++					// Transition on every tick, even when no cell will be
++					// born or die, so that the cells of a stable pattern
++					// still grow one generation older.
++
++					boolean changed = outermostCell.transition();
++
++					// A color that depends on age can change on any tick,
++					// so then every cell is redrawn. Otherwise only the
++					// parts of the board that changed are redrawn, as before.
++
++					if( Resident.colorChangesWithAge() )
++						refreshNow( true );
++					else if( changed )
++						refreshNow( false );
+ 				}
+@@ -231,5 +242,7 @@ public class Universe extends JPanel
+ 	 *  have to be refreshed.
++	 *  @param drawAll true to redraw every cell, even the
++	 *  			ones that did not change.
+ 	 */
+ 
+-	private void refreshNow()
++	private void refreshNow( final boolean drawAll )
+ 	{	SwingUtilities.invokeLater
+@@ -245,3 +258,3 @@ public class Universe extends JPanel
+ 						panelBounds.y = 0;
+-						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
++						outermostCell.redraw(g, panelBounds, drawAll); //{=Universe.redraw2}
+ 					}
+
+// Resident.java
+@@ -27,9 +27,9 @@ public final class Resident implements Cell
+ 	 *  the original fixed red, so the board looks the same as before
+-	 *  until another rule is chosen.
++	 *  until another rule is chosen. Universe reads it on the clock
++	 *  thread (through colorChangesWithAge()) while it is changed on
++	 *  another thread, so it is volatile.
+ 	 */
+-	private static CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
++	private static volatile CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
+ 
+-	/** Make every cell use the given color rule from now on. Call this
+-	 *  on the thread that draws the board (the Swing event thread in the
+-	 *  game).
++	/** Make every cell use the given color rule from now on.
+ 	 *  @throws IllegalArgumentException if policy is null.
+@@ -42,2 +42,9 @@ public final class Resident implements Cell
+ 
++	/** Return true if a cell's color can change just because the cell
++	 *  grows older. Universe then redraws every cell on every tick.
++	 */
++	static boolean colorChangesWithAge()
++	{	return colorPolicy.changesWithAge();
++	}
++
+ 	private boolean amAlive 	= false;
+```
+
+### 테스트
+
+| 테스트 클래스 | 테스트 메서드 | 확인 내용 | 실행 수 |
+| --- | --- | --- | --- |
+| `UniverseColorTest` | `stillLifeStaysRedWhileCyclingIsOff` | 고정 색 규칙에서 Universe의 실제 틱으로 30틱을 보내도 블록이 빨강 | 1 |
+| `UniverseColorTest` | `stillLifeCyclesThroughColorsWhenNothingElseChanges` | 순환 규칙에서 블록만 있는 판이 10틱에 파랑, 20틱에 초록, 30틱에 빨강 | 1 |
+| `CellAgeColorTest` | `colorChangesWithAgeFollowsTheCurrentPolicy` | 순환 규칙이면 `Resident.colorChangesWithAge()`가 true, 고정 규칙이면 false | 1 |
+
+- UniverseColorTest는 UniverseStoreTest와 같은 방법으로 창 없이 실제 Universe를 만든다. Mockito로 `MenuSite`와 `Clock`을 대신해서 메뉴 콜백과 Universe가 시계에 등록한 리스너를 받아 두고, 그 리스너의 `tick()`을 불러 틱을 보낸다. 색은 `Universe.paint()`로 이미지에 그려 읽는다.
+- 순환 테스트는 `Resident.setColorPolicy()`로 규칙을 직접 넣는다. 그래서 이 테스트는 메뉴가 아니라 Universe의 틱 처리를 확인한다. 메뉴로 규칙을 바꾸는 부분은 변경 5에서 따로 시험한다.
+
+### 검증
+
+| 항목 | 결과 |
+| --- | --- |
+| 전체 테스트 (`gradlew test --rerun`) | 65개 통과 (기존 32개, `CellColorPolicyTest` 22개, `CellAgeColorTest` 8개, `DefaultCellColorTest` 1개, `UniverseColorTest` 2개), 실패 0 |
+| 테스트용 JVM 수 | 7개 (테스트 클래스마다 1개) |
+
+바꾼 줄마다 결함을 하나씩 넣은 사본에서 전체 테스트를 돌린 결과다.
+
+| 바꾼 줄 | 넣은 결함 | 실패한 테스트 |
+| --- | --- | --- |
+| 매 틱 `transition()` 호출 | dev처럼 생사가 바뀔 셀이 있을 때만 부름 | `stillLifeCyclesThroughColorsWhenNothingElseChanges` |
+| `colorChangesWithAge()` | 늘 false를 돌려줌 | `colorChangesWithAgeFollowsTheCurrentPolicy` |
+| `refreshNow( true )` | `refreshNow( false )`로 바꿈 | 없음. 창이 없는 테스트에서는 그리지 않으므로 아래 실제 창 확인으로 대신함 |
+| 색 규칙 참조의 `volatile` | 지움 | 없음. 스레드 사이에 값이 보이는지는 테스트로 재현할 수 없음 |
+
+`refreshNow(true)`가 판 전체를 다시 그리는지는 창이 없는 테스트에서 확인할 수 없다(`getGraphics()`가 null). 그래서 시험용 사본으로 실제 게임 창을 띄워 확인했다. `Resident.setColorPolicy()`로 순환 규칙을 넣고, 마우스 이벤트로 2×2 블록을 놓은 뒤 `Clock.instance().tick()`으로 틱을 보냈다. `paint()`는 부르지 않았고, 화면에 실제로 그려진 픽셀을 `java.awt.Robot`으로 읽었다.
+
+| 시점 | 이 변경의 빌드 | 대조: `refreshNow( true )`를 `refreshNow( false )`로 바꾼 사본 |
+| --- | --- | --- |
+| 블록을 놓은 직후 | 빨강 | 빨강 |
+| 9틱 | 빨강 | 빨강 |
+| 10틱 | 파랑 | 빨강 |
+| 20틱 | 초록 | 빨강 |
+| 30틱 | 빨강 | 빨강 |
+
+대조 사본에서는 멈춘 블록이 다시 그려지지 않아 화면이 빨강에 머물렀다. 이 변경의 빌드에서는 틱마다 판 전체를 다시 그려 나이에 맞는 색이 나왔다.
+
+- `--warning-mode all`로 실행했을 때 Gradle 사용 중단(deprecation) 경고는 없었다.
+- 결함을 넣은 확인과 실제 창 확인은 시험용 사본에서만 했고, 저장소의 코드는 바꾸지 않았다.
+- 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, Windows 11, 2026-11-12.
