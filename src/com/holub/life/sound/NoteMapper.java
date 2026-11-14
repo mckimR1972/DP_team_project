@@ -2,6 +2,7 @@ package com.holub.life.sound;
 
 import java.awt.Point;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -32,6 +33,7 @@ final class NoteMapper
 	record Note( int pitch, int pan, int velocity ) {}
 
 	/** 생성된 셀들에서 최대 {@link #MAX_VOICES}개의 음을 고른다.
+	 *  스트럼할 수 있게 왼쪽부터 정렬한다.
 	 *  @param births		셀 위치 (x = 열, y = 행)
 	 *  @param boardWidth	판의 가로(=세로) 셀 수
 	 *  @param chord		코드 진행에서의 위치. 끝나면 처음으로 돌아간다.
@@ -65,6 +67,7 @@ final class NoteMapper
 								 panOfColumn(chosen.getValue().x, boardWidth),
 								 velocity ) );
 		}
+		notes.sort( Comparator.comparingInt(Note::pan) );
 		return notes;
 	}
 

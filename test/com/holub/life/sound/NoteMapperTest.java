@@ -66,6 +66,18 @@ class NoteMapperTest
 	}
 
 	@Test
+	void notesAreOrderedLeftToRightForStrumming()
+	{	List<Point> births = List.of( new Point(60, 0), new Point(5, 40),
+									  new Point(30, 20) );
+
+		List<NoteMapper.Note> notes = mapper.notesFor( births, WIDTH, 0 );
+
+		assertEquals( 3, notes.size() );
+		assertTrue(    notes.get(0).pan() < notes.get(1).pan()
+					&& notes.get(1).pan() < notes.get(2).pan() );
+	}
+
+	@Test
 	void columnSetsStereoPosition()
 	{	assertEquals( 0, mapper.notesFor(
 						List.of(new Point(0, 0)), WIDTH, 0 ).get(0).pan() );
