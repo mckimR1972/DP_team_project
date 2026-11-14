@@ -49,3 +49,19 @@ tasks.withType(Test).configureEach {
         events 'passed', 'skipped', 'failed'
     }
 }
+
+// Runs actual Swing components and a save dialog in a separate JVM.
+// Keep this opt-in because it needs a desktop, unlike the normal JUnit suite.
+tasks.register('patternUiTest', JavaExec) {
+    group = 'verification'
+    description = 'Runs the capture/template Swing integration checks (desktop required).'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.holub.life.PatternUiTest'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    enableAssertions = true
+    systemProperty 'java.awt.headless', 'false'
+    doFirst {
+        layout.buildDirectory.get().asFile.mkdirs()
+    }
+}
