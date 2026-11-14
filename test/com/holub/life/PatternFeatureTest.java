@@ -5,8 +5,9 @@ import java.awt.Rectangle;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.Random;
+import org.junit.jupiter.api.Test;
 
-/** Dependency-free behavioral tests, including a separate reference Life algorithm. */
+/** Behavioral scenarios, including a separate reference Life algorithm. */
 public final class PatternFeatureTest {
     private static int passed;
     private static Cell board() { return new Neighborhood(4, new Neighborhood(4, new Resident())); }
@@ -48,7 +49,14 @@ public final class PatternFeatureTest {
         return next;
     }
 
+    @Test
+    void capturePlacementPersistenceAndLifeEvolutionScenarios() throws Exception {
+        main(new String[0]);
+    }
+
     public static void main(String[] args) throws Exception {
+        passed = 0;
+        Files.createDirectories(Paths.get("build"));
         Cell board = board();
         BoardEditor editor = new BoardEditor(board);
         editor.place(glider(), new Point(3, 4));
