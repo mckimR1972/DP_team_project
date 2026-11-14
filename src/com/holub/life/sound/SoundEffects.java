@@ -15,7 +15,8 @@ import com.holub.life.Universe;
 import com.holub.ui.MenuSite;
 
 /**
- * 세대마다 생긴 셀을 마림바 화음으로 낸다.
+ * 세대마다 생긴 셀을 마림바 화음으로 낸다. 일정한 박자로 마디마다
+ * 코드가 바뀐다.
  * <p>
  * {@link #install}로 붙이며, 붙이지 않아도 게임은 똑같이 동작한다.
  */
@@ -25,6 +26,8 @@ public final class SoundEffects implements Universe.GenerationListener
 	private static final int PAN_CONTROLLER     = 10;
 	private static final int NOTE_LENGTH_MS     = 220;
 	private static final int MIN_PHRASE_GAP_MS  = 120;	// 클럭이 빠를 때 소리가 몰리지 않게
+	private static final int STEP_MS            = 150;
+	private static final int STEPS_PER_BAR      = 16;
 
 	private final Universe			universe;
 	private final MidiChannel[]		voices = new MidiChannel[NoteMapper.MAX_VOICES];
@@ -32,7 +35,9 @@ public final class SoundEffects implements Universe.GenerationListener
 	private final ScheduledExecutorService noteScheduler;
 
 	private volatile boolean enabled = true;
+	private volatile int	 chord	 = 0;
 	private long  lastPhraseNanos = 0;
+	private int   step	   = 0;			// 스케줄러 스레드에서만 사용
 
 	/** Universe를 구독하고 Sound 메뉴를 추가한다. MIDI 신시사이저가
 	 *  없으면 소리 없이 실행된다.
@@ -68,11 +73,21 @@ public final class SoundEffects implements Universe.GenerationListener
 				return thread;
 			}
 		);
+
+		noteScheduler.scheduleAtFixedRate( this::playStep, 0, STEP_MS,
+										   TimeUnit.MILLISECONDS );
 	}
 
 	private void createMenus()
 	{	MenuSite.addLine( this, "Sound", "On",  e -> enabled = true  );
 		MenuSite.addLine( this, "Sound", "Off", e -> enabled = false );
+	}
+
+	/** 박자를 세고 마디가 끝나면 다음 코드로 넘어간다. */
+	private void playStep()
+	{	step = (step + 1) % STEPS_PER_BAR;
+		if( step == 0 )
+			++chord;
 	}
 
 	public void generationChanged( List<Point> births, List<Point> deaths )
@@ -86,7 +101,7 @@ public final class SoundEffects implements Universe.GenerationListener
 		lastPhraseNanos = now;
 
 		List<NoteMapper.Note> notes =
-					mapper.notesFor( births, universe.widthInCells() );
+					mapper.notesFor( births, universe.widthInCells(), chord );
 
 		for( int voice = 0; voice < notes.size(); ++voice )
 			play( voices[voice], notes.get(voice), 0, NOTE_LENGTH_MS );

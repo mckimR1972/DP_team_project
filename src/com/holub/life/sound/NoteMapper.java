@@ -7,16 +7,21 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * 한 세대에 생긴 셀들을 작은 화음으로 바꾼다. 판의 높이로 C장조
- * 펜타토닉 음계의 음을 고르고, 열로 좌우 위치를 정한다. 펜타토닉이라
- * 어떤 음이 함께 나도 어울린다.
+ * 한 세대에 생긴 셀들을 작은 화음으로 바꾼다. 판의 높이로 C-Am-F-G
+ * 진행 중 현재 코드에 맞는 5음 중 하나를 고르고, 열로 좌우 위치를
+ * 정한다. 어떤 음이 함께 나도 어울리게 하기 위해서다.
  */
 final class NoteMapper
 {
 	static final int MAX_VOICES = 5;
 
-	/** C장조 펜타토닉. C에서 몇 반음 위인지, 낮은 음부터. */
-	private static final int[] SCALE = { 0, 2, 4, 7, 9 };
+	/** 코드별 5음. C에서 몇 반음 위인지, 낮은 음부터. */
+	private static final int[][] CHORD_SCALES =
+	{	{ 0, 2, 4, 7,  9 },		// C
+		{ 0, 4, 7, 9, 11 },		// Am
+		{ 0, 2, 5, 7,  9 },		// F
+		{ 2, 4, 7, 9, 11 },		// G
+	};
 
 	private static final int SCALE_LENGTH = 5;
 	private static final int LOWEST_NOTE  = 48;	// C3
@@ -29,18 +34,21 @@ final class NoteMapper
 	/** 생성된 셀들에서 최대 {@link #MAX_VOICES}개의 음을 고른다.
 	 *  @param births		셀 위치 (x = 열, y = 행)
 	 *  @param boardWidth	판의 가로(=세로) 셀 수
+	 *  @param chord		코드 진행에서의 위치. 끝나면 처음으로 돌아간다.
 	 */
-	List<Note> notesFor( List<Point> births, int boardWidth )
-	{	return notesFor( births, boardWidth, MAX_VOICES );
+	List<Note> notesFor( List<Point> births, int boardWidth, int chord )
+	{	return notesFor( births, boardWidth, chord, MAX_VOICES );
 	}
 
 	private List<Note> notesFor( List<Point> births, int boardWidth,
-								 int maxVoices )
+								 int chord, int maxVoices )
 	{
+		int[] scale = CHORD_SCALES[ chord % CHORD_SCALES.length ];
+
 		// 같은 음이 되는 셀은 처음 것만 남긴다.
 		TreeMap<Integer,Point> byPitch = new TreeMap<>();
 		for( Point cell : births )
-			byPitch.putIfAbsent( pitchOfRow(cell.y, boardWidth), cell );
+			byPitch.putIfAbsent( pitchOfRow(cell.y, boardWidth, scale), cell );
 
 		List<Map.Entry<Integer,Point>> candidates =
 									new ArrayList<>( byPitch.entrySet() );
@@ -60,10 +68,10 @@ final class NoteMapper
 		return notes;
 	}
 
-	private int pitchOfRow( int row, int boardWidth )
+	private int pitchOfRow( int row, int boardWidth, int[] scale )
 	{	int step = (boardWidth - 1 - row) * NOTE_COUNT / boardWidth;
 		return LOWEST_NOTE + 12 * (step / SCALE_LENGTH)
-						   + SCALE[ step % SCALE_LENGTH ];
+						   + scale[ step % SCALE_LENGTH ];
 	}
 
 	private int panOfColumn( int column, int boardWidth )
