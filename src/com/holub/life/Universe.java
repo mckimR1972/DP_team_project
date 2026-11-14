@@ -1,12 +1,15 @@
 package com.holub.life;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
 
 import com.holub.io.Files;
+import com.holub.tools.Publisher;
 import com.holub.ui.MenuSite;
 
 import com.holub.life.Cell;
@@ -147,8 +150,11 @@ public class Universe extends JPanel
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
 						   )
 					  )
-					{	if( outermostCell.transition() )
-							refreshNow();
+					{	boolean[][] before = liveCells();
+						if( outermostCell.transition() )
+						{	refreshNow();
+							publishChanges( before );
+						}
 					}
 				}
 			}
@@ -161,6 +167,62 @@ public class Universe extends JPanel
 
 	public static Universe instance()
 	{	return theInstance;
+	}
+
+	/** 세대마다 바뀐 셀을 알려 받는 리스너. Point에는 셀 위치가
+	 *  (x = 열, y = 행)으로 들어 있다.
+	 */
+	public interface GenerationListener
+	{	void generationChanged( List<Point> births, List<Point> deaths );
+	}
+
+	private final Publisher generationPublisher = new Publisher();
+
+	/** 판이 바뀐 세대마다 알림을 받을 리스너를 등록한다. 리스너는
+	 *  클럭 스레드에서 불리므로 빨리 끝나야 한다.
+	 */
+	public void addGenerationListener( GenerationListener observer )
+	{	generationPublisher.subscribe( observer );
+	}
+
+	/** 판의 가로(=세로) 셀 수를 반환한다. */
+	public int widthInCells()
+	{	return outermostCell.widthInCells();
+	}
+
+	/** 판의 스냅샷을 [행][열] 순서로 반환한다. */
+	public boolean[][] liveCells()
+	{	int width = outermostCell.widthInCells();
+		boolean[][] cells = new boolean[width][width];
+
+		for( int row = 0; row < width; ++row )
+			for( int column = 0; column < width; ++column )
+				cells[row][column] = outermostCell.isAliveAt(row, column);
+
+		return cells;
+	}
+
+	private void publishChanges( boolean[][] before )
+	{	final List<Point> births = new ArrayList<Point>();
+		final List<Point> deaths = new ArrayList<Point>();
+
+		for( int row = 0; row < before.length; ++row )
+			for( int column = 0; column < before.length; ++column )
+			{	boolean isAlive = outermostCell.isAliveAt(row, column);
+				if( isAlive && !before[row][column] )
+					births.add( new Point(column, row) );
+				else if( !isAlive && before[row][column] )
+					deaths.add( new Point(column, row) );
+			}
+
+		generationPublisher.publish
+		(	new Publisher.Distributor()
+			{	public void deliverTo( Object subscriber )
+				{	((GenerationListener)subscriber)
+										.generationChanged(births, deaths);
+				}
+			}
+		);
 	}
 
 	private void doLoad()
@@ -244,7 +306,7 @@ public class Universe extends JPanel
 						panelBounds.x = 0;
 						panelBounds.y = 0;
 						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
-					}
+									}
 					finally
 					{	g.dispose();
 					}
