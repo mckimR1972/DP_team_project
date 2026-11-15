@@ -105,6 +105,26 @@ class NoteMapperTest
 	}
 
 	@Test
+	void smallGenerationsHaveNoBurstLayer()
+	{	List<NoteMapper.Note> notes =
+			mapper.notesFor( List.of(new Point(0, 0)), WIDTH, 0 );
+		assertTrue( mapper.burstLayerFor(11, notes).isEmpty() );
+	}
+
+	@Test
+	void burstLayerDoublesNotesAnOctaveHigherAndQuieter()
+	{	List<NoteMapper.Note> notes =
+			mapper.notesFor( List.of(new Point(0, 0)), WIDTH, 0 );
+
+		NoteMapper.Note note  = notes.get(0);
+		NoteMapper.Note layer = mapper.burstLayerFor(12, notes).get(0);
+
+		assertEquals( note.pitch() + 12, layer.pitch() );
+		assertEquals( note.pan(), layer.pan() );
+		assertTrue( layer.velocity() < note.velocity() );
+	}
+
+	@Test
 	void padFollowsTheProgression()
 	{	assertEquals( 36, mapper.padNotesFor(0)[0] );	// C
 		assertEquals( 33, mapper.padNotesFor(1)[0] );	// A

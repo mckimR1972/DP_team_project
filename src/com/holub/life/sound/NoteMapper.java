@@ -32,6 +32,7 @@ final class NoteMapper
 		{ 43, 50, 59 },		// G
 	};
 
+	private static final int BURST_BIRTHS = 12;
 	private static final int SCALE_LENGTH = 5;
 	private static final int LOWEST_NOTE  = 48;	// C3
 	private static final int NOTE_COUNT   = 15;	// 3옥타브
@@ -77,6 +78,20 @@ final class NoteMapper
 		}
 		notes.sort( Comparator.comparingInt(Note::pan) );
 		return notes;
+	}
+
+	/** 한 세대에 많이 생기면 한 옥타브 위 레이어를 더한다. 적으면
+	 *  빈 목록을 반환한다.
+	 *  @param births 이번 세대에 생긴 셀 수
+	 *  @param notes  그 셀들로 고른 화음
+	 */
+	List<Note> burstLayerFor( int births, List<Note> notes )
+	{	List<Note> layer = new ArrayList<>();
+		if( births >= BURST_BIRTHS )
+			for( Note note : notes )
+				layer.add( new Note( note.pitch() + 12, note.pan(),
+									 note.velocity() * 3 / 4 ) );
+		return layer;
 	}
 
 	/** 코드의 패드 음을 반환한다. */

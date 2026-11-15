@@ -17,17 +17,20 @@ import com.holub.ui.MenuSite;
 
 /**
  * 세대마다 짧은 소리를 낸다. 생긴 셀은 마림바 화음을 왼쪽부터
- * 스트럼하고, 사라진 셀은 쉐이커를 친다. 아래에서는 패드가 현재 코드를
- * 내고(판이 붐빌수록 크게), 일정한 박자로 마디마다 코드가 바뀐다.
+ * 스트럼하고, 한꺼번에 많이 생기면 비브라폰을 겹치고, 사라진 셀은
+ * 쉐이커를 친다. 아래에서는 패드가 현재 코드를 내고(판이 붐빌수록
+ * 크게), 일정한 박자로 마디마다 코드가 바뀐다.
  * <p>
  * {@link #install}로 붙이며, 붙이지 않아도 게임은 똑같이 동작한다.
  */
 public final class SoundEffects implements Universe.GenerationListener
 {
 	private static final int MARIMBA_PROGRAM    = 12;	// General MIDI 번호
+	private static final int VIBRAPHONE_PROGRAM = 11;	// General MIDI 번호
 	private static final int WARM_PAD_PROGRAM   = 89;	// General MIDI 번호
 	private static final int PAN_CONTROLLER     = 10;
 	private static final int EXPRESSION_CONTROLLER = 11;
+	private static final int BURST_CHANNEL      = 5;
 	private static final int PAD_CHANNEL        = 6;
 	private static final int PERCUSSION_CHANNEL = 9;	// General MIDI 번호
 	private static final int SHAKER_NOTE        = 82;	// General MIDI 번호
@@ -41,6 +44,7 @@ public final class SoundEffects implements Universe.GenerationListener
 
 	private final Universe			universe;
 	private final MidiChannel[]		voices = new MidiChannel[NoteMapper.MAX_VOICES];
+	private final MidiChannel		burst;
 	private final MidiChannel		pad;
 	private final MidiChannel		percussion;
 	private final NoteMapper		mapper = new NoteMapper();
@@ -79,6 +83,9 @@ public final class SoundEffects implements Universe.GenerationListener
 			voices[voice].programChange( MARIMBA_PROGRAM );
 		}
 		percussion = channels[PERCUSSION_CHANNEL];
+
+		burst = channels[BURST_CHANNEL];
+		burst.programChange( VIBRAPHONE_PROGRAM );
 
 		pad = channels[PAD_CHANNEL];
 		pad.programChange( WARM_PAD_PROGRAM );
@@ -143,6 +150,12 @@ public final class SoundEffects implements Universe.GenerationListener
 		for( int voice = 0; voice < notes.size(); ++voice )
 			play( voices[voice], notes.get(voice), strumDelay(voice),
 				  NOTE_LENGTH_MS );
+
+		List<NoteMapper.Note> layer =
+							mapper.burstLayerFor( births.size(), notes );
+
+		for( int voice = 0; voice < layer.size(); ++voice )
+			play( burst, layer.get(voice), strumDelay(voice), NOTE_LENGTH_MS );
 
 		if( !deaths.isEmpty() )
 			playShaker( mapper.percussionVelocityFor(deaths.size()) );
