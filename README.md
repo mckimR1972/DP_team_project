@@ -57,6 +57,7 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 | --- | --- |
 | [docs/fix-life-game-changes.md](docs/fix-life-game-changes.md) | 기본 오류 3가지 수정, 회귀 테스트 32개와 수정 전후 결과 |
 | [docs/feature-color-gen-changes.md](docs/feature-color-gen-changes.md) | 세대에 따른 셀 색 순환 기능의 변경 기록 |
+| [docs/color-gen-redraw-lag.md](docs/color-gen-redraw-lag.md) | 색 순환 중 화면 갱신 지연: 문제 상황, 원인, 해결 방안 |
 
 ## GitHub 사용 규칙 (팀 공통)
 
