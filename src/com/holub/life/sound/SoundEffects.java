@@ -144,8 +144,9 @@ public final class SoundEffects implements Universe.GenerationListener
 
 		lastPhraseNanos = now;
 
-		List<NoteMapper.Note> notes =
-					mapper.notesFor( births, universe.widthInCells(), chord );
+		List<NoteMapper.Note> notes = mapper.humanized
+		(	mapper.notesFor( births, universe.widthInCells(), chord )
+		);
 
 		for( int voice = 0; voice < notes.size(); ++voice )
 			play( voices[voice], notes.get(voice), strumDelay(voice),
@@ -162,7 +163,7 @@ public final class SoundEffects implements Universe.GenerationListener
 	}
 
 	private int strumDelay( int voice )
-	{	return voice * STRUM_GAP_MS;
+	{	return voice * STRUM_GAP_MS + mapper.timingJitterMs();
 	}
 
 	private void updatePad( int[] chordNotes, int level )

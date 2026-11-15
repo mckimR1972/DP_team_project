@@ -8,6 +8,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -102,6 +103,32 @@ class NoteMapperTest
 			assertTrue( note.velocity() > 0 && note.velocity() <= 127 );
 		}
 		assertEquals( notes.size(), pitches.size() );
+	}
+
+	@Test
+	void humanizingKeepsNotesValidAndVariesThem()
+	{	NoteMapper seeded = new NoteMapper( new Random(42) );
+		List<NoteMapper.Note> notes = List.of( new NoteMapper.Note(60, 64, 60) );
+
+		Set<Integer> velocities = new HashSet<>();
+		Set<Integer> pitches = new HashSet<>();
+		for( int i = 0; i < 500; ++i )
+		{	NoteMapper.Note note = seeded.humanized(notes).get(0);
+			velocities.add( note.velocity() );
+			pitches.add( note.pitch() );
+			assertEquals( 64, note.pan() );
+			assertTrue( note.velocity() >= 52 && note.velocity() <= 68 );
+		}
+		assertTrue( velocities.size() > 5 );
+		assertEquals( Set.of(60, 72), pitches );
+	}
+
+	@Test
+	void timingJitterStaysSmall()
+	{	for( int i = 0; i < 200; ++i )
+		{	int jitter = mapper.timingJitterMs();
+			assertTrue( jitter >= 0 && jitter <= 15 );
+		}
 	}
 
 	@Test

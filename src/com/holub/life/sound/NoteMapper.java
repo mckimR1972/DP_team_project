@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 
 /**
@@ -38,6 +39,20 @@ final class NoteMapper
 	private static final int NOTE_COUNT   = 15;	// 3옥타브
 	private static final int MAX_PAN      = 127;
 
+	private static final int	VELOCITY_SPREAD		 = 8;
+	private static final int	MAX_TIMING_JITTER_MS = 15;
+	private static final double OCTAVE_JUMP_CHANCE	 = 0.12;
+
+	private final Random random;
+
+	NoteMapper()
+	{	this( new Random() );
+	}
+
+	NoteMapper( Random random )
+	{	this.random = random;
+	}
+
 	/** MIDI 음 하나. pan과 velocity는 0~127. */
 	record Note( int pitch, int pan, int velocity ) {}
 
@@ -49,6 +64,30 @@ final class NoteMapper
 	 */
 	List<Note> notesFor( List<Point> births, int boardWidth, int chord )
 	{	return notesFor( births, boardWidth, chord, MAX_VOICES );
+	}
+
+	/** 반복되는 화음이 기계적으로 들리지 않도록 세기를 조금 바꾸고,
+	 *  가끔 한 옥타브 올린 음을 반환한다.
+	 */
+	List<Note> humanized( List<Note> notes )
+	{	List<Note> result = new ArrayList<>();
+		for( Note note : notes )
+		{	int velocity = note.velocity()
+					+ random.nextInt( 2 * VELOCITY_SPREAD + 1 ) - VELOCITY_SPREAD;
+
+			int pitch = note.pitch();
+			if( random.nextDouble() < OCTAVE_JUMP_CHANCE )
+				pitch += 12;
+
+			result.add( new Note( pitch, note.pan(),
+								  Math.max(1, Math.min(127, velocity)) ) );
+		}
+		return result;
+	}
+
+	/** 음 타이밍을 살짝 흐트러뜨릴 작은 지연(ms)을 반환한다. */
+	int timingJitterMs()
+	{	return random.nextInt( MAX_TIMING_JITTER_MS + 1 );
 	}
 
 	private List<Note> notesFor( List<Point> births, int boardWidth,
