@@ -106,6 +106,40 @@ class NoteMapperTest
 	}
 
 	@Test
+	void sweepPlaysOnlyCellsInTheColumnBlock()
+	{	boolean[][] cells = new boolean[WIDTH][WIDTH];
+		cells[10][4] = true;	// 구간 안
+		cells[50][8] = true;	// 구간 바로 다음
+
+		List<NoteMapper.Note> notes =
+					mapper.sweepNotesFor( cells, 4, 4, 0, false );
+
+		assertEquals( 1, notes.size() );
+		assertEquals( pitchAt(10, 0), notes.get(0).pitch() );
+	}
+
+	@Test
+	void sweepOfAnEmptyBlockIsSilent()
+	{	assertTrue( mapper.sweepNotesFor( new boolean[WIDTH][WIDTH],
+										  0, 4, 0, true ).isEmpty() );
+	}
+
+	@Test
+	void sweepLimitsVoicesAndAccentsTheBeat()
+	{	boolean[][] cells = new boolean[WIDTH][WIDTH];
+		for( int row = 0; row < WIDTH; ++row )
+			cells[row][0] = true;
+
+		List<NoteMapper.Note> plain =
+					mapper.sweepNotesFor( cells, 0, 4, 0, false );
+		List<NoteMapper.Note> accent =
+					mapper.sweepNotesFor( cells, 0, 4, 0, true );
+
+		assertEquals( 3, plain.size() );
+		assertTrue( accent.get(0).velocity() > plain.get(0).velocity() );
+	}
+
+	@Test
 	void humanizingKeepsNotesValidAndVariesThem()
 	{	NoteMapper seeded = new NoteMapper( new Random(42) );
 		List<NoteMapper.Note> notes = List.of( new NoteMapper.Note(60, 64, 60) );

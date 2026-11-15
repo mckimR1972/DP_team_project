@@ -16,10 +16,15 @@ import com.holub.life.Universe;
 import com.holub.ui.MenuSite;
 
 /**
- * 세대마다 짧은 소리를 낸다. 생긴 셀은 마림바 화음을 왼쪽부터
+ * 판을 두 겹의 음악으로 바꾼다.
+ * <p>
+ * 재생선이 일정한 박자로 판을 훑으며 지나가는 산 셀을 칼림바로 연주하고,
+ * 그 아래에서 패드가 현재 코드를 낸다. 판이 붐빌수록 패드가 커진다.
+ * 한 바퀴마다 코드가 바뀌어서 게임을 멈춰도 소리가 계속 난다.
+ * <p>
+ * 그 위에 세대마다 짧은 소리를 더한다. 생긴 셀은 마림바 화음을 왼쪽부터
  * 스트럼하고, 한꺼번에 많이 생기면 비브라폰을 겹치고, 사라진 셀은
- * 쉐이커를 친다. 아래에서는 패드가 현재 코드를 내고(판이 붐빌수록
- * 크게), 일정한 박자로 마디마다 코드가 바뀐다.
+ * 쉐이커를 친다.
  * <p>
  * {@link #install}로 붙이며, 붙이지 않아도 게임은 똑같이 동작한다.
  */
@@ -28,24 +33,29 @@ public final class SoundEffects implements Universe.GenerationListener
 	private static final int MARIMBA_PROGRAM    = 12;	// General MIDI 번호
 	private static final int VIBRAPHONE_PROGRAM = 11;	// General MIDI 번호
 	private static final int WARM_PAD_PROGRAM   = 89;	// General MIDI 번호
+	private static final int KALIMBA_PROGRAM    = 108;	// General MIDI 번호
 	private static final int PAN_CONTROLLER     = 10;
 	private static final int EXPRESSION_CONTROLLER = 11;
 	private static final int BURST_CHANNEL      = 5;
 	private static final int PAD_CHANNEL        = 6;
+	private static final int SWEEP_CHANNEL      = 7;
 	private static final int PERCUSSION_CHANNEL = 9;	// General MIDI 번호
 	private static final int SHAKER_NOTE        = 82;	// General MIDI 번호
 	private static final int NOTE_LENGTH_MS     = 220;
+	private static final int SWEEP_NOTE_LENGTH_MS = 400;
 	private static final int STRUM_GAP_MS       = 25;
 	private static final int SHAKER_DELAY_MS    = 60;
 	private static final int MIN_PHRASE_GAP_MS  = 120;	// 클럭이 빠를 때 소리가 몰리지 않게
 	private static final int PAD_VELOCITY       = 80;
 	private static final int STEP_MS            = 150;
-	private static final int STEPS_PER_BAR      = 16;
+	private static final int STEPS_PER_SWEEP    = 16;
+	private static final int STEPS_PER_BEAT     = 4;
 
 	private final Universe			universe;
 	private final MidiChannel[]		voices = new MidiChannel[NoteMapper.MAX_VOICES];
 	private final MidiChannel		burst;
 	private final MidiChannel		pad;
+	private final MidiChannel		sweep;
 	private final MidiChannel		percussion;
 	private final NoteMapper		mapper = new NoteMapper();
 	private final ScheduledExecutorService noteScheduler;
@@ -90,6 +100,9 @@ public final class SoundEffects implements Universe.GenerationListener
 		pad = channels[PAD_CHANNEL];
 		pad.programChange( WARM_PAD_PROGRAM );
 
+		sweep = channels[SWEEP_CHANNEL];
+		sweep.programChange( KALIMBA_PROGRAM );
+
 		noteScheduler = Executors.newSingleThreadScheduledExecutor
 		(	task ->
 			{	Thread thread = new Thread( task, "sound-notes" );
@@ -107,20 +120,32 @@ public final class SoundEffects implements Universe.GenerationListener
 		MenuSite.addLine( this, "Sound", "Off", e -> enabled = false );
 	}
 
-	/** 박자를 한 스텝 진행한다. 패드를 판 상태에 맞추고, 마디가
-	 *  끝나면 다음 코드로 넘어간다.
-	 */
+	/** 재생선을 한 스텝 옮기고 그 아래 셀을 연주한다. */
 	private void playStep()
 	{
 		if( !enabled )
 		{	stopPad();
+			universe.setPlayhead( -1 );
 			return;
 		}
 
-		updatePad( mapper.padNotesFor(chord),
-				   mapper.padLevelFor(countLive(universe.liveCells())) );
+		boolean[][] cells  = universe.liveCells();
+		int columnsPerStep = cells.length / STEPS_PER_SWEEP;
+		int firstColumn	   = step * columnsPerStep;
 
-		step = (step + 1) % STEPS_PER_BAR;
+		universe.setPlayhead( firstColumn );
+
+		List<NoteMapper.Note> notes = mapper.humanized
+		(	mapper.sweepNotesFor( cells, firstColumn, columnsPerStep, chord,
+								  step % STEPS_PER_BEAT == 0 )
+		);
+		for( NoteMapper.Note note : notes )
+			play( sweep, note, mapper.timingJitterMs(), SWEEP_NOTE_LENGTH_MS );
+
+		updatePad( mapper.padNotesFor(chord),
+				   mapper.padLevelFor(countLive(cells)) );
+
+		step = (step + 1) % STEPS_PER_SWEEP;
 		if( step == 0 )
 			++chord;
 	}

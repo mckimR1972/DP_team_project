@@ -39,6 +39,10 @@ final class NoteMapper
 	private static final int NOTE_COUNT   = 15;	// 3옥타브
 	private static final int MAX_PAN      = 127;
 
+	private static final int MAX_SWEEP_VOICES = 3;
+	private static final int SWEEP_VELOCITY   = 45;
+	private static final int SWEEP_ACCENT     = 70;
+
 	private static final int	VELOCITY_SPREAD		 = 8;
 	private static final int	MAX_TIMING_JITTER_MS = 15;
 	private static final double OCTAVE_JUMP_CHANCE	 = 0.12;
@@ -64,6 +68,30 @@ final class NoteMapper
 	 */
 	List<Note> notesFor( List<Point> births, int boardWidth, int chord )
 	{	return notesFor( births, boardWidth, chord, MAX_VOICES );
+	}
+
+	/** 재생선 한 스텝에서 낼 음을 고른다. 몇 개 열 안의 산 셀을
+	 *  정해진 세기로 연주한다.
+	 *  @param liveCells	판 전체, [행][열] 순서
+	 *  @param accented		강박 스텝이면 true
+	 */
+	List<Note> sweepNotesFor( boolean[][] liveCells, int firstColumn,
+							  int columns, int chord, boolean accented )
+	{
+		List<Point> cells = new ArrayList<>();
+		for( int row = 0; row < liveCells.length; ++row )
+			for( int column = firstColumn;
+						column < firstColumn + columns; ++column )
+				if( liveCells[row][column] )
+					cells.add( new Point(column, row) );
+
+		int velocity = accented ? SWEEP_ACCENT : SWEEP_VELOCITY;
+
+		List<Note> notes = new ArrayList<>();
+		for( Note note : notesFor( cells, liveCells.length, chord,
+								   MAX_SWEEP_VOICES ) )
+			notes.add( new Note(note.pitch(), note.pan(), velocity) );
+		return notes;
 	}
 
 	/** 반복되는 화음이 기계적으로 들리지 않도록 세기를 조금 바꾸고,
