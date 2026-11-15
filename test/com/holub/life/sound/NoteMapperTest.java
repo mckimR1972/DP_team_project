@@ -105,6 +105,20 @@ class NoteMapperTest
 	}
 
 	@Test
+	void padFollowsTheProgression()
+	{	assertEquals( 36, mapper.padNotesFor(0)[0] );	// C
+		assertEquals( 33, mapper.padNotesFor(1)[0] );	// A
+		assertEquals( 36, mapper.padNotesFor(CHORDS)[0] );
+	}
+
+	@Test
+	void padGrowsWithLiveCellsUpToACapAndStopsOnAnEmptyBoard()
+	{	assertEquals( 0, mapper.padLevelFor(0) );
+		assertTrue( mapper.padLevelFor(10) < mapper.padLevelFor(200) );
+		assertEquals( 100, mapper.padLevelFor(4096) );
+	}
+
+	@Test
 	void moreDeathsHitHarderUpToACap()
 	{	assertTrue( mapper.percussionVelocityFor(1)
 				  < mapper.percussionVelocityFor(30) );

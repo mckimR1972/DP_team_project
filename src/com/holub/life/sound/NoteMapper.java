@@ -24,6 +24,14 @@ final class NoteMapper
 		{ 2, 4, 7, 9, 11 },		// G
 	};
 
+	/** 코드별 패드 음: 낮은 근음, 5음, 3음. */
+	private static final int[][] PAD_CHORDS =
+	{	{ 36, 43, 52 },		// C
+		{ 33, 45, 52 },		// Am
+		{ 41, 48, 57 },		// F
+		{ 43, 50, 59 },		// G
+	};
+
 	private static final int SCALE_LENGTH = 5;
 	private static final int LOWEST_NOTE  = 48;	// C3
 	private static final int NOTE_COUNT   = 15;	// 3옥타브
@@ -69,6 +77,19 @@ final class NoteMapper
 		}
 		notes.sort( Comparator.comparingInt(Note::pan) );
 		return notes;
+	}
+
+	/** 코드의 패드 음을 반환한다. */
+	int[] padNotesFor( int chord )
+	{	return PAD_CHORDS[ chord % PAD_CHORDS.length ];
+	}
+
+	/** 산 셀 수에 맞는 패드 세기(0~127)를 반환한다. 판이 붐빌수록
+	 *  소리가 두꺼워진다.
+	 */
+	int padLevelFor( int liveCells )
+	{	return liveCells == 0
+				? 0 : (int)Math.min( 100, 20 + 5 * Math.sqrt(liveCells) );
 	}
 
 	/** 사라진 셀 수에 맞는 타악기 세기를 반환한다. */
