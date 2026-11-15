@@ -225,6 +225,39 @@ public class Universe extends JPanel
 		);
 	}
 
+	private static final int PLAYHEAD_WIDTH = 3;
+	private static final Color PLAYHEAD_COLOR = new Color( 0, 170, 80 );
+
+	private volatile int playhead = -1;
+
+	/** 해당 열의 왼쪽 가장자리에 세로선을 그린다.
+	 *  @param column 표시할 열. -1이면 선을 지운다.
+	 */
+	public void setPlayhead( int column )
+	{	int previous = playhead;
+		playhead = column;
+		repaintPlayhead( previous );
+		repaintPlayhead( column );
+	}
+
+	private void repaintPlayhead( int column )
+	{	if( column >= 0 )
+			repaint( column * pixelsPerCell(), 0, PLAYHEAD_WIDTH, getHeight() );
+	}
+
+	private void drawPlayhead( Graphics g )
+	{	int column = playhead;
+		if( column >= 0 )
+		{	g.setColor( PLAYHEAD_COLOR );
+			g.fillRect( column * pixelsPerCell(), 0,
+						PLAYHEAD_WIDTH, getHeight() );
+		}
+	}
+
+	private int pixelsPerCell()
+	{	return Math.max( 1, getWidth() / outermostCell.widthInCells() );
+	}
+
 	private void doLoad()
 	{	try
 		{
@@ -282,6 +315,7 @@ public class Universe extends JPanel
 		panelBounds.x = 0;
 		panelBounds.y = 0;
 		outermostCell.redraw(g, panelBounds, true);		//{=Universe.redraw1}
+		drawPlayhead( g );
 	}
 
 	/** Force a screen refresh by queing a request on
@@ -306,7 +340,8 @@ public class Universe extends JPanel
 						panelBounds.x = 0;
 						panelBounds.y = 0;
 						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
-									}
+						drawPlayhead( g );
+					}
 					finally
 					{	g.dispose();
 					}

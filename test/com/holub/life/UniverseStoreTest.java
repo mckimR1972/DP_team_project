@@ -3,10 +3,13 @@ package com.holub.life;
 import com.holub.io.Files;
 import com.holub.ui.MenuSite;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.io.ObjectInputStream;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -100,6 +103,33 @@ class UniverseStoreTest {
 
         assertTrue(cells[2][5]);
         assertEquals(false, cells[5][2]);
+    }
+
+    @Test
+    void playheadIsDrawnOverTheBoardAndCanBeRemoved() throws Exception {
+        final int column = 10;
+        final int pixel = column * 8;
+
+        try {
+            universe.setPlayhead(column);
+            int shown = renderedPixel(pixel);
+            universe.setPlayhead(-1);
+            int hidden = renderedPixel(pixel);
+
+            assertEquals(new Color(0, 170, 80).getRGB(), shown);
+            assertTrue(shown != hidden);
+        } finally {
+            universe.setPlayhead(-1);
+        }
+    }
+
+    private static int renderedPixel(int x) {
+        BufferedImage image = new BufferedImage(512, 512, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = image.createGraphics();
+        graphics.setClip(0, 0, 512, 512);
+        universe.paint(graphics);
+        graphics.dispose();
+        return image.getRGB(x, 100) | 0xff000000;
     }
 
     private static void mouse(int eventId, int column, int row) {
