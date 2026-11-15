@@ -71,6 +71,11 @@ final class NoteMapper
 		return notes;
 	}
 
+	/** 사라진 셀 수에 맞는 타악기 세기를 반환한다. */
+	int percussionVelocityFor( int deaths )
+	{	return (int)Math.min( 70, 25 + 6 * Math.sqrt(deaths) );
+	}
+
 	private int pitchOfRow( int row, int boardWidth, int[] scale )
 	{	int step = (boardWidth - 1 - row) * NOTE_COUNT / boardWidth;
 		return LOWEST_NOTE + 12 * (step / SCALE_LENGTH)

@@ -104,4 +104,10 @@ class NoteMapperTest
 		assertEquals( notes.size(), pitches.size() );
 	}
 
+	@Test
+	void moreDeathsHitHarderUpToACap()
+	{	assertTrue( mapper.percussionVelocityFor(1)
+				  < mapper.percussionVelocityFor(30) );
+		assertEquals( 70, mapper.percussionVelocityFor(4096) );
+	}
 }

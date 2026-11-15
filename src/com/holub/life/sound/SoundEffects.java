@@ -16,7 +16,8 @@ import com.holub.ui.MenuSite;
 
 /**
  * 세대마다 짧은 소리를 낸다. 생긴 셀은 마림바 화음을 왼쪽부터
- * 스트럼한다. 일정한 박자로 마디마다 코드가 바뀐다.
+ * 스트럼하고, 사라진 셀은 쉐이커를 친다. 일정한 박자로 마디마다
+ * 코드가 바뀐다.
  * <p>
  * {@link #install}로 붙이며, 붙이지 않아도 게임은 똑같이 동작한다.
  */
@@ -24,14 +25,18 @@ public final class SoundEffects implements Universe.GenerationListener
 {
 	private static final int MARIMBA_PROGRAM    = 12;	// General MIDI 번호
 	private static final int PAN_CONTROLLER     = 10;
+	private static final int PERCUSSION_CHANNEL = 9;	// General MIDI 번호
+	private static final int SHAKER_NOTE        = 82;	// General MIDI 번호
 	private static final int NOTE_LENGTH_MS     = 220;
 	private static final int STRUM_GAP_MS       = 25;
+	private static final int SHAKER_DELAY_MS    = 60;
 	private static final int MIN_PHRASE_GAP_MS  = 120;	// 클럭이 빠를 때 소리가 몰리지 않게
 	private static final int STEP_MS            = 150;
 	private static final int STEPS_PER_BAR      = 16;
 
 	private final Universe			universe;
 	private final MidiChannel[]		voices = new MidiChannel[NoteMapper.MAX_VOICES];
+	private final MidiChannel		percussion;
 	private final NoteMapper		mapper = new NoteMapper();
 	private final ScheduledExecutorService noteScheduler;
 
@@ -66,6 +71,7 @@ public final class SoundEffects implements Universe.GenerationListener
 		{	voices[voice] = channels[voice];
 			voices[voice].programChange( MARIMBA_PROGRAM );
 		}
+		percussion = channels[PERCUSSION_CHANNEL];
 
 		noteScheduler = Executors.newSingleThreadScheduledExecutor
 		(	task ->
@@ -107,6 +113,9 @@ public final class SoundEffects implements Universe.GenerationListener
 		for( int voice = 0; voice < notes.size(); ++voice )
 			play( voices[voice], notes.get(voice), strumDelay(voice),
 				  NOTE_LENGTH_MS );
+
+		if( !deaths.isEmpty() )
+			playShaker( mapper.percussionVelocityFor(deaths.size()) );
 	}
 
 	private int strumDelay( int voice )
@@ -124,5 +133,10 @@ public final class SoundEffects implements Universe.GenerationListener
 		);
 		noteScheduler.schedule( () -> channel.noteOff( note.pitch() ),
 								delayMs + lengthMs, TimeUnit.MILLISECONDS );
+	}
+
+	private void playShaker( int velocity )
+	{	noteScheduler.schedule( () -> percussion.noteOn(SHAKER_NOTE, velocity),
+								SHAKER_DELAY_MS, TimeUnit.MILLISECONDS );
 	}
 }
