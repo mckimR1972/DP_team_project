@@ -10,18 +10,17 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// Checks the color rule that Resident starts with, so this class never sets one.
-// Gradle runs every test class in its own JVM (forkEvery = 1), so no other
-// test can have changed the rule before this one runs.
+// Resident의 기본 색 규칙을 확인하므로 여기서는 규칙을 정하지 않는다.
+// forkEvery = 1이라 다른 테스트 클래스가 먼저 규칙을 바꿔 놓을 수 없다.
 class DefaultCellColorTest {
-    private static final int CELL = 8;                     // one cell is 8 pixels wide
+    private static final int CELL = 8;                     // 셀 한 칸 8px
     private static final int BOARD = 64 * CELL;
 
     private final Cell board = new Neighborhood(8, new Neighborhood(8, new Resident()));
 
     @Test
     void liveCellsStayRedWhenNoColorPolicyIsChosen() {
-        click(0, 0); click(1, 0); click(0, 1); click(1, 1);        // 2 x 2 block
+        click(0, 0); click(1, 0); click(0, 1); click(1, 1);        // 2 x 2 블록
 
         assertEquals(Color.RED, colorAt(0, 0), "generation 0");
         for (int generation = 1; generation <= 25; generation++) {
@@ -36,7 +35,7 @@ class DefaultCellColorTest {
         board.userClicked(new Point(x * CELL + 4, y * CELL + 4), new Rectangle(0, 0, BOARD, BOARD));
     }
 
-    private Color colorAt(int x, int y) {                  // draw the board and read the middle of the cell
+    private Color colorAt(int x, int y) {                  // 판을 그린 뒤 셀 가운데 색을 읽음
         BufferedImage image = new BufferedImage(BOARD, BOARD, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();
         board.redraw(g, new Rectangle(0, 0, BOARD, BOARD), true);

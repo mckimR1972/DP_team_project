@@ -20,36 +20,25 @@ import com.holub.life.Universe;
 public final class Resident implements Cell
 {
 	private static final Color BORDER_COLOR = Colors.DARK_YELLOW;
-	static final Color LIVE_COLOR			= Color.RED;	// Universe's Color menu uses it too
+	static final Color LIVE_COLOR			= Color.RED;	// Color 메뉴에서도 쓴다
 	private static final Color DEAD_COLOR   = Colors.LIGHT_YELLOW;
 
-	/** The color rule that every live cell is drawn with. It starts as
-	 *  the original fixed red, so the board looks the same as before
-	 *  until another rule is chosen. Universe reads it on the clock
-	 *  thread (through colorChangesWithAge()) while it is changed on
-	 *  another thread, so it is volatile.
-	 */
+	// 모든 셀이 함께 쓰는 색 규칙. 시계 스레드에서도 읽으므로 volatile
 	private static volatile CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
 
-	/** Make every cell use the given color rule from now on.
-	 *  @throws IllegalArgumentException if policy is null.
-	 */
 	static void setColorPolicy( CellColorPolicy policy )
 	{	if( policy == null )
 			throw new IllegalArgumentException( "null color policy" );
 		colorPolicy = policy;
 	}
 
-	/** Return true if a cell's color can change just because the cell
-	 *  grows older. Universe then redraws every cell on every tick.
-	 */
 	static boolean colorChangesWithAge()
 	{	return colorPolicy.changesWithAge();
 	}
 
 	private boolean amAlive 	= false;
 	private boolean willBeAlive	= false;
-	private int		age			= 0;	// generations this cell has been alive; 0 when born
+	private int		age			= 0;	// 연속으로 살아남은 세대 수 (태어나면 0)
 
 	private boolean isStable(){return amAlive == willBeAlive; }
 
@@ -102,9 +91,12 @@ public final class Resident implements Cell
 		return this;
 	}
 
+	/** 세대를 넘길 때만 호출한다. 나이도 함께 바뀌므로
+	 *  패턴 배치 같은 편집에는 쓰지 않는다.
+	 */
 	public boolean transition()
 	{	boolean changed = amAlive != willBeAlive;
-		age = (amAlive && willBeAlive) ? age + 1 : 0;	// survivors grow older; others start over
+		age = (amAlive && willBeAlive) ? age + 1 : 0;
 		amAlive = willBeAlive;
 		return changed;
 	}
@@ -126,7 +118,7 @@ public final class Resident implements Cell
 
 	public void userClicked(Point here, Rectangle surface)
 	{	amAlive = !amAlive;
-		age = 0;				// a cell revived by a click starts over
+		age = 0;
 	}
 
 	public void	   clear()			{amAlive = willBeAlive = false; }
@@ -142,7 +134,7 @@ public final class Resident implements Cell
 	{
 		Memento memento = (Memento)blob;
 		if( doLoad )
-		{	age = 0;							// ages are not saved
+		{	age = 0;							// 나이는 저장되지 않는다
 			if( amAlive = willBeAlive = memento.isAlive(upperLeft) )
 				return true;
 		}

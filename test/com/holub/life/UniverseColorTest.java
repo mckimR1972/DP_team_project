@@ -38,7 +38,7 @@ class UniverseColorTest {
     static void initializeUniverseWithoutOpeningWindows() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             Clock stoppedClock = mock(Clock.class);
-            // Capture the real menu callbacks and clock listener without creating a JFrame or timer.
+            // 창과 타이머 없이 실제 메뉴 콜백과 시계 리스너만 받아 둔다
             try (MockedStatic<MenuSite> menus = mockStatic(MenuSite.class);
                  MockedStatic<Clock> clocks = mockStatic(Clock.class)) {
                 clocks.when(Clock::instance).thenReturn(stoppedClock);
@@ -81,13 +81,13 @@ class UniverseColorTest {
 
     @Test
     void stillLifeCyclesThroughColorsWhenNothingElseChanges() throws Exception {
-        // The test sets the rule itself, so it checks Universe's tick and not a menu.
+        // 메뉴 대신 규칙을 직접 정해 Universe의 틱 처리만 확인
         SwingUtilities.invokeAndWait(() -> {
             Resident.setColorPolicy(new CyclingColorPolicy(10, Color.RED, BLUE, GREEN));
             placeBlock();
             tick(10);
         });
-        assertEquals(BLUE, colorAt(0, 0));                 // no cell was born or died, yet the color moved on
+        assertEquals(BLUE, colorAt(0, 0));                 // 태어나거나 죽은 셀이 없어도 색이 바뀜
 
         SwingUtilities.invokeAndWait(() -> tick(10));
         assertEquals(GREEN, colorAt(0, 0));
@@ -100,11 +100,11 @@ class UniverseColorTest {
     void ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             placeBlock();
-            tick(25);                                      // 25 generations with the original red
+            tick(25);                                      // 원래 빨강으로 25세대
             select("Color > Cycle by Generation");
         });
 
-        assertEquals(GREEN, colorAt(0, 0));                // age 25, without another tick
+        assertEquals(GREEN, colorAt(0, 0));                // 틱 없이 바로 나이 25의 색
     }
 
     @Test
@@ -117,13 +117,13 @@ class UniverseColorTest {
         assertEquals(GREEN, colorAt(0, 0));
 
         SwingUtilities.invokeAndWait(() -> select("Color > Single Color"));
-        assertEquals(Color.RED, colorAt(0, 0));            // right away
+        assertEquals(Color.RED, colorAt(0, 0));            // 바로 빨강
 
         SwingUtilities.invokeAndWait(() -> tick(10));
-        assertEquals(Color.RED, colorAt(0, 0));            // and it stays red
+        assertEquals(Color.RED, colorAt(0, 0));            // 계속 빨강
     }
 
-    private static void placeBlock() {                     // 2 x 2 block: a pattern that never changes
+    private static void placeBlock() {                     // 2 x 2 블록: 변하지 않는 패턴
         click(0, 0); click(1, 0); click(0, 1); click(1, 1);
     }
 
@@ -133,7 +133,7 @@ class UniverseColorTest {
         ));
     }
 
-    private static void tick(int times) {                  // the listener that Universe gave the clock
+    private static void tick(int times) {                  // Universe가 시계에 등록한 리스너를 직접 호출
         for (int i = 0; i < times; i++) {
             clockListener.tick();
         }
@@ -145,7 +145,7 @@ class UniverseColorTest {
         );
     }
 
-    private static Color colorAt(int x, int y) throws Exception {   // paint the board and read the middle of the cell
+    private static Color colorAt(int x, int y) throws Exception {   // 판을 그린 뒤 셀 가운데 색을 읽음
         Color[] color = new Color[1];
         SwingUtilities.invokeAndWait(() -> {
             BufferedImage image = new BufferedImage(universe.getWidth(), universe.getHeight(),

@@ -2,26 +2,11 @@ package com.holub.life;
 
 import java.awt.Color;
 
-/**
- * Moves on to the next color every {@code period} generations and goes
- * back to the first color after the last one. With a period of 10 and the
- * colors red, blue and green, a cell is red at ages 0-9, blue at 10-19,
- * green at 20-29 and red again at 30-39.
- * <p>
- * Objects of this class never change, so one object can be shared by
- * every cell on the board.
- */
+/** period 세대마다 다음 색으로 바꾸고, 마지막 색 다음에는 처음 색으로 돌아간다 */
 public final class CyclingColorPolicy implements CellColorPolicy {
     private final int period;
     private final Color[] colors;
 
-    /**
-     * @param period the number of generations that each color lasts;
-     *               must be positive.
-     * @param colors the colors in the order they are used; at least two,
-     *               none of them null. The array is copied, so changing
-     *               it afterwards does not change this policy.
-     */
     public CyclingColorPolicy(int period, Color... colors) {
         if (period <= 0)
             throw new IllegalArgumentException("period must be positive: " + period);
@@ -39,6 +24,10 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
     @Override
     public Color colorOf(int age) {
+        // int idx = Math.min((age / period), colors.length - 1);
+        // return colors[idx]; => 마지막 색이면 순회 X
+
+        // 순회
         return colors[(age / period) % colors.length];
     }
 

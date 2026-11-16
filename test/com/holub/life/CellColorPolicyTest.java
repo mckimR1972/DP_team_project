@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CellColorPolicyTest {
-    // The colors that the game cycles through.
+    // 게임에서 순환하는 색
     private static final Color RED = Color.RED;
     private static final Color BLUE = new Color(0x0072B2);
     private static final Color GREEN = new Color(0x009E73);

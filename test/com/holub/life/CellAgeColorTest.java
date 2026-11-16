@@ -24,18 +24,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CellAgeColorTest {
-    private static final int CELL = 8;                     // one cell is 8 pixels wide
-    private static final int SIZE = 64;                    // the board is 64 x 64 cells
+    private static final int CELL = 8;                     // 셀 한 칸 8px
+    private static final int SIZE = 64;                    // 판은 64 x 64칸
     private static final int BOARD = SIZE * CELL;
     private static final Color BLUE = new Color(0x0072B2);
     private static final Color GREEN = new Color(0x009E73);
     private static final Color DEAD = Colors.LIGHT_YELLOW;
 
-    // The same structure as Universe: 8 x 8 blocks of 8 x 8 cells.
+    // Universe와 같은 구조 (8 x 8 셀짜리 블록 8 x 8개)
     private final Cell board = new Neighborhood(8, new Neighborhood(8, new Resident()));
 
     @AfterEach
-    void restoreOriginalColor() {                          // every cell shares the policy
+    void restoreOriginalColor() {                          // 색 규칙은 모든 셀이 공유하므로 되돌려 둔다
         Resident.setColorPolicy(new FixedColorPolicy(Color.RED));
     }
 
@@ -47,28 +47,28 @@ class CellAgeColorTest {
         tick(9);
         assertEquals(Color.RED, colorAt(0, 0));
         tick(1);
-        assertEquals(BLUE, colorAt(0, 0));                 // generation 10
+        assertEquals(BLUE, colorAt(0, 0));                 // 10세대
         tick(10);
-        assertEquals(GREEN, colorAt(0, 0));                // generation 20
+        assertEquals(GREEN, colorAt(0, 0));                // 20세대
         tick(10);
-        assertEquals(Color.RED, colorAt(0, 0));            // generation 30: back to the first color
+        assertEquals(Color.RED, colorAt(0, 0));            // 30세대: 다시 처음 색
     }
 
     @Test
     void survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver() {
-        // With a period of 1 every age has its own color, so the drawn color is the age.
+        // 주기가 1이면 나이마다 색이 달라서 색으로 나이를 알 수 있다
         Color age0 = Color.RED, age1 = BLUE, age2 = GREEN;
         Resident.setColorPolicy(new CyclingColorPolicy(1, age0, age1, age2));
-        click(20, 20); click(21, 20); click(22, 20);       // horizontal blinker
+        click(20, 20); click(21, 20); click(22, 20);       // 가로 블링커
 
         tick(1);
-        assertEquals(age1, colorAt(21, 20));               // center survived
-        assertEquals(DEAD, colorAt(20, 20));               // left end died
-        assertEquals(age0, colorAt(21, 19));               // top end was born
+        assertEquals(age1, colorAt(21, 20));               // 가운데: 살아남음
+        assertEquals(DEAD, colorAt(20, 20));               // 왼쪽 끝: 죽음
+        assertEquals(age0, colorAt(21, 19));               // 위: 새로 태어남
 
         tick(1);
         assertEquals(age2, colorAt(21, 20));
-        assertEquals(age0, colorAt(20, 20));               // born again: starts over
+        assertEquals(age0, colorAt(20, 20));               // 다시 태어나면 0부터
     }
 
     @Test
@@ -78,11 +78,11 @@ class CellAgeColorTest {
         tick(20);
         assertEquals(GREEN, colorAt(10, 10));
 
-        click(10, 10);                                     // kill the cell
-        click(10, 10);                                     // and bring it back before the next tick
+        click(10, 10);                                     // 죽였다가
+        click(10, 10);                                     // 다음 틱 전에 다시 살림
 
         assertEquals(Color.RED, colorAt(10, 10));
-        assertEquals(GREEN, colorAt(11, 10));              // the other three cells keep their age
+        assertEquals(GREEN, colorAt(11, 10));              // 나머지 세 칸은 나이 그대로
         assertEquals(GREEN, colorAt(10, 11));
         assertEquals(GREEN, colorAt(11, 11));
     }
@@ -95,8 +95,7 @@ class CellAgeColorTest {
         assertEquals(GREEN, colorAt(10, 10));
         boolean[] block = liveCells();
 
-        // Grid > Store and Grid > Load in the order Universe runs them,
-        // with a byte array in place of the file.
+        // Universe의 Grid > Store, Load와 같은 순서 (파일 대신 바이트 배열)
         ByteArrayOutputStream file = new ByteArrayOutputStream();
         board.createMemento().flush(file);
         board.clear();
@@ -104,14 +103,14 @@ class CellAgeColorTest {
         loaded.load(new ByteArrayInputStream(file.toByteArray()));
         board.transfer(loaded, new Point(0, 0), Cell.LOAD);
 
-        assertArrayEquals(block, liveCells());             // the same four cells came back
-        assertEquals(Color.RED, colorAt(10, 10));          // ages are not saved
+        assertArrayEquals(block, liveCells());             // 같은 네 칸이 돌아옴
+        assertEquals(Color.RED, colorAt(10, 10));          // 나이는 저장되지 않음
         assertEquals(Color.RED, colorAt(11, 10));
         assertEquals(Color.RED, colorAt(10, 11));
         assertEquals(Color.RED, colorAt(11, 11));
 
         tick(10);
-        assertEquals(BLUE, colorAt(10, 10));               // and they grow older again
+        assertEquals(BLUE, colorAt(10, 10));               // 다시 나이를 먹음
     }
 
     @Test
@@ -126,13 +125,12 @@ class CellAgeColorTest {
         assertEquals(DEAD, colorAt(10, 10));
 
         click(10, 10);
-        assertEquals(Color.RED, colorAt(10, 10));          // the age left by Clear does not show
+        assertEquals(Color.RED, colorAt(10, 10));          // Clear 전 나이가 드러나지 않음
     }
 
     @Test
     void lifeRuleIsUnchanged() {
-        // The four kinds of random soup used in the design document's experiments,
-        // as {soup size, percent alive}: big soups keep changing, small ones settle fast.
+        // 설계 문서 실험의 무작위 수프 {크기, 생존 %}: 크면 오래 변하고 작으면 금방 멈춘다
         int[][] soups = { {64, 30}, {24, 35}, {10, 40}, {4, 50} };
         for (int[] soup : soups) {
             for (long seed = 1; seed <= 8; seed++) {
@@ -155,11 +153,11 @@ class CellAgeColorTest {
         tick(10);
 
         assertThrows(IllegalArgumentException.class, () -> Resident.setColorPolicy(null));
-        assertEquals(BLUE, colorAt(10, 10));               // still drawn with the cycling rule
+        assertEquals(BLUE, colorAt(10, 10));               // 순환 규칙 그대로
     }
 
     @Test
-    void colorChangesWithAgeFollowsTheCurrentPolicy() {   // Universe redraws every cell while this is true
+    void colorChangesWithAgeFollowsTheCurrentPolicy() {
         useCyclingColors();
         assertTrue(Resident.colorChangesWithAge());
 
@@ -167,11 +165,11 @@ class CellAgeColorTest {
         assertFalse(Resident.colorChangesWithAge());
     }
 
-    private static void useCyclingColors() {               // the rule the game cycles with
+    private static void useCyclingColors() {               // Color 메뉴의 순환 규칙과 같음
         Resident.setColorPolicy(new CyclingColorPolicy(10, Color.RED, BLUE, GREEN));
     }
 
-    private void placeBlock(int x, int y) {                // 2 x 2 block: a pattern that never changes
+    private void placeBlock(int x, int y) {                // 2 x 2 블록: 변하지 않는 패턴
         click(x, y); click(x + 1, y); click(x, y + 1); click(x + 1, y + 1);
     }
 
@@ -189,13 +187,13 @@ class CellAgeColorTest {
         }
     }
 
-    private static void tick(Cell board) {                 // one generation: figure the next state, then switch to it
+    private static void tick(Cell board) {                 // 한 세대 진행
         board.figureNextState(Cell.DUMMY, Cell.DUMMY, Cell.DUMMY, Cell.DUMMY,
                               Cell.DUMMY, Cell.DUMMY, Cell.DUMMY, Cell.DUMMY);
         board.transition();
     }
 
-    private Color colorAt(int x, int y) {                  // draw the board and read the middle of the cell
+    private Color colorAt(int x, int y) {                  // 판을 그린 뒤 셀 가운데 색을 읽음
         BufferedImage image = new BufferedImage(BOARD, BOARD, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = image.createGraphics();
         board.redraw(g, new Rectangle(0, 0, BOARD, BOARD), true);
@@ -207,7 +205,7 @@ class CellAgeColorTest {
         return liveCells(board);
     }
 
-    // Reads the live cells the way Grid > Store does: transfer() into a memento.
+    // Grid > Store처럼 transfer()로 살아 있는 셀을 읽음
     private static boolean[] liveCells(Cell board) {
         boolean[] alive = new boolean[SIZE * SIZE];
         board.transfer(new Cell.Memento() {
@@ -235,7 +233,7 @@ class CellAgeColorTest {
     private static boolean[] placeSoup(Cell board, int size, int percentAlive, long seed) {
         boolean[] alive = new boolean[SIZE * SIZE];
         Random random = new Random(seed);
-        int offset = (SIZE - size) / 2;                    // centered on the board
+        int offset = (SIZE - size) / 2;                    // 판 가운데에 둠
         for (int y = offset; y < offset + size; y++) {
             for (int x = offset; x < offset + size; x++) {
                 if (random.nextInt(100) < percentAlive) {
@@ -247,7 +245,7 @@ class CellAgeColorTest {
         return alive;
     }
 
-    // Conway's rule computed directly, on a 64 x 64 board with dead cells all around it.
+    // 콘웨이 규칙을 직접 계산 (판 바깥은 죽은 셀)
     private static boolean[] nextGeneration(boolean[] alive) {
         boolean[] next = new boolean[SIZE * SIZE];
         for (int y = 0; y < SIZE; y++) {

@@ -15,8 +15,9 @@
 | 3 | Resident의 나이 계산과 색 규칙 | `Resident.java` | 반영 (2026-11-12) |
 | 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
 | 5 | Universe의 Color 메뉴 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
+| 6 | 주석 한글화와 정리 | `build.gradle`, 색 규칙 3개, `Resident.java`, `Universe.java`, 테스트 4개 | 반영 (2026-11-15) |
 
-번호는 설계 문서 6절 "구현 순서"의 번호와 같다.
+1\~5번은 설계 문서 6절 "구현 순서"의 번호와 같다. 6번은 구현을 마친 뒤 한 주석 정리다.
 
 ## 1. 테스트 클래스마다 JVM 분리
 
@@ -543,3 +544,44 @@ Grid, Go 메뉴 뒤에 Color 메뉴를 추가했다. Single Color를 고르면 �
 - `--warning-mode all`로 실행했을 때 Gradle 사용 중단(deprecation) 경고는 없었다.
 - 결함을 넣은 확인과 실제 창 확인은 시험용 사본에서만 했고, 저장소의 코드는 바꾸지 않았다.
 - 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, Windows 11, 2026-11-12.
+
+## 6. 주석 한글화와 정리
+
+### 요약
+
+1\~5번에서 넣은 주석을 한글로 바꾸고 짧게 줄였다. 코드만 봐도 알 수 있는 주석은 뺐고, `Resident.transition()`에는 사용 규칙 주석을 새로 달았다. 실행되는 코드는 바뀌지 않았다.
+
+### 바꾼 이유
+
+- 코드를 읽고 고칠 사람이 모두 팀원이므로 주석은 한글로, 필요한 곳에만 짧게 쓴다.
+- `transition()`은 계속 살아 있는 셀의 나이를 1 늘리고 나머지 셀의 나이를 0으로 만든다. 그래서 편집에 쓰면 나이가 틀어진다. 다른 팀원의 통계 기능 문서(「전체 통계 옵저버」)도 템플릿 배치나 폭탄 같은 편집에 `transition()`을 쓰지 않기로 했으므로 이 약속을 코드에 적었다. 다른 기능과 맞출 사항 전체는 설계 문서 9절에 있다.
+
+### 변경 내용
+
+| 파일 | 남긴 주석 | 뺀 주석 |
+| --- | --- | --- |
+| `build.gradle` | `forkEvery = 1`을 둔 이유 | 없음 |
+| 색 규칙 3개 | 타입마다 한 줄 설명 | 색 순서 예시, 생성자 인자 설명, `@see` |
+| `Resident.java` | `LIVE_COLOR`를 Color 메뉴도 쓴다는 점, `colorPolicy`가 volatile인 이유, `age`의 뜻, `transition()` 사용 규칙(새로 추가), Load 때 나이를 0으로 하는 이유 | `setColorPolicy()`, `colorChangesWithAge()` 설명, 나이 계산 줄과 클릭 줄의 설명 |
+| `Universe.java` | 매 틱 `transition()`을 부르는 이유, 다시 그릴 범위, Color 메뉴 추가 위치, 순환 색, `refreshNow()`의 `drawAll` | `useColorPolicy()` 설명 |
+| 테스트 4개 | 기대값 옆 짧은 설명 | `colorChangesWithAgeFollowsTheCurrentPolicy()` 옆 설명 |
+
+예외 메시지, 테스트 메서드 이름, 테스트 실패 메시지는 주석이 아니라서 그대로 두었다.
+
+`Resident.transition()`에 새로 단 주석:
+
+```java
+	/** 세대를 넘길 때만 호출한다. 나이도 함께 바뀌므로
+	 *  패턴 배치 같은 편집에는 쓰지 않는다.
+	 */
+	public boolean transition()
+```
+
+### 검증
+
+| 항목 | 결과 |
+| --- | --- |
+| 전체 테스트 (`gradlew clean test`) | 67개 통과, 실패 0 |
+
+- 한글 주석은 `build.gradle`의 `options.encoding = 'UTF-8'` 설정으로 컴파일된다.
+- 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, Windows 11, 2026-11-15.

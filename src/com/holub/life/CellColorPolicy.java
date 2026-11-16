@@ -2,27 +2,11 @@ package com.holub.life;
 
 import java.awt.Color;
 
-/**
- * Decides the color of a live cell from its age (the Strategy in the
- * Strategy pattern). A cell is drawn in the color that the current policy
- * gives for its age, so the coloring can change without changing the cell.
- *
- * @see FixedColorPolicy
- * @see CyclingColorPolicy
- */
+/** 살아 있는 셀의 색을 나이에 따라 정하는 규칙 (Strategy 패턴) */
 public interface CellColorPolicy {
-    /**
-     * Returns the color of a live cell.
-     *
-     * @param age the number of generations the cell has been alive:
-     *            0 for a cell that was just born. It is never negative.
-     */
+    /** 나이가 age인 셀의 색. age는 0 이상이고 막 태어난 셀은 0 */
     Color colorOf(int age);
 
-    /**
-     * Returns true if the color of a cell changes as the cell grows older.
-     * The board then has to be repainted even on a tick in which no cell
-     * is born or dies.
-     */
+    /** 나이에 따라 색이 바뀌는 규칙이면 true (Universe가 매 틱 판 전체를 다시 그림) */
     boolean changesWithAge();
 }
