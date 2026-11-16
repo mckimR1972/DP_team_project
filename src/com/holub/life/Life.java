@@ -12,7 +12,8 @@ import com.holub.ui.MenuSite;
 
 public final class Life extends JFrame
 {	
-	private static JComponent universe;
+	private final Universe universe;
+	private final Statistics statistics;
 
 	public static void main( String[] arguments )
 	{	SwingUtilities.invokeLater(Life::new);
@@ -27,10 +28,43 @@ public final class Life extends JFrame
 		MenuSite.establish( this );		//{=life.java.establish}
 
 		setDefaultCloseOperation	( EXIT_ON_CLOSE 		);
-		getContentPane().setLayout	( new BorderLayout()	);
-		getContentPane().add( Universe.instance(), BorderLayout.CENTER); //{=life.java.install}
+		universe = Universe.instance();
+		StatisticsPanel statisticsPanel = new StatisticsPanel();
+		// At integration, obtain the existing shared tabs here instead.
+		JTabbedPane tabs = new JTabbedPane();
+		tabs.setName("life.sidebar");
+		tabs.addTab("통계", statisticsPanel);
+		setContentPane(createContent(universe, tabs));
+		statistics = connectStatistics(universe, statisticsPanel);
 
+		setResizable(false);
 		pack();
+		setLocationRelativeTo(null);
 		setVisible( true );
+	}
+
+	/** Lay out supplied tabs without replacing their pages, selection, or listeners. */
+	static JPanel createContent(Universe universe, JTabbedPane tabs) {
+		// Recompute after all tabs are added, even if the shared pane was sized earlier.
+		tabs.setPreferredSize(null);
+		Dimension tabSize = tabs.getPreferredSize();
+		tabs.setPreferredSize(new Dimension(tabSize.width, universe.getPreferredSize().height));
+
+		JPanel content = new JPanel(new BorderLayout());
+		content.add(universe, BorderLayout.CENTER);
+		content.add(tabs, BorderLayout.EAST);
+		return content;
+	}
+
+	/** Registration synchronously displays the INITIAL snapshot before the window opens. */
+	static Statistics connectStatistics(Universe universe, StatisticsPanel panel) {
+		Statistics statistics = new Statistics(panel::showStatistics);
+		universe.addBoardChangeListener(statistics);
+		return statistics;
+	}
+
+	@Override public void dispose() {
+		universe.removeBoardChangeListener(statistics);
+		super.dispose();
 	}
 }

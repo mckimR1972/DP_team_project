@@ -6,11 +6,10 @@
 
 ### 구현 범위
 
-Universe가 게임판의 작업 완료 상태를 발행하고 Statistics가 받아 **세대 번호·생존 셀 수·생존 비율·세대별 탄생·사망 수**를 계산한다. 자동 진행·단일 진행·클릭·Clear·Load를 연결했으며, JUnit에서 실제 Statistics를 등록해 검증했다.
+Universe가 게임판의 작업 완료 상태를 발행하고 Statistics가 받아 **세대 번호·생존 셀 수·생존 비율·세대별 탄생·사망 수**를 계산한다. 자동 진행·단일 진행·클릭·Clear·Load를 연결했다. 게임 시작 시 Life가 Statistics를 등록하고, 오른쪽 통계 탭의 StatisticsPanel이 집계 결과를 표시한다.
 
 아직 구현하거나 연결하지 않은 내용:
 
-- **통계 화면:** StatisticsPanel·오른쪽 통계 탭과 Life의 Statistics 생성·구독 코드는 다음 작업이다.
 - **다른 담당 기능:** 템플릿·Undo·프리즈·사운드·색상 실행 코드는 합치지 않았다. TEMPLATE·TEMPLATE_UNDO는 이벤트 계약과 단위 테스트만 있다.
 - **색별 통계:** 이벤트에 나이·색상 정보가 없어 색별 집계·파이 차트는 미구현이다. 프리즈된 생존 셀도 나이가 증가한다는 정책은 색상·프리즈 통합 시 확인한다.
 
@@ -22,6 +21,8 @@ Universe가 게임판의 작업 완료 상태를 발행하고 Statistics가 받�
 | BoardChangeListener | onBoardChanged(event): 작업 완료 상태를 받는 Observer 계약이다. |
 | Statistics | 생성자에서 결과 콜백을 받는다. onBoardChanged()가 calculate()로 계산한 뒤 비교 기준과 결과를 갱신하고 콜백을 호출한다. current()는 최근 결과를 Optional로 반환하며 첫 이벤트 전에는 비어 있다. |
 | Statistics.Summary | 불변 결과: generation(전달받은 세대), livingCells(생존 수), livingRatio(백분율 0~100), births·deaths(탄생·사망), hasGenerationDelta(변화량 계산 여부). |
+| StatisticsPanel | 생성자는 항목과 초기 `—` 표시를 구성한다. showStatistics(summary)는 다섯 항목을 갱신하고, private formatPercentage()는 비율을 소수점 둘째 자리로 표시한다. 보드 조회·통계 계산·구독은 하지 않는다. |
+| Life — 화면과 연결 | createContent(universe, tabs)는 외부에서 구성한 JTabbedPane을 오른쪽에 배치한다. 탭 생성·등록은 Life 생성자에서 담당한다. connectStatistics()는 결과 콜백을 패널에 연결한 Statistics를 생성·등록하고 반환한다. Life가 등록 객체를 보관하며 dispose()에서 해제한다. |
 | Universe — 구독 | addBoardChangeListener()는 중복 등록을 막고 새 구독자에게만 INITIAL을 전달한다. removeBoardChangeListener()는 없는 구독자를 해제해도 안전하다. |
 | Universe — 진행 | advanceOneGeneration()이 상태 계산·필요한 transition·세대 증가·완료 알림·repaint를 수행한다. 안정된 패턴과 빈 보드도 세대가 증가한다. |
 | Universe — 발행 | captureAliveCells()로 상태를 수집하고 createBoardChangeEvent()로 이벤트를 만든다. notifyBoardChanged(kind)는 같은 이벤트를 구독자들에게 전달하며 보드·세대 번호를 바꾸지 않는다. |
@@ -39,7 +40,7 @@ isAliveAt 구현과 중첩 조회 테스트는 사운드 브랜치의 `6ff3e81`�
 Clock.tick() → Universe.advanceOneGeneration()
   → 상태 계산·반영 → 세대 증가 → notifyBoardChanged(GENERATION)
   → isAliveAt으로 전체 상태 수집 → BoardChangeEvent
-  → Statistics 계산·비교 기준 갱신 → 결과 콜백
+  → Statistics 계산·비교 기준 갱신 → Summary 콜백 → StatisticsPanel.showStatistics
 ```
 
 | 작업 | 알림 | 세대 번호 |
@@ -66,12 +67,31 @@ Clock.tick() → Universe.advanceOneGeneration()
 3. 계산하지 못한 경우 hasGenerationDelta는 false이며 births·deaths의 0은 미계산 값이다. 화면은 `—` 등으로 표시한다. 실제 변화가 없는 세대는 true와 0으로 구분한다.
 4. 모든 이벤트의 현재 상태를 다음 비교 기준으로 교체한다. 편집 후 다음 세대도 새 기준으로 비교하며, 세대 누락·역행·중복이나 크기 변경 시 변화량을 계산하지 않고 기준을 다시 잡는다. 직전 상태 하나만 보관하므로 Undo 이력은 아니다.
 
+### 통계 화면과 시작 시 연결
+
+Life는 `MenuSite.establish()` → Universe 확보 → 패널·탭 구성 → `connectStatistics()` → `pack()` → 창 표시 순서로 실행한다. `new Statistics(panel::showStatistics)`를 Universe에 등록하면 INITIAL이 즉시 전달되므로, 첫 화면부터 현재 상태를 표시한다. 등록 때문에 세대를 진행하거나 보드를 초기화하지 않는다.
+
+| 표시 항목 | Summary 값 | 표시 규칙 |
+| --- | --- | --- |
+| 현재 세대 / 살아 있는 셀 | generation / livingCells | 전달받은 정수 그대로 표시 |
+| 생존 비율 | livingRatio | 이미 백분율이므로 다시 100을 곱하지 않음. `Locale.ROOT`로 `0.00%` 형식 표시 |
+| 이번 세대 탄생 / 사망 | births / deaths | hasGenerationDelta가 true이면 숫자, false이면 `—`로 교체 |
+
+- 첫 결과 전에는 다섯 값 모두 `—`다. 빈 보드의 INITIAL은 세대 0·생존 0·비율 0.00%·변화량 `—`, 실제 변화 없는 세대는 변화량 `0`으로 구분한다.
+- 패널 생성·갱신은 EDT에서 실행한다. showStatistics()는 EDT 밖 요청과 null 결과를 거부한다. 기존 동기 알림을 사용하므로 추가 Timer·invokeLater·상태 이력은 없다.
+- 패널은 캡처·프리즈와 같은 선호 크기 258×512, 사방 여백 14px, 제목 16pt다. BoxLayout으로 세로 배치하고, 각 통계 행은 항목명·숫자를 좌우 정렬한다.
+- Life 생성자는 현재 `통계` 탭 하나를 구성한다. createContent(universe, tabs)는 전달받은 탭을 교체하지 않고, Universe를 CENTER·탭을 EAST에 간격 없이 배치한다. 모든 탭 등록 후 기존 선호 크기를 해제해 너비를 재계산하고, 탭 제목줄을 포함한 전체 높이를 보드의 512px로 맞춘다. 패널 실제 높이는 제목줄만큼 작아진다.
+- 창은 `setResizable(false)` → `pack()` → `setLocationRelativeTo(null)`로 구성한다. 기본 게임판 512×512를 유지하며, 이전 확대·여백 배치는 사용하지 않는다.
+- 패널은 탭이나 JFrame을 소유하지 않는다. 다른 탭을 선택해도 구독·비교 기준을 유지하며 최신 결과를 표시한다. connectStatistics()와 createContent()는 같은 패키지에서만 사용하고, 테스트도 실제 연결·배치 메서드를 재사용한다.
+
+공용 탭 통합 시 Life의 `new JTabbedPane()`을 기존 `universe.sideControls()` 사용으로 바꾸고, `tabs.addTab("통계", statisticsPanel)`로 한 번만 추가하면 된다. createContent()는 기존 탭 순서·선택·전환 리스너를 보존한다. 이 브랜치에 sideControls()나 캡처·프리즈 기능을 추가한 것은 아니며, 통합 후 탭 전환의 편집 모드 종료와 템플릿·Undo 완료 알림은 별도 확인한다. 탭을 열 때마다 Statistics를 다시 등록하지 않는다.
+
 ### 설계 선택
 
 | 선택 | 이유 |
 | --- | --- |
 | Observer | Universe는 Subject, BoardChangeListener는 수신 계약, Statistics는 Observer다. Universe가 통계·사운드의 구체적인 구현을 알 필요가 없다. |
-| 현재 상태 전달·계산과 표시 분리 | Statistics가 비교 기준과 집계를 담당하고 불변 Summary를 전달한다. 발행 측에서 관찰자별 계산을 하지 않으며 화면 없이 테스트할 수 있다. |
+| 현재 상태 전달·계산과 표시 분리 | Statistics가 비교 기준과 집계를 담당하고 불변 Summary를 패널에 전달한다. Universe는 통계 패널을 모르며 Statistics도 Swing에 의존하지 않는다. 패널을 별도 BoardChangeListener로 만들지 않아 계산과 보드 조회가 중복되지 않는다. |
 | 불변 이벤트·결과 | 관찰자나 화면이 받은 데이터를 바꿔 다른 관찰자의 상태를 훼손하지 못하게 한다. |
 | 공통 isAliveAt 재사용 | 통계 전용 조회 계약을 Cell에 추가하지 않고 사운드와 공유한다. Universe에서 한 번 수집해 모든 관찰자에게 전달한다. |
 | LinkedHashSet 구독 관리 | 기존 Publisher 대신 중복 등록 방지·없는 구독자 해제·명확한 리스너 타입을 지원한다. |
@@ -80,24 +100,71 @@ Clock.tick() → Universe.advanceOneGeneration()
 
 ## 검증 요약과 상세 테스트
 
-아래는 **2026-11-11 구현 검증 당시의 결과**다. 이번 문서 정리에서는 Java 소스·테스트를 변경하지 않아 JUnit을 재실행하지 않았다.
+아래는 **2026-11-17 캡처·프리즈 규격 및 공용 탭 결합 구조 반영 후 전체 JUnit 재실행 결과**다. 화면 관련 검사 25개와 기존 검사 93개가 모두 통과했다. 기존 확대 배치 검사 2개는 현재 정책에 맞는 배치·탭 검사로 교체했다.
 
 - 환경: macOS, Amazon Corretto JDK 17.0.19, Gradle 9.5.1, JUnit Jupiter 6.0.3
-- 실행: 최초 `./gradlew clean test --no-daemon --console=plain`, 수정 후 `./gradlew test --no-daemon --console=plain`
+- 실행: `JAVA_HOME='/Users/kdi/Library/Java/JavaVirtualMachines/corretto-17.0.19/Contents/Home' ./gradlew test --no-daemon --console=plain`
 - BUILD SUCCESSFUL과 XML 검사 수를 대조했다. 검사 수에는 파라미터별 실행을 포함한다. 실제 창을 띄우지 않는 headless 검사다.
 
 | 통계·연결 관련 검사 | 실행 수 | 결과 |
 | --- | ---: | --- |
+| StatisticsPanelTest — 표시 규칙·공통 패널 규격 검사 | 12 | 모두 통과 |
+| StatisticsPanelIntegrationTest — 실제 게임판·화면 연결 및 공용 탭 결합 검사 | 13 | 모두 통과 |
 | BoardChangeEventTest — 기존 통계 이벤트 단위 검사 | 13 | 모두 통과 |
 | StatisticsTest — 기존 통계 계산 단위 검사 | 23 | 모두 통과 |
-| UniverseEventsTest — 이번에 작성한 실제 보드 연결 검사 | 18 | 모두 통과 |
-| ClockIntegrationTest — 이번에 작성한 실제 시계 연결 검사 | 6 | 모두 통과 |
+| UniverseEventsTest — 기존 실제 보드 연결 검사 | 18 | 모두 통과 |
+| ClockIntegrationTest — 기존 실제 시계 연결 검사 | 6 | 모두 통과 |
 | NeighborhoodTest의 isAliveAt 중첩 조회 — 사운드에서 재사용 | 1 | 통과 |
-| 통계·연결 관련 합계 | 61 | 모두 통과 |
+| 통계·연결 관련 합계 | 86 | 모두 통과 |
 
-기존 오류 수정 회귀 검사 32개도 모두 통과했다(전체 93개 통과, 실패·오류·건너뜀 0). 기존 검증의 상세 내용은 [README](../README.md)를 참고한다.
+기존 오류 수정 회귀 검사 32개도 모두 통과했다(전체 118개 통과, 실패·오류·건너뜀 0). 기존 검증의 상세 내용은 [README](../README.md)를 참고한다.
 
-**검증 범위 구분:** 통계 단위 테스트는 이벤트를 직접 생성하고, UniverseEventsTest·ClockIntegrationTest는 실제 보드·시계를 실행한다. 템플릿·Undo·프리즈·색상·사운드 실제 연동과 통계 화면은 검증하지 않았다.
+**검증 범위 구분:** StatisticsTest는 이벤트를, StatisticsPanelTest는 Summary를 직접 만든다. StatisticsPanelIntegrationTest는 실제 Life 연결·배치 메서드와 Universe·Statistics·Clock·JLabel을 사용한다. 공용 탭 검사에서 패턴 캡처·Freezing은 테스트용 빈 JPanel이며 실제 기능을 합친 것이 아니다. 큰 숫자 배치 검사는 Summary를 직접 전달한다. 템플릿·Undo·프리즈·색상·사운드 실제 연동은 포함하지 않았다.
+
+**화면 확인:** 실제 구성 코드로 초기 상태·블링커 한 세대 진행·큰 숫자 표시를 775×512 내용 영역으로 렌더링해 확인했다. 창 제목줄·메뉴를 포함한 OS 창 캡처가 아니다. 이번 검증은 headless JUnit과 렌더링이며, 실제 JFrame의 마우스 조작·크기 변경 금지·종료와 dispose() 호출은 검증 완료로 기록하지 않는다.
+
+<details>
+<summary>StatisticsPanelTest 12개 — 표시 규칙·공통 규격과 기대 결과</summary>
+
+Summary를 직접 전달하고 실제 JLabel 텍스트를 읽는다. 패널에 보관된 별도 결과를 검사하거나 통계 계산을 다시 실행하는 검사가 아니다. 컴포넌트의 생성·갱신·조회는 EDT에서 수행한다.
+
+| 검사 내용 | 입력 및 기대 결과 | 실행 수 |
+| --- | --- | ---: |
+| 공통 패널 규격 | 선호 크기 258×512·여백 14px·굵은 제목 16pt | 1 |
+| 첫 결과 전 | 다섯 값 모두 `—` | 1 |
+| 기본 결과와 long 세대 | 세대 3000000000·생존 120·2.93%·탄생 8·사망 5가 그대로 표시 | 1 |
+| 비율 형식 | 0 → 0.00%, 100 → 100.00%, 12.3456 → 12.35%, 0.0244140625 → 0.02% | 4 |
+| 미계산 변화량 | 이전 탄생·사망 숫자를 `—`로 교체 | 1 |
+| 실제 변화 없음 | hasGenerationDelta=true인 탄생·사망 0을 `0`으로 표시 | 1 |
+| 연속 결과 | 세대·생존 수·비율·탄생·사망을 모두 최신 값으로 교체 | 1 |
+| 잘못된 갱신 요청 | EDT 밖 호출 거부 / null 결과 거부 및 기존 표시 유지 | 2 |
+| 합계 | | 12 |
+
+</details>
+
+<details>
+<summary>StatisticsPanelIntegrationTest 13개 — 실제 게임판·표시·탭 결합</summary>
+
+기존 LifeTestSupport와 실제 Life.connectStatistics()를 사용한다. 창 메뉴 등록 및 Load 파일 선택 UI만 대체하며 게임판, 계산, 타이머, 파일 복원과 JLabel 갱신은 실제 코드다. 각 검사 후 Clock 정지·리스너 해제·보드 초기화를 수행한다. StatisticsPanelTestSupport는 테스트 전용 컴포넌트 조회 도우미이며 앱에는 포함되지 않는다.
+
+| 검사 내용 | 기대 결과 | 실행 수 |
+| --- | --- | ---: |
+| 시작 연결 | 등록 직후 세대 0·생존 0·0.00%·탄생/사망 `—` | 1 |
+| 진행 중인 보드에 연결 | 안정 블록 2세대 상태를 유지해 표시, 다음 세대는 3·생존 4·변화량 0 | 1 |
+| 정지 상태 편집 | 고립 셀 클릭 → 1·0.02%, 세대 진행 → 사망 1, 재편집 → 변화량 `—` | 1 |
+| 실제 단일 진행 메뉴 | 블링커 1세대·생존 3·0.07%·탄생 2·사망 2 | 1 |
+| 안정된 블록 | 1~3세대 증가, 생존 4·0.10%·탄생/사망 0 | 1 |
+| Clear 메뉴 | 모든 현재값 초기화, 변화량 `—` | 1 |
+| 실제 파일 Load | 복원 후 세대 0·생존 3·변화량 `—`, 다음 세대는 탄생 2·사망 2 | 1 |
+| 구독 해제 | 이후 클릭·세대 진행에도 기존 표시 유지 | 1 |
+| 자동 Swing Timer | 3세대 표시 시 정지, 생존 4·변화량 0. 완료는 CountDownLatch로 대기 | 1 |
+| 통계 단독 배치 | 외부에서 만든 탭을 전달, 게임판 512×512와 탭 전체 높이 일치, 간격·겹침·라벨 잘림 없음 | 1 |
+| 공용 탭 보존·너비 재계산 | 빈 패널 두 개 뒤에 통계 추가, 기존 패널·선택·리스너 유지, 이전 고정 폭 80px을 새 내용에 맞게 재계산 | 1 |
+| 숨겨진 통계·탭 전환 | 다른 탭에서 블링커 2세대 진행 → 통계 탭에 생존 3·탄생 2·사망 2 표시, 결과·비교 기준 유지, 재전환 후 3세대 정상 표시 | 1 |
+| 큰 숫자·안내문 배치 | 직접 전달한 세대 3000000000·생존/탄생/사망 4096·100.00%와 안내문이 좁은 패널 안에서 잘리지 않음 | 1 |
+| 합계 | | 13 |
+
+</details>
 
 <details>
 <summary>이벤트·통계 단위 테스트 36개 — 입력과 기대 결과</summary>
@@ -199,7 +266,7 @@ Gradle 실행 설정이나 forkEvery는 바꾸지 않았다.
 
 자동 타이머 검사는 CountDownLatch와 EDT의 일회성 지연 표식으로 완료·정지를 확인하며, EDT를 Thread.sleep으로 막지 않는다.
 재사용한 isAliveAt 검사는 4×4 중첩 보드의 (3,2)를 살리고 (2,3)은 죽어 있음을 확인해 행·열 및 중첩 좌표 변환을 검증한다.
-템플릿·Undo 실행, 프리즈·색상·사운드 연동과 실제 통계 화면은 이번 검사에 포함하지 않았다.
+이 기존 시계·조회 검사에는 템플릿·Undo·프리즈·색상·사운드 연동이나 패널 표시가 포함되지 않는다. 패널 연결 검증은 위 신규 StatisticsPanelIntegrationTest에 정리했다.
 
 </details>
 
@@ -260,5 +327,44 @@ HTML 보고서: `build/reports/tests/test/index.html`. 빌드 산출물과 보�
 - 통계 상태 수집·이전 상태 갱신의 일관성을 위한 Swing Timer 선택 이유와 대안을 문서화했다.
 - 이번 정리에서는 중복된 현재 설계를 합치고 테스트 상세·변경 기록을 접기 영역으로 옮겼다. 테스트 입력·기대 결과와 변경 전후 표는 보존했다.
 - 문서 정리 작업에서는 Java 소스·테스트·빌드 설정을 변경하거나 JUnit을 재실행하지 않았다. Markdown 구조·참조 경로·공백 오류와 기존 파일 보존 여부를 확인했다. 커밋과 push는 하지 않았다.
+
+</details>
+
+<details>
+<summary>2026-11-16 · 통계 패널과 게임 시작 시 연결</summary>
+
+- 작업 기준: feature/statistics의 e6a58db. 커밋·push 전 작업 내용이다.
+
+| 대상 | 변경 전 | 변경 후 |
+| --- | --- | --- |
+| StatisticsPanel | 화면 클래스 없음 | Summary의 다섯 값을 표시하고 미계산 변화량을 `—`로 구분 |
+| Life 생성자 | Universe만 가운데에 배치 | createContent()로 게임판·오른쪽 통계 탭 구성, 연결 후 pack·최소 크기 설정 |
+| 통계 실행 연결 | 테스트에서만 Statistics 생성·등록 | connectStatistics()가 결과 콜백 연결·등록, INITIAL로 첫 표시 완성 |
+| 구독 수명 | 실행 앱의 통계 구독 없음 | Life가 Statistics 참조를 보관하고 dispose()에서 해제 |
+| 표시 검증 | 계산 결과와 이벤트만 검사 | 신규 JUnit 22개로 실제 JLabel·게임판 연결·배치 검사 |
+
+Universe·Clock·Cell 계층·Statistics 계산·공통 이벤트 계약은 이번 작업에서 변경하지 않았다. 패널이 보드를 다시 조회하거나 자체 타이머로 갱신하는 방식 대신 기존 결과 콜백을 연결해 계산과 표시 책임을 분리했다. Life의 화면 배치와 연결을 package-private 메서드로 분리해 headless 검사에서도 앱과 동일한 코드를 사용한다.
+
+전체 JUnit 115개 통과. 현재 화면 및 변경 상세는 위 설계·검증 영역에 정리했다. README와 빌드 설정은 수정하지 않았고 색별 통계·다른 담당 기능 연동은 후속 작업이다.
+
+</details>
+
+<details>
+<summary>2026-11-17 · 캡처·프리즈 화면 규격 및 공용 탭 결합 준비</summary>
+
+- 작업 기준: 앞서 작성한 통계 화면의 미커밋 변경. 현재 브랜치는 feature/statistics이며 이번에도 커밋·push는 하지 않았다.
+- 참고 코드: capture-templates의 e7fec42와 freezing의 c95d0b5. 패널 외형과 창 배치만 맞췄으며 두 기능을 병합하지 않았다.
+
+| 대상 | 변경 전 | 변경 후 |
+| --- | --- | --- |
+| StatisticsPanel | GridBagLayout, 제목 22pt, 여백 18~20px | BoxLayout, 선호 크기 258×512, 제목 16pt, 여백 14px |
+| Life.createContent | (Universe, StatisticsPanel)을 받아 내부에서 탭 생성 | (Universe, JTabbedPane)을 받아 기존 패널·선택·리스너를 보존해 배치 |
+| 창 배치 | 보드 주변 컨테이너, 12px 간격, 확대 가능 | CENTER에 보드·EAST에 탭, 간격 없음, 크기 변경 금지, 화면 중앙 배치 |
+| 탭 크기 | 최소 폭 280px | 모든 탭 등록 후 자연 너비 재계산, 제목줄 포함 높이 512px |
+| 레이아웃 검사 | 기본·확대 배치 2개 | 단독 배치·공용 탭 보존·숨김 상태 갱신·큰 값 배치 4개 |
+
+공용 탭을 통계 쪽에서 다시 만들면 다른 기능의 탭이나 전환 리스너를 잃을 수 있어, 화면 조립 메서드가 완성된 탭을 받도록 변경했다. 기존 탭의 선호 너비가 먼저 고정된 경우도 고려해 전체 등록 후 재계산한다. 구독은 탭 선택과 분리해 한 번만 연결한다.
+
+표시 검사에 규격 1개를 추가하고 배치 검사를 교체해 화면 관련 검사는 25개, 전체는 118개가 통과했다. 테스트용 패턴·프리즈 탭은 빈 패널이며 실제 기능 연동은 통합 후 확인한다. README·빌드 설정·게임 진행·통계 계산·이벤트 계약은 수정하지 않았다.
 
 </details>
