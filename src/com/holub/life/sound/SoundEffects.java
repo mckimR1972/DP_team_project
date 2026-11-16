@@ -24,7 +24,8 @@ import com.holub.ui.MenuSite;
  * <p>
  * 그 위에 세대마다 짧은 소리를 더한다. 생긴 셀은 마림바 화음을 왼쪽부터
  * 스트럼하고, 한꺼번에 많이 생기면 비브라폰을 겹치고, 사라진 셀은
- * 쉐이커를 친다.
+ * 쉐이커를 친다. 같은 변화가 반복되면 점점 작아지고, 판이 전멸하면
+ * 마무리 화음을 낸다.
  * <p>
  * {@link #install}로 붙이며, 붙이지 않아도 게임은 똑같이 동작한다.
  */
@@ -45,6 +46,8 @@ public final class SoundEffects implements Universe.GenerationListener
 	private static final int SWEEP_NOTE_LENGTH_MS = 400;
 	private static final int STRUM_GAP_MS       = 25;
 	private static final int SHAKER_DELAY_MS    = 60;
+	private static final int ENDING_GAP_MS      = 90;
+	private static final int ENDING_NOTE_LENGTH_MS = 900;
 	private static final int MIN_PHRASE_GAP_MS  = 120;	// 클럭이 빠를 때 소리가 몰리지 않게
 	private static final int PAD_VELOCITY       = 80;
 	private static final int STEP_MS            = 150;
@@ -58,6 +61,7 @@ public final class SoundEffects implements Universe.GenerationListener
 	private final MidiChannel		sweep;
 	private final MidiChannel		percussion;
 	private final NoteMapper		mapper = new NoteMapper();
+	private final RepeatTracker		repeats = new RepeatTracker();
 	private final ScheduledExecutorService noteScheduler;
 
 	private volatile boolean enabled = true;
@@ -161,16 +165,27 @@ public final class SoundEffects implements Universe.GenerationListener
 
 	public void generationChanged( List<Point> births, List<Point> deaths )
 	{
+		if( !enabled )
+			return;
+
+		double gain = repeats.gainFor( births, deaths );
+
+		if( boardDiedOut(births) )
+		{	playEnding();
+			return;
+		}
+
 		long now = System.nanoTime();
-		if(		!enabled
-			||	( births.isEmpty() && deaths.isEmpty() )
+		if(		gain == 0.0
 			||	now - lastPhraseNanos < MIN_PHRASE_GAP_MS * 1_000_000L )
 			return;
 
 		lastPhraseNanos = now;
 
-		List<NoteMapper.Note> notes = mapper.humanized
-		(	mapper.notesFor( births, universe.widthInCells(), chord )
+		List<NoteMapper.Note> notes = mapper.scaled
+		(	mapper.humanized( mapper.notesFor( births, universe.widthInCells(),
+											   chord ) ),
+			gain
 		);
 
 		for( int voice = 0; voice < notes.size(); ++voice )
@@ -184,7 +199,18 @@ public final class SoundEffects implements Universe.GenerationListener
 			play( burst, layer.get(voice), strumDelay(voice), NOTE_LENGTH_MS );
 
 		if( !deaths.isEmpty() )
-			playShaker( mapper.percussionVelocityFor(deaths.size()) );
+			playShaker( (int)(mapper.percussionVelocityFor(deaths.size()) * gain) );
+	}
+
+	private boolean boardDiedOut( List<Point> births )
+	{	return births.isEmpty() && countLive( universe.liveCells() ) == 0;
+	}
+
+	private void playEnding()
+	{	List<NoteMapper.Note> notes = mapper.endingChordFor( chord );
+		for( int voice = 0; voice < notes.size(); ++voice )
+			play( voices[voice], notes.get(voice), voice * ENDING_GAP_MS,
+				  ENDING_NOTE_LENGTH_MS );
 	}
 
 	private int strumDelay( int voice )

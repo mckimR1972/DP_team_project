@@ -39,6 +39,7 @@ final class NoteMapper
 	private static final int NOTE_COUNT   = 15;	// 3옥타브
 	private static final int MAX_PAN      = 127;
 
+	private static final int ENDING_VELOCITY  = 60;
 	private static final int MAX_SWEEP_VOICES = 3;
 	private static final int SWEEP_VELOCITY   = 45;
 	private static final int SWEEP_ACCENT     = 70;
@@ -111,6 +112,23 @@ final class NoteMapper
 								  Math.max(1, Math.min(127, velocity)) ) );
 		}
 		return result;
+	}
+
+	/** 세기만 gain 비율로 줄인 음을 반환한다. */
+	List<Note> scaled( List<Note> notes, double gain )
+	{	List<Note> result = new ArrayList<>();
+		for( Note note : notes )
+			result.add( new Note( note.pitch(), note.pan(),
+								  (int)(note.velocity() * gain) ) );
+		return result;
+	}
+
+	/** 판이 전멸할 때 낼 마무리 화음을 반환한다. */
+	List<Note> endingChordFor( int chord )
+	{	List<Note> notes = new ArrayList<>();
+		for( int pitch : padNotesFor(chord) )
+			notes.add( new Note(pitch + 24, MAX_PAN / 2, ENDING_VELOCITY) );
+		return notes;
 	}
 
 	/** 음 타이밍을 살짝 흐트러뜨릴 작은 지연(ms)을 반환한다. */

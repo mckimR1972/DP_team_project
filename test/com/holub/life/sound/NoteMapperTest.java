@@ -158,6 +158,23 @@ class NoteMapperTest
 	}
 
 	@Test
+	void scalingLowersLoudnessOnly()
+	{	NoteMapper.Note note = new NoteMapper.Note( 60, 30, 80 );
+
+		NoteMapper.Note half = mapper.scaled( List.of(note), 0.5 ).get(0);
+
+		assertEquals( new NoteMapper.Note(60, 30, 40), half );
+	}
+
+	@Test
+	void endingChordIsAboveThePadOfTheSameChord()
+	{	List<NoteMapper.Note> ending = mapper.endingChordFor( 2 );
+
+		assertEquals( 3, ending.size() );
+		assertEquals( mapper.padNotesFor(2)[0] + 24, ending.get(0).pitch() );
+	}
+
+	@Test
 	void timingJitterStaysSmall()
 	{	for( int i = 0; i < 200; ++i )
 		{	int jitter = mapper.timingJitterMs();
