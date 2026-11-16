@@ -142,17 +142,48 @@ public class Universe extends JPanel
 		Clock.instance().addClockListener //{=Universe.clock.subscribe}
 		(	new Clock.Listener()
 			{	public void tick()
-				{	if( outermostCell.figureNextState
+				{	outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
-						   )
-					  )
-					{	if( outermostCell.transition() )
-							refreshNow();
-					}
+						   );
+
+					// 바뀌는 셀이 없어도 매 틱 불러야 멈춘 패턴도 나이를 먹는다
+					boolean changed = outermostCell.transition();
+
+					// 나이로 색이 바뀌는 규칙이면 판 전체를, 아니면 바뀐 곳만 다시 그린다
+					if( Resident.colorChangesWithAge() )
+						refreshNow( true );
+					else if( changed )
+						refreshNow( false );
 				}
 			}
 		);
+
+		// Go 메뉴는 위의 Clock.instance()에서 생기므로 그 뒤에 추가해야 Go 다음에 붙는다
+		MenuSite.addLine
+		(	this, "Color", "Single Color",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	useColorPolicy( new FixedColorPolicy( Resident.LIVE_COLOR ) );
+				}
+			}
+		);
+
+		MenuSite.addLine
+		(	this, "Color", "Cycle by Generation",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	// 10세대마다 빨강 → 파랑 → 초록 (적록 색약도 구분되는 색)
+					useColorPolicy( new CyclingColorPolicy
+						( 10, Resident.LIVE_COLOR, new Color(0x0072B2), new Color(0x009E73) ) );
+				}
+			}
+		);
+	}
+
+	private void useColorPolicy( CellColorPolicy policy )
+	{	Resident.setColorPolicy( policy );
+		repaint();
 	}
 
 	/** Singleton Accessor. The Universe object itself is manufactured
@@ -229,9 +260,10 @@ public class Universe extends JPanel
 	 *  the redraw() method on a given <code>Cell</code>
 	 *  does nothing if the <code>Cell</code> doesn't
 	 *  have to be refreshed.
+	 *  @param drawAll true면 바뀌지 않은 셀까지 모두 다시 그린다
 	 */
 
-	private void refreshNow()
+	private void refreshNow( final boolean drawAll )
 	{	SwingUtilities.invokeLater
 		(	new Runnable()
 			{	public void run()
@@ -243,7 +275,7 @@ public class Universe extends JPanel
 						Rectangle panelBounds = getBounds();
 						panelBounds.x = 0;
 						panelBounds.y = 0;
-						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
+						outermostCell.redraw(g, panelBounds, drawAll); //{=Universe.redraw2}
 					}
 					finally
 					{	g.dispose();
