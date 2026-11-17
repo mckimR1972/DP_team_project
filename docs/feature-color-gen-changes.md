@@ -16,8 +16,9 @@
 | 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
 | 5 | Universe의 Color 메뉴 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
 | 6 | 주석 한글화와 정리 | `build.gradle`, 색 규칙 3개, `Resident.java`, `Universe.java`, 테스트 4개 | 반영 (2026-11-15) |
+| 7 | 색 순환 중 판 전체를 repaint()로 다시 그리기 | `Universe.java`, `UniverseColorTest.java` | 반영 (2026-11-17) |
 
-1\~5번은 설계 문서 6절 "구현 순서"의 번호와 같다. 6번은 구현을 마친 뒤 한 주석 정리다.
+1\~5번은 설계 문서 6절 "구현 순서"의 번호와 같다. 6번은 구현을 마친 뒤 한 주석 정리다. 7번은 구현 순서의 6번 조각이다.
 
 ## 1. 테스트 클래스마다 JVM 분리
 
@@ -585,3 +586,90 @@ Grid, Go 메뉴 뒤에 Color 메뉴를 추가했다. Single Color를 고르면 �
 
 - 한글 주석은 `build.gradle`의 `options.encoding = 'UTF-8'` 설정으로 컴파일된다.
 - 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, Windows 11, 2026-11-15.
+
+## 7. 색 순환 중 판 전체를 repaint()로 다시 그리기
+
+### 요약
+
+색 순환이 켜져 있으면 틱마다 판 전체를 `repaint()`로 다시 그리게 했다. 색 순환이 꺼져 있으면 dev처럼 `refreshNow()`가 바뀐 블록만 그린다. `refreshNow()`는 dev의 원래 모양(인자 없음)으로 되돌렸다. 설계 문서 구현 순서의 6번 조각이다.
+
+| 파일 | 내용 |
+| --- | --- |
+| `src/com/holub/life/Universe.java` | 틱 처리의 다시 그리기 두 줄과 주석, `refreshNow()`를 dev 모양으로 |
+| `test/com/holub/life/UniverseColorTest.java` | 아래 테스트 2개와 도우미 메서드 2개 추가 |
+
+### 바꾼 이유
+
+4번 조각의 `refreshNow( true )`는 판 전체를 `getGraphics()`로 화면에 바로 그리는 작업을 틱마다 이벤트 큐에 하나씩 넣었다. 실제 창에서 이 한 장면에 75\~143 ms가 걸려 Fast(30 ms)와 Medium(70 ms)의 틱 간격보다 길었다. 그래서 작업이 쌓여 클릭과 메뉴가 수 초에서 수십 초 늦게 처리됐다. `repaint()`는 처리 전 요청을 Swing이 하나로 합치고, `paint()`가 이중 버퍼에 판 전체를 그려 한 장면이 1.7\~5.5 ms다. 원인, 측정, 다른 방안과의 비교는 [color-gen-redraw-lag.md](color-gen-redraw-lag.md)에 있다.
+
+### 변경 내용
+
+```diff
+// Universe.java
+@@ -151,9 +151,10 @@ public class Universe extends JPanel
+ 					boolean changed = outermostCell.transition();
+ 
+-					// 나이로 색이 바뀌는 규칙이면 판 전체를, 아니면 바뀐 곳만 다시 그린다
++					// 나이로 색이 바뀌면 판 전체를, 아니면 바뀐 곳만 다시 그린다.
++					// 판 전체는 repaint()로 요청해야 밀린 요청이 하나로 합쳐진다
+ 					if( Resident.colorChangesWithAge() )
+-						refreshNow( true );
++						repaint();
+ 					else if( changed )
+-						refreshNow( false );
++						refreshNow();
+ 				}
+ 			}
+@@ -261,8 +262,7 @@ public class Universe extends JPanel
+ 	 *  does nothing if the <code>Cell</code> doesn't
+ 	 *  have to be refreshed.
+-	 *  @param drawAll true면 바뀌지 않은 셀까지 모두 다시 그린다
+ 	 */
+ 
+-	private void refreshNow( final boolean drawAll )
++	private void refreshNow()
+ 	{	SwingUtilities.invokeLater
+ 		(	new Runnable()
+@@ -276,5 +276,5 @@ public class Universe extends JPanel
+ 						panelBounds.x = 0;
+ 						panelBounds.y = 0;
+-						outermostCell.redraw(g, panelBounds, drawAll); //{=Universe.redraw2}
++						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
+ 					}
+ 					finally
+```
+
+### 테스트
+
+| 테스트 | 판 | 확인 내용 |
+| --- | --- | --- |
+| `cyclingTickRequestsRepaintEvenWhenNothingChanges` | 색 순환 켬, 블록만 | 10틱 동안 판 전체 `repaint()` 요청 10번 |
+| `tickWithCyclingOffNeverRequestsRepaint` | 색 순환 끔, 블록과 블링커 | 10틱 동안 판 전체 `repaint()` 요청 0번. 꺼진 상태는 dev처럼 `refreshNow()`로 그린다 |
+
+테스트 안에서 RepaintManager를 바꿔 끼워, 틱을 보내는 동안 Universe가 요청한 판 전체 다시 그리기를 세고, 끝나면 원래 RepaintManager로 되돌린다. 게임 코드에는 아무것도 더하지 않았다.
+
+### 검증
+
+| 항목 | 결과 |
+| --- | --- |
+| 전체 테스트 (`gradlew clean test`) | 69개 통과, 실패 0 |
+| 결함 사본: `repaint()`를 지움 | cyclingTickRequestsRepaintEvenWhenNothingChanges 실패 |
+| 결함 사본: 4번 조각의 `refreshNow( true )` | cyclingTickRequestsRepaintEvenWhenNothingChanges 실패 |
+| 결함 사본: 꺼진 상태에서도 `repaint()` | tickWithCyclingOffNeverRequestsRepaint 실패 |
+| 실제 창의 화면 색 (블록, 순환 규칙) | 9틱 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강. `repaint()`를 지운 대조 사본은 계속 빨강 |
+
+실제 창에서 6초 동안 돌리며 0.1초마다 이벤트 큐에 넣은 빈 작업이 실행되기까지 걸린 시간이다. 클릭과 메뉴도 같은 큐에서 기다린다.
+
+| 판 | 색 순환 | 속도 | 바꾸기 전 (마지막 1초) | 바꾼 뒤 (마지막 1초) | 바꾼 뒤 최대 | 바꾼 뒤, 멈춘 다음 큐가 비기까지 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 패턴 | 켬 | Fast | 14.1초 | 0 ms | 5 ms | 3 ms |
+| 패턴 | 켬 | Medium | 4.5초 | 0 ms | 5 ms | 4 ms |
+| 무작위 | 켬 | Fast | 20.5초 | 0 ms | 5 ms | 3 ms |
+| 무작위 | 켬 | Medium | 5.9초 | 0 ms | 7 ms | 6 ms |
+| 패턴 | 끔 | Fast | 0 ms | 0 ms | 12 ms | 5 ms |
+| 무작위 | 끔 | Fast | 6.6초 | 6.5초 | 7.0초 | 7.0초 |
+
+- 패턴 판은 2×2 블록 6개와 블링커 2개, 무작위 판은 64×64 전체에서 30%의 셀을 살린 판이다.
+- 색 순환을 끈 무작위 판은 dev와 같은 코드라 dev처럼 밀린다. 원본에서 온 한계이고 지연 문서 5절에 적었다.
+- 결함을 넣은 확인과 실제 창 확인은 시험용 사본에서만 했다.
+- 환경: Gradle 9.5.1(래퍼), JDK 17(테스트), 실행 JDK 21.0.12, JUnit Jupiter 6.0.3, Mockito 5.23.0, Windows 11(1920×1080, 배율 100%), 2026-11-17.
