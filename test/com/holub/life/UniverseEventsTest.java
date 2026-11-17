@@ -7,7 +7,6 @@ import java.io.FileNotFoundException;
 import java.io.ObjectOutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
@@ -53,7 +52,7 @@ class UniverseEventsTest {
             assertEquals(INITIAL, last().kind());
             assertEquals(0, last().generation());
             assertEquals(64, last().boardSize());
-            assertTrue(last().copyAliveCells().isEmpty());
+            assertTrue(LifeTestSupport.countAlive(last().copyAliveCells()) == 0);
         });
     }
 
@@ -100,9 +99,9 @@ class UniverseEventsTest {
             assertEquals(4, events.size());
             assertEquals(EDIT, last().kind());
             assertEquals(0, last().generation());
-            assertEquals(bits(3 * 64 + 10, 63 * 64, 63), last().copyAliveCells());
+            assertArrayEquals(cells(3 * 64 + 10, 63 * 64, 63), last().copyAliveCells());
             LifeTestSupport.click(3, 10);
-            assertEquals(bits(63 * 64, 63), last().copyAliveCells());
+            assertArrayEquals(cells(63 * 64, 63), last().copyAliveCells());
         });
     }
 
@@ -115,7 +114,7 @@ class UniverseEventsTest {
             LifeTestSupport.press(1, 512, MouseEvent.BUTTON1);
             LifeTestSupport.press(1, 1, MouseEvent.BUTTON3);
             assertEquals(1, events.size());
-            assertTrue(snapshot().copyAliveCells().isEmpty());
+            assertTrue(LifeTestSupport.countAlive(snapshot().copyAliveCells()) == 0);
         });
     }
 
@@ -133,14 +132,16 @@ class UniverseEventsTest {
             assertEquals(1, events.size());
             assertEquals(GENERATION, last().kind());
             assertEquals(1, last().generation());
-            assertEquals(bits(6 * 64 + 8, 7 * 64 + 8, 8 * 64 + 8), last().copyAliveCells());
+            assertArrayEquals(cells(6 * 64 + 8, 7 * 64 + 8, 8 * 64 + 8), last().copyAliveCells());
             assertEquals(1, summaries.size());
             assertEquals(3, summary().livingCells());
             assertEquals(3 * 100.0 / 4096, summary().livingRatio(), 0.000001);
             assertDelta(2, 2);
+            assertEquals(List.of(new Point(8, 6), new Point(8, 8)), last().copyBirths());
+            assertEquals(List.of(new Point(7, 7), new Point(9, 7)), last().copyDeaths());
             LifeTestSupport.clock.tick();
             assertEquals(2, last().generation());
-            assertEquals(bits(7 * 64 + 7, 7 * 64 + 8, 7 * 64 + 9), last().copyAliveCells());
+            assertArrayEquals(cells(7 * 64 + 7, 7 * 64 + 8, 7 * 64 + 9), last().copyAliveCells());
             assertDelta(2, 2);
         });
     }
@@ -177,7 +178,7 @@ class UniverseEventsTest {
     }
 
     @Test
-    void editingAfterGenerationUpdatesBaselineForActualNextGeneration() throws Exception {
+    void editingBeforeNextGenerationUsesActualBoardForSharedDelta() throws Exception {
         LifeTestSupport.onEdt(() -> {
             subscribe(statistics);
             seedBlock();
@@ -232,13 +233,13 @@ class UniverseEventsTest {
             }
             assertEquals(1, events.size());
             assertEquals(LOAD, last().kind());
-            assertEquals(bits(7 * 64 + 7, 7 * 64 + 8, 7 * 64 + 9), last().copyAliveCells());
+            assertArrayEquals(cells(7 * 64 + 7, 7 * 64 + 8, 7 * 64 + 9), last().copyAliveCells());
             assertEquals(0, summary().generation());
             assertEquals(3, summary().livingCells());
             assertFalse(summary().hasGenerationDelta());
             LifeTestSupport.clock.tick();
             assertDelta(2, 2);
-            assertEquals(bits(6 * 64 + 8, 7 * 64 + 8, 8 * 64 + 8), last().copyAliveCells());
+            assertArrayEquals(cells(6 * 64 + 8, 7 * 64 + 8, 8 * 64 + 8), last().copyAliveCells());
         });
     }
 
@@ -252,7 +253,7 @@ class UniverseEventsTest {
             seedBlock();
             LifeTestSupport.clock.tick();
             Statistics.Summary before = summary();
-            BitSet cells = last().copyAliveCells();
+            boolean[][] cells = last().copyAliveCells();
             events.clear();
             try (MockedStatic<Files> chooser = mockStatic(Files.class);
                  MockedStatic<JOptionPane> dialogs = mockStatic(JOptionPane.class)) {
@@ -266,7 +267,7 @@ class UniverseEventsTest {
             assertSame(before, summary());
             BoardChangeEvent current = snapshot();
             assertEquals(1, current.generation());
-            assertEquals(cells, current.copyAliveCells());
+            assertArrayEquals(cells, current.copyAliveCells());
         });
     }
 
@@ -275,7 +276,7 @@ class UniverseEventsTest {
         LifeTestSupport.onEdt(() -> {
             subscribe(events::add);
             LifeTestSupport.click(3, 10);
-            BitSet cells = last().copyAliveCells();
+            boolean[][] cells = last().copyAliveCells();
             events.clear();
             try (MockedStatic<Files> chooser = mockStatic(Files.class);
                  MockedStatic<JOptionPane> dialogs = mockStatic(JOptionPane.class)) {
@@ -285,7 +286,7 @@ class UniverseEventsTest {
                 dialogs.verifyNoInteractions();
             }
             assertTrue(events.isEmpty());
-            assertEquals(cells, snapshot().copyAliveCells());
+            assertArrayEquals(cells, snapshot().copyAliveCells());
         });
     }
 
@@ -304,7 +305,7 @@ class UniverseEventsTest {
             }
             assertTrue(events.isEmpty());
             assertEquals(1, snapshot().generation());
-            assertEquals(4, snapshot().copyAliveCells().cardinality());
+            assertEquals(4, LifeTestSupport.countAlive(snapshot().copyAliveCells()));
         });
         assertTrue(java.nio.file.Files.size(target) > 0);
     }
@@ -315,14 +316,14 @@ class UniverseEventsTest {
             List<BoardChangeEvent> first = new ArrayList<>();
             subscribe(event -> {
                 first.add(event);
-                event.copyAliveCells().clear();
+                for (boolean[] row : event.copyAliveCells()) java.util.Arrays.fill(row, false);
             });
             subscribe(events::add);
             LifeTestSupport.click(3, 10);
             assertSame(first.get(1), last());
-            assertEquals(bits(3 * 64 + 10), last().copyAliveCells());
+            assertArrayEquals(cells(3 * 64 + 10), last().copyAliveCells());
             LifeTestSupport.click(4, 11);
-            assertEquals(bits(3 * 64 + 10), first.get(1).copyAliveCells());
+            assertArrayEquals(cells(3 * 64 + 10), first.get(1).copyAliveCells());
         });
     }
 
@@ -359,6 +360,17 @@ class UniverseEventsTest {
         });
     }
 
+    @Test
+    void generationCannotBePublishedWithoutAnActualTransition() throws Exception {
+        LifeTestSupport.onEdt(() -> {
+            subscribe(events::add);
+            assertThrows(IllegalArgumentException.class,
+                    () -> LifeTestSupport.universe.notifyBoardChanged(GENERATION));
+            assertEquals(1, events.size());
+            assertEquals(0, last().generation());
+        });
+    }
+
     private void subscribe(BoardChangeListener listener) {
         subscriptions.add(listener);
         LifeTestSupport.universe.addBoardChangeListener(listener);
@@ -388,9 +400,9 @@ class UniverseEventsTest {
         assertEquals(deaths, summary().deaths());
     }
 
-    private static BitSet bits(int... indices) {
-        BitSet bits = new BitSet();
-        for (int index : indices) bits.set(index);
-        return bits;
+    private static boolean[][] cells(int... indices) {
+        boolean[][] cells = new boolean[64][64];
+        for (int index : indices) cells[index / 64][index % 64] = true;
+        return cells;
     }
 }

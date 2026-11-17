@@ -1,305 +1,204 @@
 # 통계 기능 설계 및 구현 기록
 
-현재 설계와 검증 요약을 먼저 정리하고, 상세 테스트와 변경 기록은 접기 영역에서 관리한다.
+현재 설계와 검증 요약을 먼저 정리하고, 상세 테스트와 과거 변경 기록은 접기 영역에서 관리한다.
 
 ## 현재 설계
 
 ### 구현 범위
 
-Universe가 게임판의 작업 완료 상태를 발행하고 Statistics가 받아 **세대 번호·생존 셀 수·생존 비율·세대별 탄생·사망 수**를 계산한다. 자동 진행·단일 진행·클릭·일반 드래그·템플릿 배치·배치 Undo·Clear·Load를 연결했다. Life의 오른쪽 공용 탭에 실제 패턴 도구와 통계 패널을 함께 배치했다.
+Universe가 작업 완료 후 하나의 `BoardChangeEvent`를 발행하고, `Statistics`와 `SoundEffects`가 같은 `BoardChangeListener` 계약으로 구독한다. 통계는 **세대 번호·생존 수·생존 비율·이번 세대의 탄생·사망 수**를 계산하여 오른쪽 통계 탭에 표시한다.
 
-통계 `4021231`에 dev `a480113`을 병합한 작업본을 검증했다. 색상·캡처/템플릿·일반 드래그·사운드를 보존했으며 **공통 이벤트 전환은 아직 하지 않았다.** 통계는 기존 BitSet·BoardChangeListener, 사운드는 기존 GenerationListener와 음 생성 코드를 유지한다.
-
-아직 구현하거나 연결하지 않은 내용:
-
-- **후속 통합:** 프리즈는 이번 dev에 포함되지 않았다. 통계·사운드의 구독 인터페이스 및 자료형 통일은 별도 후속 작업이다.
-- **색별 통계:** 이벤트에 나이·색상 정보가 없어 색별 집계·파이 차트는 미구현이다. 프리즈된 생존 셀도 나이가 증가한다는 정책은 색상·프리즈 통합 시 확인한다.
+기준은 dev 병합 커밋 `4a49d0a`다. 기존 Clock 리스너의 `tick()` 본문, 색상·캡처/템플릿·드래그·탭 배치를 유지하면서 공통 이벤트로 전환했다. 별도 `advanceOneGeneration()`은 없다. 프리즈와 색별 통계는 이번 구현에 포함하지 않는다.
 
 ### 클래스와 주요 메서드
 
-| 클래스 | 주요 메서드·데이터와 역할 |
+| 클래스 | 역할과 메서드 |
 | --- | --- |
-| BoardChangeEvent | kind()·generation()·boardSize()로 작업 종류·세대·크기를 조회하고, copyAliveCells()로 생존 상태의 독립된 BitSet을 반환한다. |
-| BoardChangeListener | onBoardChanged(event): 작업 완료 상태를 받는 Observer 계약이다. |
-| Statistics | 생성자에서 결과 콜백을 받는다. onBoardChanged()가 calculate()로 계산한 뒤 비교 기준과 결과를 갱신하고 콜백을 호출한다. current()는 최근 결과를 Optional로 반환하며 첫 이벤트 전에는 비어 있다. |
-| Statistics.Summary | 불변 결과: generation(전달받은 세대), livingCells(생존 수), livingRatio(백분율 0~100), births·deaths(탄생·사망), hasGenerationDelta(변화량 계산 여부). |
-| StatisticsPanel | 생성자는 항목과 초기 `—` 표시를 구성한다. showStatistics(summary)는 다섯 항목을 갱신하고, private formatPercentage()는 비율을 소수점 둘째 자리로 표시한다. 보드 조회·통계 계산·구독은 하지 않는다. |
-| Life — 화면과 연결 | createSidebar()가 실제 패턴·통계 탭을 구성한다. createContent()는 보드와 공용 탭을 배치하고, connectStatistics()는 패널 콜백에 연결한 Statistics를 등록한다. SoundEffects.install()도 유지한다. dispose()에서 통계 구독을 해제한다. |
-| Universe — 구독 | addBoardChangeListener()는 중복 등록을 막고 새 구독자에게만 INITIAL을 전달한다. removeBoardChangeListener()는 없는 구독자를 해제해도 안전하다. |
-| Universe — 진행 | 생성자에서 등록한 Clock.Listener.tick()은 편집 중이면 종료한다. 진행 시 패턴 Undo 이력을 정리하고 상태 계산·매 세대 transition·세대 증가·통계 알림을 수행한다. 생존 변화가 있을 때 기존 사운드 알림을 전달하며, 색상 순환 중이거나 생존 상태가 바뀌면 보드를 repaint한다. |
-| Universe — 발행 | captureAliveCells()로 상태를 수집하고 createBoardChangeEvent()로 이벤트를 만든다. notifyBoardChanged(kind)는 같은 이벤트를 구독자들에게 전달하며 보드·세대 번호를 바꾸지 않는다. |
-| Universe — 불러오기 | doLoad()는 파일을 다 읽은 후 보드를 교체한다. 취소·읽기 실패는 기존 상태를 유지한다. |
-| Cell 계층 | isAliveAt(row, column)으로 셀 좌표를 조회한다. Neighborhood는 좌표를 하위 Cell로 변환·위임하고 Resident는 자신의 상태를, DUMMY는 false를 반환한다. |
-| Clock·Life | Clock의 Swing Timer가 Clock.tick()을 호출하고 Universe에 등록된 Clock.Listener.tick()으로 연결된다. Life.main()은 invokeLater(Life::new)로 EDT에서 앱을 구성한다. |
+| BoardChangeEvent | 작업 종류·세대·크기·현재 `boolean[][]`·탄생/사망 `List<Point>`를 담는 불변 이벤트. `kind()`·`generation()`·`boardSize()`·`copyAliveCells()`·`copyBirths()`·`copyDeaths()`로 조회한다. |
+| BoardChangeListener | `onBoardChanged(event)`로 완료 상태를 받는 Observer 계약. Statistics와 SoundEffects가 구현한다. |
+| Universe — 구독 | `addBoardChangeListener()`는 중복 등록을 막고 새 구독자에게만 INITIAL을 전달한다. `removeBoardChangeListener()`로 해제한다. |
+| Universe — 상태와 발행 | `liveCells()`가 `isAliveAt()`으로 판을 한 번 읽는다. `createBoardChangeEvent(kind, before)`가 완료 상태와 탄생·사망을 구성하고, `notifyBoardChanged()`가 같은 이벤트 객체를 모든 구독자에게 동기 전달한다. |
+| Statistics | `onBoardChanged()` → `calculate()` → Summary 콜백. 생존 수는 배열에서, 탄생·사망 수는 목록 크기에서 구한다. 이전 판·이전 세대·BitSet을 보관하거나 상태 차이를 재계산하지 않는다. `current()`는 최근 Summary를 Optional로 반환한다. |
+| Statistics.Summary | 세대·생존 수·백분율·탄생·사망·`hasGenerationDelta`. 이벤트 수신마다 새 불변 결과를 만들며 패널과 계약은 유지한다. |
+| StatisticsPanel | `showStatistics(summary)`로 값만 표시한다. 보드 조회·구독·계산을 하지 않는다. |
+| SoundEffects | `install()`이 공통 리스너로 등록한다. `onBoardChanged()`는 최신 판을 갱신하고, 변화가 있는 GENERATION만 기존 내부 `generationChanged(List<Point>, List<Point>)`로 전달한다. |
+| Life | `createSidebar()`로 패턴·통계 공용 탭 구성, `createContent()`로 배치, `connectStatistics()`로 계산·화면 연결. 기존 `SoundEffects.install()`을 유지한다. |
+| Clock·Cell 계층 | dev의 Swing Timer와 `Clock.tick()`을 유지한다. Cell 계층의 기존 `isAliveAt(row, column)`을 재사용한다. |
 
-생존 좌표는 `row * boardSize + column` 비트로 표현한다. BoardChangeEvent는 입력·조회 시 BitSet을 복사하며 Cell 객체나 이전 상태를 노출하지 않는다. null·음수 세대·잘못된 보드 크기·범위 밖 비트는 거부한다.
+### 데이터와 이벤트 계약
 
-isAliveAt 구현과 중첩 조회 테스트는 사운드 브랜치의 `6ff3e81`을 재사용했다. 유효한 셀 행·열을 사용하며 Resident의 조회 좌표는 (0,0)이다. 별도로 Neighborhood.transfer(..., LOAD)의 계산 캐시를 무효화해 로드 후 빈 인접 묶음도 다시 계산하도록 수정했다.
+배열은 `[행][열]`, Point는 `x = 열, y = 행`이다. 이벤트 생성 시 배열의 각 행과 모든 Point를 복사하고, 조회 시에도 독립된 복사본을 반환한다. 한 Observer가 받은 배열·목록·Point를 바꿔도 다른 Observer나 이벤트는 바뀌지 않는다.
 
-### 실행과 연동 규칙
+생성자는 null·음수 세대·잘못된 정사각형 크기·불완전한 행·범위 밖/중복 좌표를 거부한다. 탄생 좌표는 현재 살아 있어야 하고 사망 좌표는 현재 죽어 있어야 한다. GENERATION은 양수 세대이며 다른 종류는 탄생·사망 목록이 비어 있어야 한다.
+
+| 작업 | 이벤트 | 탄생·사망 | 세대 |
+| --- | --- | --- | --- |
+| 새 구독자 | 해당 구독자에게만 INITIAL | 해당 없음 | 현재 값 |
+| 자동·단일 진행 | GENERATION 한 번 | 실제 진행 전후 차이 | 1 증가 |
+| 클릭·일반 드래그 | 실제 변경이 있는 마우스 이벤트 처리 후 EDIT | 해당 없음 | 유지 |
+| 템플릿 배치·Undo | 완료 신호에서 TEMPLATE·TEMPLATE_UNDO | 해당 없음 | 유지 |
+| Clear / Load 성공 | CLEAR / LOAD | 해당 없음 | 0 |
+| 캡처 선택·무변경 배치·Load 취소/읽기 실패·Store | 없음 | 해당 없음 | 유지 |
+
+일반 드래그는 각 mouseDragged 처리 완료 시, 템플릿은 한 배치 드래그 완료 시 알린다. PatternTools의 기존 PropertyChange 신호를 한 번 연결하며 패턴 코드는 변경하지 않았다. Load는 파일을 다 읽은 뒤 보드를 교체하고, 실패 시 보드·통계를 유지한다.
+
+### 실행 흐름과 담당 경계
 
 ```text
-Clock.tick() → Universe 생성자에 등록한 Clock.Listener.tick()
-  → 상태 계산·반영 → 세대 증가 → notifyBoardChanged(GENERATION)
-  → isAliveAt으로 전체 상태 수집 → BoardChangeEvent
-  → Statistics 계산·비교 기준 갱신 → Summary 콜백 → StatisticsPanel.showStatistics
+Clock.tick() → Universe에 등록한 Clock.Listener.tick()
+  → 편집 중이면 종료 → 패턴 Undo 이력 정리 → 다음 상태 계산
+  → 진행 전 boolean[][] 수집 → 매 세대 transition() → 세대 증가
+  → 진행 후 boolean[][] 수집 → 탄생·사망 List<Point> 계산
+  → BoardChangeEvent 하나를 등록된 BoardChangeListener들에게 전달
+      Statistics: 생존 수·비율·목록 크기 → Summary → StatisticsPanel
+      SoundEffects: 최신 판 보관 → 변화 있는 GENERATION만 기존 음 생성
+  → 기존 조건에 따라 게임판 repaint
 ```
 
-| 작업 | 알림 | 세대 번호 |
-| --- | --- | --- |
-| 새 구독자 등록 | 해당 구독자에게만 INITIAL | 현재 값 |
-| 자동 진행·단일 진행 | 완료 후 GENERATION 한 번 | 1 증가 |
-| 보드 안의 왼쪽 클릭·일반 드래그 | 실제 변경이 있는 마우스 이벤트 처리 후 EDIT 한 번 | 유지 |
-| Clear | 초기화 후 CLEAR 한 번 | 0 |
-| Load 성공 | 상태 적용 후 LOAD 한 번 | 0 |
-| Load 취소·읽기 IOException / Store | 없음 | 유지 |
-| 템플릿 배치·Undo | 완료된 드래그당 TEMPLATE 한 번, 실제 Undo 후 TEMPLATE_UNDO 한 번 | 유지 |
+- 전후 비교는 Universe가 한 번 수행한다. 이전 상태는 그 tick의 지역 변수이고, 이후 이벤트나 Statistics에 저장하지 않는다. 현재 상태 수집 결과를 비교와 이벤트 구성에 함께 사용한다.
+- 공개 `notifyBoardChanged(kind)`는 편집·복원 완료용이다. 실제 진행 전 상태 없이 GENERATION을 호출하면 예외를 던진다. 세대 진행은 Clock을 통해 요청한다.
+- 등록·해제·알림은 EDT에서 실행한다. EDT 밖 Clock.tick 요청은 기존 dev 코드가 EDT로 전달한다. 관찰자는 콜백에서 판을 변경하지 않는다.
+- 같은 발행에서는 같은 이벤트 인스턴스를 전달한다. 발행 중 구독 변경은 다음 발행부터 반영된다. 신규 구독의 INITIAL은 기존 구독자를 다시 초기화하지 않는다.
+- 안정된 블록·빈 판도 세대와 통계는 진행한다. Resident.transition()은 매 세대 호출하므로 생존 상태가 같아도 셀 나이가 증가한다. 순환 색상 또는 생존 변화가 있을 때만 기존 보드 repaint를 요청한다.
 
-저장 형식에 세대 번호가 없어 Load 성공 시 0으로 시작한다. Load 성공·Store는 Clock을 멈추고, 일반 그리기 모드의 Clear는 자동 진행을 멈추지 않는다. 진행 중인 템플릿 드래그를 Clear로 끝내면 TEMPLATE로 그 작업을 먼저 확정한 뒤 CLEAR로 초기화한다. 무변경·거부된 배치, 캡처 선택에는 상태 변경 알림이 없다.
+### 통계 계산과 표시
 
-- **EDT 실행:** Universe의 등록·해제·notifyBoardChanged는 EDT 밖에서 호출하면 IllegalStateException을 던진다. 세대 진행은 Clock.tick()을 통해 요청하며, dev의 Clock 구현이 EDT 밖 요청을 invokeLater로 전달한 뒤 Universe의 리스너 본문을 실행한다. startTicking·stop은 UI의 EDT 경로에서 호출하며, dev처럼 별도의 EDT 거부 검사는 없다.
-- **연동 방법:** PatternTools의 기존 TEMPLATE·TEMPLATE_UNDO PropertyChange 완료 신호를 Universe 생성 시 한 번 연결한다. 한 템플릿 드래그가 끝난 뒤 상태를 읽고 통계에 전달한다. 편집 중에는 세대 진행을 막는다. 콜백은 짧게 처리하고 게임판을 다시 변경하지 않는다.
-- **구독 관리:** 일반 발행은 구독자가 없으면 수집을 생략한다. 발행 시작 시 구독자 목록을 복사하므로 콜백 중 해제는 다음 발행부터 반영된다.
-- **타이머 동작:** dev의 Swing Timer 구현을 유지한다. 양수 간격이면 이전 Timer를 멈추고 새 Timer를 시작하며, 첫 자동 tick도 지정 간격 뒤 실행한다. 0 이하는 정지다. 메뉴 선택 중에는 tick을 건너뛰며 세대는 실제 완료 횟수로 센다.
+GENERATION은 **이벤트 자체에 해당 한 세대의 변화 결과**가 있으므로 `hasGenerationDelta = true`다. 목록이 비면 탄생·사망을 `0`으로 표시한다. 다른 종류는 `false`이며 변화량을 `—`로 표시한다. 모든 종류에서 세대·생존 수·비율은 최신 값으로 갱신한다.
 
-### 통계 계산 규칙
+Statistics가 처음 받는 이벤트가 GENERATION이거나 이전에 다른 세대/크기를 받았어도, 이번 이벤트가 담은 실제 한 세대의 결과를 사용한다. 누락된 여러 세대를 합산하는 뜻은 아니다. Undo 이력과 이전 판 비교 기준은 Statistics가 관리하지 않는다.
 
-1. 모든 이벤트에서 생존 수·비율과 전달받은 세대 번호를 갱신한다. 통계 전용 타이머는 없다.
-2. GENERATION이고 이전 상태가 있으며, 보드 크기가 같고 세대 번호가 정확히 1 증가했을 때만 탄생·사망을 계산한다. 탄생은 현재 생존 집합에서 이전 집합을 뺀 수, 사망은 그 반대다. 계산에는 복사본을 사용한다.
-3. 계산하지 못한 경우 hasGenerationDelta는 false이며 births·deaths의 0은 미계산 값이다. 화면은 `—` 등으로 표시한다. 실제 변화가 없는 세대는 true와 0으로 구분한다.
-4. 모든 이벤트의 현재 상태를 다음 비교 기준으로 교체한다. 편집 후 다음 세대도 새 기준으로 비교하며, 세대 누락·역행·중복이나 크기 변경 시 변화량을 계산하지 않고 기준을 다시 잡는다. 직전 상태 하나만 보관하므로 Undo 이력은 아니다.
+Life가 패널과 Statistics를 한 번 연결하면 INITIAL로 창 표시 전 값이 채워진다. 패널은 기존 258×512 선호 크기·여백 14px·제목 16pt를 유지한다. 보드는 512×512이고 오른쪽 공용 탭 전체 높이를 보드에 맞춘다. 패턴 탭을 떠날 때 진행 중 입력을 완료하고 Undo를 유지하며, 일반 그리기 상태에서는 탭 전환으로 Clock이 멈추지 않는다.
 
-### 통계 화면과 시작 시 연결
+### 사운드 연결
 
-Life는 `MenuSite.establish()` → Universe 확보 → 패널·공용 탭 구성 → `connectStatistics()` → `SoundEffects.install()` → `pack()` → 창 표시 순서로 실행한다. 통계 등록 시 INITIAL이 즉시 전달되며, 등록 때문에 세대나 보드를 변경하지 않는다.
+`GenerationListener`·`addGenerationListener()`·`generationPublisher`·`publishChanges()`를 제거했다. 사운드의 `generationChanged()`는 외부 구독 메서드가 아닌 private 내부 음 생성 메서드로 유지한다.
 
-| 표시 항목 | Summary 값 | 표시 규칙 |
-| --- | --- | --- |
-| 현재 세대 / 살아 있는 셀 | generation / livingCells | 전달받은 정수 그대로 표시 |
-| 생존 비율 | livingRatio | 이미 백분율이므로 다시 100을 곱하지 않음. `Locale.ROOT`로 `0.00%` 형식 표시 |
-| 이번 세대 탄생 / 사망 | births / deaths | hasGenerationDelta가 true이면 숫자, false이면 `—`로 교체 |
+`onBoardChanged()`는 사운드 Off 상태에서도 최신 배열 복사본을 저장한다. GENERATION이고 탄생 또는 사망이 있을 때만 기존 효과음 처리에 진입한다. INITIAL·편집·Undo·Clear·Load·변화 없는 세대는 세대 효과음이나 반복 감지·마무리 화음을 호출하지 않는다.
 
-- 첫 결과 전에는 다섯 값 모두 `—`다. 빈 보드의 INITIAL은 세대 0·생존 0·비율 0.00%·변화량 `—`, 실제 변화 없는 세대는 변화량 `0`으로 구분한다.
-- 패널 생성·갱신은 EDT에서 실행한다. showStatistics()는 EDT 밖 요청과 null 결과를 거부한다. 기존 동기 알림을 사용하므로 추가 Timer·invokeLater·상태 이력은 없다.
-- 패널은 캡처·프리즈와 같은 선호 크기 258×512, 사방 여백 14px, 제목 16pt다. BoxLayout으로 세로 배치하고, 각 통계 행은 항목명·숫자를 좌우 정렬한다.
-- Life.createSidebar()는 `패턴 캡처`와 `통계` 탭을 구성한다. createContent()는 Universe를 CENTER·공용 탭을 EAST에 간격 없이 배치한다. 모든 탭 등록 후 선호 너비를 재계산하고, 탭 제목줄을 포함한 전체 높이를 보드의 512px로 맞춘다.
-- 창은 `setResizable(false)` → `pack()` → `setLocationRelativeTo(null)`로 구성한다. 기본 게임판 512×512를 유지하며, 이전 확대·여백 배치는 사용하지 않는다.
-- 패널은 탭이나 JFrame을 소유하지 않는다. 다른 탭을 선택해도 구독·비교 기준을 유지하며 최신 결과를 표시한다. connectStatistics()와 createContent()는 같은 패키지에서만 사용하고, 테스트도 실제 연결·배치 메서드를 재사용한다.
+재생선은 `volatile boolean[][] latestCells`에서 완성된 스냅샷을 읽는다. 배열은 저장 후 수정하지 않고 다음 이벤트에서 참조 전체를 교체한다. 최초 구독의 INITIAL을 받은 뒤 150ms 재생선 예약을 시작한다. playStep·전멸 판단·판 크기는 이 스냅샷을 사용하며 사운드 스레드가 Universe의 셀 상태를 다시 읽지 않는다. 재생선 표시 요청은 기존 setPlayhead를 사용한다.
 
-패턴 탭을 떠날 때 finishPatternEditing()으로 활성 입력을 종료한다. 진행 중인 드래그는 완료 알림을 한 번 보내고 Undo 가능 상태를 유지한다. 일반 그리기 모드에서는 cancel()이 아무 작업도 하지 않으므로 탭 전환이 시계를 멈추지 않는다. 탭을 열 때마다 Statistics나 패턴 완료 리스너를 다시 등록하지 않는다.
+음 선택·악기·스트럼·반복 감쇠·전멸 화음·예약 간격과 NoteMapper·RepeatTracker·SoundSettings 코드는 유지했다. 자세한 변경점은 [통계·사운드 연결 변경 문서](sound-statistics-integration.md)에 정리했다.
 
 ### 설계 선택
 
 | 선택 | 이유 |
 | --- | --- |
-| Observer | Universe는 Subject, BoardChangeListener는 수신 계약, Statistics는 Observer다. Universe가 통계·사운드의 구체적인 구현을 알 필요가 없다. |
-| 현재 상태 전달·계산과 표시 분리 | Statistics가 비교 기준과 집계를 담당하고 불변 Summary를 패널에 전달한다. Universe는 통계 패널을 모르며 Statistics도 Swing에 의존하지 않는다. 패널을 별도 BoardChangeListener로 만들지 않아 계산과 보드 조회가 중복되지 않는다. |
-| 불변 이벤트·결과 | 관찰자나 화면이 받은 데이터를 바꿔 다른 관찰자의 상태를 훼손하지 못하게 한다. |
-| 공통 isAliveAt 재사용 | 통계 전용 셀 조회 메서드는 추가하지 않는다. 이번 병합에서는 기존 통계 BitSet 수집과 사운드 배열 조회를 유지한다. 두 발행 경로의 통일은 후속 작업이다. |
-| dev의 Clock.Listener.tick 본문 유지 | 기존 편집 보호·상태 계산·나이 갱신·화면·사운드 처리 순서를 보존하고, transition() 직후 세대 증가와 통계 알림만 추가한다. 별도 세대 진행 메서드 없이 자동 진행과 단일 진행이 같은 리스너를 사용한다. |
-| LinkedHashSet 구독 관리 | 통계 리스너의 중복 등록 방지·해제·명확한 타입을 지원한다. 사운드의 기존 Publisher는 이번 병합에서 유지한다. |
-
-**Swing Timer 선택 이유:** 통계는 세대 진행뿐 아니라 클릭·Clear 등의 완료 시에도 갱신된다. 게임판 전체를 읽는 중 상태가 바뀌거나 Statistics의 이전 상태 갱신이 겹치지 않도록 변경·수집·동기 알림을 EDT에서 순차 처리하고, Clock의 자동 진행도 여기에 맞췄다. 이벤트 복사는 수집 완료 후의 값을 보호하므로 수집 과정의 일관성도 필요하다. 기존 Timer에 EDT 전달이나 공통 잠금을 추가하는 대안도 있지만, 현재 Swing 구조에서는 Swing Timer가 간단하다. Statistics 자체는 타이머에 의존하지 않는다. 모든 연동 기능이 EDT 규칙을 지켜야 하며, 계산이 길어지면 UI 응답이 늦어질 수 있다. [Swing Timer 공식 문서](https://docs.oracle.com/en/java/javase/17/docs/api/java.desktop/javax/swing/Timer.html)
+| 공통 Observer 계약 | Universe가 한 완료 이벤트를 발행하고 Statistics·SoundEffects가 각자 필요한 정보와 종류를 선택한다. 두 기능은 서로를 참조하지 않는다. |
+| boolean[][]와 List<Point> | 기존 사운드 입력을 유지하고 통계도 같은 데이터로 집계한다. BitSet과 목록 사이의 변환 경로를 두지 않는다. |
+| Universe에서 실제 전후 비교 | Observer의 수신 이력에 의존하지 않고, 한 번 계산한 탄생·사망을 함께 사용한다. |
+| 기존 tick 본문 유지 | 팀원이 사용하는 세대 진행 위치와 편집·나이·화면 처리를 유지한다. 별도 진입 메서드를 추가하지 않는다. |
+| 불변 이벤트와 Summary | 관찰자 사이의 상태 간섭을 막고 통계 계산과 화면 표시를 분리한다. |
+| EDT와 사운드 스냅샷 | 보드 변경·수집·발행은 EDT에서 순차 처리한다. 별도 사운드 스레드는 게시된 스냅샷만 읽어 진행 중인 보드를 읽지 않는다. |
 
 ## 검증 요약과 상세 테스트
 
-2026-11-17, 통계 `4021231`과 dev `a480113`의 병합 작업본에서 dev의 Clock.Listener.tick() 본문을 유지하도록 수정한 뒤 전체 검사를 다시 실행했다. **JUnit 242개 통과, 실패·오류·건너뜀 0**을 확인했다. 새 통합 검사 12개를 중심으로 아래에 기록한다. 공통 이벤트 전환은 이 검증에 포함되지 않는다.
+2026-11-17, `4a49d0a` 이후 공통 이벤트 전환 작업본에서 **JUnit 266개 통과, 실패·오류·건너뜀 0**을 확인했다.
 
 - 실행: `./gradlew test --no-daemon --console=plain`
-- 환경: macOS, Gradle 9.5.1 / Gradle 실행 JDK 25.0.1 / 컴파일·테스트 toolchain Amazon Corretto JDK 17.0.19 / JUnit Jupiter 6.0.3
-- 이번 재실행은 `BUILD SUCCESSFUL in 1m 15s`로 완료했다. 현재 클래스 이름에 대응하는 JUnit XML 23개의 실행 수를 대조했다. 파라미터별 실행을 포함하며, 이름이 중복된 오래된 XML 복사본은 집계하지 않았다.
-- dev의 클래스별 JVM 격리 설정(`forkEvery = 1`)을 유지한다. 통계 테스트는 사용자 저장 템플릿 대신 빈 임시 폴더를 사용한다.
+- 결과: `BUILD SUCCESSFUL in 1m 24s`, 24개 클래스의 현재 JUnit XML과 실행 수를 대조했다.
+- 환경: macOS / Gradle 9.5.1 / 실행 JDK 25.0.1 / 컴파일·테스트 toolchain JDK 17.0.19 / JUnit Jupiter 6.0.3
+- 이전 242개에서 계약 변경에 맞춰 검사를 교체·확장했다. 총수 차이가 모두 새 테스트를 뜻하지는 않는다.
 
-| 검사 구분 | 실행 수 | 결과 |
+| 검사 | 실행 수 | 결과 |
 | --- | ---: | --- |
-| MergedFeaturesIntegrationTest — 이번 병합 연결 검사 | 12 | 모두 통과 |
-| 기존 통계·화면·시계 연결 검사 6개 클래스 | 85 | 모두 통과 |
+| BoardChangeEventTest | 22 | 배열·Point 복사, 이벤트 계약 통과 |
+| StatisticsTest | 22 | 현재 상태·공유 변화량 집계 통과 |
+| UniverseEventsTest | 19 | 발행·구독·실제 보드 경로 통과 |
+| ClockIntegrationTest | 6 | 자동·단일 진행·EDT 전달 통과 |
+| StatisticsPanelTest + StatisticsPanelIntegrationTest | 25 | 표시·탭·연결 통과 |
+| MergedFeaturesIntegrationTest | 12 | 기존 기능·통계 통합 통과 |
+| SoundEffectsIntegrationTest — 신규 | 15 | 실제 사운드 구독·이벤트 처리·예약 통과 |
 | dev의 기존 색상·패턴·드래그·사운드·회귀 검사 | 145 | 모두 통과 |
-| 전체 | 242 | 실패·오류·건너뜀 0 |
+| 전체 | 266 | 실패·오류·건너뜀 0 |
 
-기존 오류 수정 회귀 검사 32개도 dev 검사에 포함되어 모두 통과했다.
+기존 오류 수정 회귀 검사 32개는 dev 검사에 포함되어 통과했다. HTML 보고서는 `build/reports/tests/test/index.html`이며 빌드 산출물은 Git에 넣지 않는다.
 
-**검증 범위:** 신규 통합 검사는 실제 Universe·Clock·PatternTools·BoardEditor·Statistics·StatisticsPanel과 Life의 실제 공용 탭 구성 메서드를 사용한다. 사운드는 기존 GenerationListener를 구현한 기록용 수신자로 전달 좌표·호출 횟수를 확인하고, 기존 NoteMapper·RepeatTracker·SoundSettings JUnit도 함께 실행했다. 실제 MIDI 출력과 SoundEffects.install()을 통한 장치 연결, JFrame 수동 조작, 별도 `patternUiTest` 데스크톱 검사는 이번에 실행하지 않았다.
-
-StatisticsTest는 이벤트를, StatisticsPanelTest는 Summary를 직접 구성하는 단위 검사다. 기존 StatisticsPanelIntegrationTest의 일부 공용 탭 검사는 빈 패널을 사용하며, 이번 MergedFeaturesIntegrationTest는 실제 패턴 패널과 편집 경로를 연결한다. 색상별 통계와 프리즈는 검증 범위 밖이다.
+실제 MIDI 장치 출력·청음·설정 창 수동 조작·별도 patternUiTest 데스크톱 검사는 실행하지 않았다. SoundEffects.install()은 MIDI·예약 실행·메뉴 UI를 대역으로 바꿔 실제 구독 코드를 실행했다. 음 생성 계산과 이벤트 처리는 실제 코드다.
 
 <details>
-<summary>병합 통합 검사 12개 — 실제 동작과 기대 결과</summary>
+<summary>공통 이벤트 22개·통계 22개 — 계약과 기대 결과</summary>
 
-`MergedFeaturesIntegrationTest`는 실제 메뉴·마우스·Swing Timer 경로를 실행한다. 사운드 수신자는 MIDI 장치를 열지 않으며 실제 Universe가 계산한 좌표를 기록한다.
-
-| 검사 | 기대 결과 |
+| 영역 | 검사 내용 |
 | --- | --- |
-| 한 번의 단일 tick과 블링커 | 세대 1, 생존 3, 탄생·사망 각 2. 기존 사운드 리스너도 정확한 좌표를 EDT에서 한 번 수신 |
-| 안정된 블록과 색상 순환 | 10세대 동안 생존 4·탄생/사망 0 유지, 셀은 파랑으로 변경, 세대 사운드 알림 없음 |
-| 전멸 후 빈 보드 진행 | 최초 사망 좌표만 사운드에 한 번 전달, 통계 세대는 계속 증가 |
-| 일반 드래그 생성·삭제 | 마우스 이벤트마다 완료된 상태 한 번 전달, 같은 위치 재통과는 알림 없음 |
-| 템플릿 드래그 완료 | 누르는 동안 세대 진행·통계 알림 없음, 해제 후 TEMPLATE 한 번과 생존 수 5 표시 |
-| 템플릿 Undo와 다음 세대 | 드래그 한 건을 Undo하여 이전 생존 수 복원, 다음 블링커 세대의 탄생·사망 각 2 |
-| 무변경·범위 밖 배치 | 알림·Undo 이력 중복 없음 |
-| 캡처 영역 선택 | 판·통계·세대·사운드 알림 변경 없음 |
-| 실제 패턴·통계 탭 전환 | 진행 중 드래그를 한 번 확정하고 Undo 유지, 이후 세대 진행 가능, 보드 512px 유지 |
-| 편집 중이 아닌 탭 전환 | 실제 자동 Clock이 계속 진행 |
-| 드래그 도중 Clear | 드래그 확정 후 CLEAR, 통계 초기화·Undo 비활성화, 배치 Timer가 이후 셀을 다시 만들지 않음 |
-| 패턴 편집 중 Load | 편집 종료·이력 제거·세대 0, 다음 세대에 통계와 사운드가 동일한 탄생·사망 수신 |
+| 현재 상태·좌표 | [행][열] 배열과 Point(x=열,y=행), 세대·크기·목록 유지 |
+| 방어적 복사 | 원본/반환 배열의 행, 목록, Point를 바꿔도 이벤트와 다른 수신자 데이터 유지 |
+| 입력 검증 | null·음수 세대·0세대 GENERATION·부적합한 크기·행·좌표·중복·현재 상태와 모순된 변화 거부 |
+| 작업 종류 | 세대 외 6종류는 탄생·사망 목록을 허용하지 않음 |
+| 생존 집계 | 빈 판 0%, 가득 찬 판 100%, 초기 생존 수·전달받은 세대 표시 |
+| 공유 변화량 | 첫 GENERATION부터 전달받은 목록 사용, 블링커 2/2, 안정 상태 0/0, 전멸·탄생 집계 |
+| 편집·복원 | 세대 외 6종류는 생존 표시를 갱신하고 변화량은 미계산. 다음 GENERATION은 자신의 목록 사용 |
+| 수신 이력과 분리 | 이전 번호와 불연속이거나 크기가 달라도 현재 이벤트의 한 세대 변화량 사용 |
+| 결과 보호 | 이벤트를 변경하지 않고 이벤트마다 Summary 한 번 전달, 이전 Summary 유지, null 입력 거부 |
+
+StatisticsTest는 이벤트와 변화 목록을 직접 구성한다. 해당 단위 검사만으로 템플릿·Undo·Load의 실제 연동을 확인했다고 보지 않는다. 실제 작업 경로는 아래 통합 검사에서 확인한다.
 
 </details>
 
 <details>
-<summary>StatisticsPanelTest 12개 — 표시 규칙·공통 규격과 기대 결과</summary>
+<summary>Universe·Clock·화면·기존 기능 — 실제 연동 검사</summary>
 
-Summary를 직접 전달하고 실제 JLabel 텍스트를 읽는다. 패널에 보관된 별도 결과를 검사하거나 통계 계산을 다시 실행하는 검사가 아니다. 컴포넌트의 생성·갱신·조회는 EDT에서 수행한다.
+UniverseEventsTest는 초기·중복·해제 구독, 동일 이벤트 공유, 좌표/목록, 편집·안정/빈 판·Load 성공/실패/취소·Clear·Store·EDT 규칙을 확인한다. GENERATION을 공개 편집 알림 API로 위조 발행할 수 없다는 검사 1개를 추가했다.
 
-| 검사 내용 | 입력 및 기대 결과 | 실행 수 |
-| --- | --- | ---: |
-| 공통 패널 규격 | 선호 크기 258×512·여백 14px·굵은 제목 16pt | 1 |
-| 첫 결과 전 | 다섯 값 모두 `—` | 1 |
-| 기본 결과와 long 세대 | 세대 3000000000·생존 120·2.93%·탄생 8·사망 5가 그대로 표시 | 1 |
-| 비율 형식 | 0 → 0.00%, 100 → 100.00%, 12.3456 → 12.35%, 0.0244140625 → 0.02% | 4 |
-| 미계산 변화량 | 이전 탄생·사망 숫자를 `—`로 교체 | 1 |
-| 실제 변화 없음 | hasGenerationDelta=true인 탄생·사망 0을 `0`으로 표시 | 1 |
-| 연속 결과 | 세대·생존 수·비율·탄생·사망을 모두 최신 값으로 교체 | 1 |
-| 잘못된 갱신 요청 | EDT 밖 호출 거부 / null 결과 거부 및 기존 표시 유지 | 2 |
-| 합계 | | 12 |
+Clock의 6개 검사는 실제 자동 Timer·단일 진행·정지·속도 변경·메뉴 선택 중 진행 억제·EDT 밖 tick 전달을 확인한다. 화면 25개 검사는 기존 다섯 표시 항목, 초기값, 비율, 탭 전환·크기·구독 해제를 확인한다.
 
-</details>
+MergedFeaturesIntegrationTest의 12개 검사는 실제 보드·패턴·통계·탭을 연결한다.
 
-<details>
-<summary>StatisticsPanelIntegrationTest 13개 — 실제 게임판·표시·탭 결합</summary>
-
-기존 LifeTestSupport와 실제 Life.connectStatistics()를 사용한다. 창 메뉴 등록 및 Load 파일 선택 UI만 대체하며 게임판, 계산, 타이머, 파일 복원과 JLabel 갱신은 실제 코드다. 각 검사 후 Clock 정지·리스너 해제·보드 초기화를 수행한다. StatisticsPanelTestSupport는 테스트 전용 컴포넌트 조회 도우미이며 앱에는 포함되지 않는다.
-
-| 검사 내용 | 기대 결과 | 실행 수 |
-| --- | --- | ---: |
-| 시작 연결 | 등록 직후 세대 0·생존 0·0.00%·탄생/사망 `—` | 1 |
-| 진행 중인 보드에 연결 | 안정 블록 2세대 상태를 유지해 표시, 다음 세대는 3·생존 4·변화량 0 | 1 |
-| 정지 상태 편집 | 고립 셀 클릭 → 1·0.02%, 세대 진행 → 사망 1, 재편집 → 변화량 `—` | 1 |
-| 실제 단일 진행 메뉴 | 블링커 1세대·생존 3·0.07%·탄생 2·사망 2 | 1 |
-| 안정된 블록 | 1~3세대 증가, 생존 4·0.10%·탄생/사망 0 | 1 |
-| Clear 메뉴 | 모든 현재값 초기화, 변화량 `—` | 1 |
-| 실제 파일 Load | 복원 후 세대 0·생존 3·변화량 `—`, 다음 세대는 탄생 2·사망 2 | 1 |
-| 구독 해제 | 이후 클릭·세대 진행에도 기존 표시 유지 | 1 |
-| 자동 Swing Timer | 3세대 표시 시 정지, 생존 4·변화량 0. 완료는 CountDownLatch로 대기 | 1 |
-| 통계 단독 배치 | 외부에서 만든 탭을 전달, 게임판 512×512와 탭 전체 높이 일치, 간격·겹침·라벨 잘림 없음 | 1 |
-| 공용 탭 보존·너비 재계산 | 빈 패널 두 개 뒤에 통계 추가, 기존 패널·선택·리스너 유지, 이전 고정 폭 80px을 새 내용에 맞게 재계산 | 1 |
-| 숨겨진 통계·탭 전환 | 다른 탭에서 블링커 2세대 진행 → 통계 탭에 생존 3·탄생 2·사망 2 표시, 결과·비교 기준 유지, 재전환 후 3세대 정상 표시 | 1 |
-| 큰 숫자·안내문 배치 | 직접 전달한 세대 3000000000·생존/탄생/사망 4096·100.00%와 안내문이 좁은 패널 안에서 잘리지 않음 | 1 |
-| 합계 | | 13 |
-
-</details>
-
-<details>
-<summary>이벤트·통계 단위 테스트 36개 — 입력과 기대 결과</summary>
-
-StatisticsTest는 테스트에서 지정한 좌표로 BitSet과 BoardChangeEvent를 만들어 onBoardChanged()에 직접 전달한다. **템플릿 배치·Undo를 실제로 실행한 검사가 아니다.** EDIT·CLEAR·LOAD도 이 클래스에서는 직접 만든 이벤트이며 실제 메뉴·파일 처리를 실행하지 않는다.
-
-블링커 모양·세대 번호도 직접 지정한다. 일부 입력은 집합 차이 계산을 확인하기 위한 상태이며 Life 규칙이나 세대 증가 자체를 실행하지 않는다. Universe 생성이나 정적 메서드 대체 없이 통계 계산을 검증한다.
-
-#### BoardChangeEventTest: 13개 검사
-
-| 검사 내용 | 입력 및 기대 결과 | 실행 수 |
-| --- | --- | ---: |
-| 전달 정보 보존 | 종류 TEMPLATE, 42세대, 크기 3, 마지막 유효 셀 (2,2)를 그대로 보관 | 1 |
-| 초기 빈 상태 허용 | 0세대의 1×1 빈 보드를 정상 생성 | 1 |
-| 원본 데이터 변경 방어 | 생성 후 입력 BitSet을 바꿔도 이벤트의 상태 유지 | 1 |
-| 반환 데이터 변경 방어 | 조회한 복사본을 바꿔도 이벤트와 다른 조회 결과 유지 | 1 |
-| 종류 누락 거부 | null 종류 입력 시 NullPointerException | 1 |
-| 생존 데이터 누락 거부 | null BitSet 입력 시 NullPointerException | 1 |
-| 음수 세대 거부 | -1, Long.MIN_VALUE 입력 시 IllegalArgumentException | 2 |
-| 잘못된 보드 크기 거부 | 0, -1, 46341, Integer.MAX_VALUE 입력 시 IllegalArgumentException | 4 |
-| 범위 밖 생존 셀 거부 | 3×3 보드에서 유효 범위 0~8 밖인 9번 비트 입력 시 IllegalArgumentException | 1 |
-| 합계 | | 13 |
-
-#### StatisticsTest: 23개 검사
-
-아래 상태와 이벤트는 모두 테스트 코드에서 직접 구성한다. 탄생·사망 미계산은 `hasGenerationDelta == false`로 구분한다.
-
-| 검사 내용 | 입력 및 기대 결과 | 실행 수 |
-| --- | --- | ---: |
-| 첫 이벤트 수신 전 | 결과가 비어 있고 결과 콜백도 호출되지 않음 | 1 |
-| 기본 집계 | 4×4에서 생존 4개, 전달 세대 12 → 생존 4, 비율 25%, 세대 12, 변화량 미계산 | 1 |
-| 빈 상태 집계 | 생존 0, 비율 0%, 변화량 미계산 | 1 |
-| 전체 생존 상태 집계 | 2×2에서 생존 4개 → 비율 100% | 1 |
-| 비교 기준 없는 GENERATION | 첫 수신은 변화량 미계산, 다음 연속 세대부터 비교 | 1 |
-| 블링커 모양의 두 상태 비교 | 5×5의 가로 3개와 세로 3개를 전달 → 생존 3, 비율 12%, 탄생 2, 사망 2 | 1 |
-| 배치가 같은 연속 세대 | 전달 세대 번호 반영, 탄생·사망 0, 계산 여부 true | 1 |
-| 생존 상태에서 빈 상태로 변경 | 생존 3개 → 0개 입력 시 탄생 0, 사망 3 | 1 |
-| 빈 상태에서 생존 상태로 변경 | 생존 0개 → 3개 입력 시 탄생 3, 사망 0 | 1 |
-| EDIT·TEMPLATE·TEMPLATE_UNDO 이벤트 | 종류별로 변화량 미계산 및 기준 교체 확인, 다음 GENERATION에서 새 기준으로 탄생 1·사망 1 계산 | 3 |
-| CLEAR 이벤트 | 전달한 빈 상태와 세대 번호 반영, 다음 GENERATION에서 새 기준 사용 | 1 |
-| LOAD 이벤트 | 전달한 상태와 세대 번호 반영, 다음 GENERATION에서 새 기준 사용 | 1 |
-| INITIAL 재수신 | 새 상태와 세대 번호로 기존 비교 기준 교체 | 1 |
-| 여러 세대 이벤트 연속 수신 | 반복 집계 결과가 맞고, 기존 이벤트의 생존 데이터도 유지됨 | 1 |
-| 세대 번호 불연속 | 9세대 이후 8·9·12세대 각각에 대해 변화량 미계산, 기준 교체 후 연속 세대부터 정상 비교 | 3 |
-| 보드 크기 변경 | 3×3 → 4×4에서 비율 갱신·변화량 미계산, 이후 같은 크기의 연속 세대부터 비교 | 1 |
-| 결과 전달 및 불변성 | 이벤트 3개에 결과 3번 전달, 최근 결과 조회 가능, 이전 결과 값 유지 | 1 |
-| 결과 콜백 누락 거부 | 생성자에 null 콜백 입력 시 NullPointerException | 1 |
-| 이벤트 누락 거부 | null 이벤트 입력 시 NullPointerException, 결과는 발행하지 않음 | 1 |
-| 합계 | | 23 |
-
-</details>
-
-<details>
-<summary>UniverseEventsTest 18개 — 실제 게임판 연결</summary>
-
-LifeTestSupport는 테스트 사이에 실제 Universe·Clock Singleton을 함께 사용하되 매번 정지·초기화하고 구독을 해제하도록 준비한다.
-메뉴 등록 UI, 파일 선택 창, 오류 알림 창만 대체한다. 실제 Clock, Cell, Statistics, 직렬화·파일 처리는 대체하지 않는다.
-기존 UniverseStoreTest도 같은 준비 코드를 사용하도록 바꿨으며 저장 중복 검사의 입력과 기대 결과는 유지했다.
-Gradle 실행 설정이나 forkEvery는 바꾸지 않았다.
-
-아래 18개 검사는 모두 통과했다.
-
-| 검사 내용 | 기대 결과 |
+| 실제 작업 | 기대 결과 |
 | --- | --- |
-| 최초 등록 | EDT에서 INITIAL 한 번, 세대 0, 크기 64, 빈 생존 상태 |
-| 중복 등록·새 구독자 | 중복 초기 알림 없음, 새 구독이 기존 구독자를 초기화하지 않음, 발행마다 한 번씩 수신 |
-| 해제·재등록 | 해제 후 알림 없음, 재등록 시 진행된 현재 세대로 INITIAL 수신 |
-| 클릭 좌표와 토글 | 비대칭 좌표·보드 경계 좌표를 row × 64 + column으로 저장, 다시 클릭하면 사망 상태 반영 |
-| 무효 마우스 입력 | 보드 밖 클릭과 오른쪽 버튼은 상태 변경·알림 없음 |
-| 실제 블링커 진행 | 하위 묶음 경계를 가로질러 정확한 가로·세로 배치 교대, 진행마다 탄생 2·사망 2 |
-| 안정된 블록 | 동일 배치로 3세대 진행, 매번 번호 증가·탄생 0·사망 0 |
-| 빈 보드 | 빈 상태에서도 진행마다 번호 증가·완료 알림 |
-| 진행 후 실제 편집 | 고립 셀 추가 직후 비교 기준 갱신, 다음 실제 세대에서 사망 1 |
-| Clear | 빈 상태·세대 0을 한 번 발행, 다음 진행은 1세대 |
-| 실제 파일 Load | 복원 상태를 한 번 발행, 세대 0, 다음 세대의 경계 탄생·사망과 정확한 좌표 확인 |
-| 파일 읽기 오류 | 직렬화 헤더가 잘못된 파일에서 오류 알림, 기존 보드·세대·통계 유지, 완료 이벤트 없음 |
-| Load 취소 | 기존 보드 유지, 완료 이벤트와 오류 창 없음 |
-| Store | 파일 출력 성공, 세대 유지, 보드 알림 없음 |
-| 이벤트 공유·상태 보호 | 관찰자들은 같은 이벤트를 받지만 복사본 변경으로 다른 관찰자나 과거 이벤트를 훼손하지 못함 |
-| 발행 중 해제 | 현재 발행은 일관된 구독자 목록을 사용하고 다음 발행부터 해제 반영 |
-| EDT 밖 요청 | 등록·해제·명시적 알림 호출을 IllegalStateException으로 거부. Clock.tick()의 EDT 전달은 ClockIntegrationTest에서 검증 |
-| 필수 인자 누락 | null 리스너·작업 종류를 거부 |
+| 블링커 한 세대 | 세대 1·생존 3·탄생/사망 각 2, 좌표 기록용 공통 Observer도 동일 결과 수신 |
+| 안정된 블록 10세대 | 생존 4 유지·색상 파랑·통계 세대 증가, 탄생/사망 없음 |
+| 전멸 후 빈 세대 | 최초 사망만 변화 목록에 포함, 이후 통계 세대 증가 |
+| 일반 드래그 생성·삭제 | 실제 변경마다 완료 알림, 같은 칸 재통과는 중복 없음 |
+| 템플릿 배치 | 편집 중 진행 차단, 드래그 완료 후 TEMPLATE 한 번 |
+| 템플릿 Undo 후 진행 | 판과 통계 복원, 다음 세대의 실제 판에서 변화량 계산 |
+| 범위 밖/무변경 배치·캡처 | 불필요한 알림·Undo 이력·세대 증가 없음 |
+| 패턴↔통계 탭 | 입력 종료·Undo 유지, 일반 모드에서는 자동 진행 지속 |
+| 배치 중 Clear·Load | 입력/이력 정리와 통계 갱신, 종료한 배치가 다시 셀을 만들지 않음 |
+
+이 12개의 사운드 확인은 BoardChangeListener로 변경 목록을 기록하는 수신자를 사용한다. 실제 SoundEffects까지 연결하는 검사는 아래 15개다.
 
 </details>
 
 <details>
-<summary>ClockIntegrationTest 6개·isAliveAt 조회 1개 — 실행과 기대 결과</summary>
+<summary>SoundEffectsIntegrationTest 15개 — 실제 사운드 객체와 통계 연결</summary>
 
-아래 6개 검사는 모두 통과했다.
+실제 Universe·Clock·Statistics·SoundEffects.install()을 사용한다. MIDI 신시사이저/채널, ScheduledExecutorService, 메뉴 등록 UI만 대역이며 예약된 Runnable을 직접 실행해 MIDI 호출을 확인한다.
 
-| 검사 내용 | 기대 결과 |
-| --- | --- |
-| 실제 단일 진행 메뉴 콜백 | Clock.tick() → Universe의 Clock.Listener.tick()을 거쳐 EDT에서 1세대 알림 |
-| 자동 Swing Timer | 실제 타이머가 세대 1·2·3을 EDT에서 순서대로 발행하고 정지 후 추가 진행 없음 |
-| 첫 알림 전 Halt | 대기 중인 자동 진행이 취소되어 세대 알림 없음 |
-| 실행 속도 교체 | 새 간격으로 진행하고 이전 예약이 남아 추가 세대를 만들지 않음 |
-| 메뉴 선택 중 tick | 선택 중에는 진행하지 않고 선택 해제 후 다음 tick에서 진행 |
-| EDT 밖 tick 요청 | EDT에 예약되어 세대 알림이 한 번 발생 |
+| 검사 | 실행 수 | 기대 결과 |
+| --- | ---: | --- |
+| 초기 상태와 시작 순서 | 1 | INITIAL 수신 뒤 재생선 시작, 즉시 실행되는 첫 스텝도 살아 있는 셀을 연주 |
+| 실제 블링커 | 1 | 통계 탄생/사망 각 2와 생성음·타악기 예약 |
+| 안정된 블록·빈 판 | 1 | 통계 세대는 증가, 세대 효과음/마무리 화음 예약 없음 |
+| 세대 외 이벤트 | 6 | INITIAL·EDIT·TEMPLATE·TEMPLATE_UNDO·CLEAR·LOAD는 최신 재생선 상태만 갱신 |
+| Off 중 편집 | 1 | 소리는 꺼져도 상태 수신, On 이후 최신 배치를 연주 |
+| 전멸 | 1 | 3음 마무리 화음, 0/90/180ms 시작·900ms 길이 유지, 이후 빈 세대에서 반복 없음 |
+| 생성음·타악기 예약 | 1 | 스트럼 25ms 간격과 0~15ms 흔들림, 음 길이 220ms, 타악기 지연 60ms 유지 |
+| 대량 탄생 | 1 | 12개 탄생 입력에서 기존 추가 악기 레이어 유지 |
+| 별도 스레드 스냅샷 | 1 | 원본/반환 배열 변경이나 실제 보드와 무관하게 수신한 완성 상태로 연주 |
+| MIDI 사용 불가 | 1 | 사운드 설치 실패가 게임·통계 진행을 막지 않음 |
 
-자동 타이머 검사는 CountDownLatch와 EDT의 일회성 지연 표식으로 완료·정지를 확인하며, EDT를 Thread.sleep으로 막지 않는다.
-재사용한 isAliveAt 검사는 4×4 중첩 보드의 (3,2)를 살리고 (2,3)은 죽어 있음을 확인해 행·열 및 중첩 좌표 변환을 검증한다.
-이 기존 시계·조회 검사에는 템플릿·Undo·프리즈·색상·사운드 연동이나 패널 표시가 포함되지 않는다. 패널 연결 검증은 위 신규 StatisticsPanelIntegrationTest에 정리했다.
+6종류별 처리와 생성음/대량 탄생 입력은 이벤트를 직접 구성한다. 템플릿·Undo 등 실제 기능의 완료 알림은 MergedFeaturesIntegrationTest에서 별도로 검증한다. 기존 NoteMapper·RepeatTracker·SoundSettings 29개 검사도 전체 실행에 포함한다.
 
 </details>
-
-HTML 보고서: `build/reports/tests/test/index.html`. 빌드 산출물과 보고서는 Git에 포함하지 않는다.
 
 ## 변경 기록
 
 <details>
-<summary>2026-11-17 · 최신 dev 병합과 기존 기능·통계 연결</summary>
+<summary>2026-11-17 · 통계·사운드의 BoardChangeListener 통합</summary>
 
-통계 `4021231`에 dev `a480113`을 병합했다. 아래는 커밋 전 작업본의 구현·검증 기록이다.
+- 기준 커밋: 4a49d0a. 이 기록은 공통 이벤트 전환 변경을 설명한다.
+- Universe의 기존 tick 본문에서 실제 전후 상태를 비교하고 하나의 공통 이벤트를 발행한다.
+- GenerationListener와 사운드 전용 Publisher 경로를 제거했다. 기존 Clock 리스너는 유지한다.
+- BoardChangeEvent를 boolean[][]·List<Point>로 통일하고 Statistics의 BitSet·이전 상태 비교를 제거했다.
+- SoundEffects의 등록·수신·상태 입력만 연결하고 음 생성/예약 규칙을 유지했다. INITIAL 수신 뒤 재생선 예약을 시작한다.
+- 이벤트/통계 계약 테스트를 갱신하고 실제 사운드 연결 검사 15개를 추가했다. 전체 266개가 통과했다.
+
+</details>
+
+<details>
+<summary>2026-11-17 · 최신 dev 병합과 기존 기능·통계 연결 (4a49d0a)</summary>
+
+통계 `4021231`에 dev `a480113`을 병합하고 `4a49d0a`로 로컬 커밋했다. 아래는 공통 이벤트 전환 전의 구현·검증 기록이다.
 
 - 충돌 7개 파일을 해결했다. Cell·NeighborhoodTest의 같은 조회 계약은 하나로 유지하고, Neighborhood의 Load 캐시·화면 갱신 처리는 dev를 유지했다.
 - Universe는 dev의 익명 Clock.Listener.tick() 본문을 유지하고 transition() 직후 generation 증가·GENERATION 알림을 추가했다. 기존 편집 보호, 매 세대 셀 나이 갱신, 조건부 보드 repaint, 사운드 알림을 보존했다.
@@ -307,7 +206,7 @@ HTML 보고서: `build/reports/tests/test/index.html`. 빌드 산출물과 보�
 - 일반 드래그 완료와 기존 패턴 PropertyChange 신호를 통계에 연결했다. 사운드 구현과 통계 이벤트·계산·표시 클래스는 그대로 유지했다.
 - Life에 실제 패턴·통계 공용 탭을 조립하고, 탭 전환으로 숨겨지는 패턴 입력을 종료한다.
 - Clock은 dev의 구현으로 맞췄으며 EDT 밖 tick 거부 검사를 EDT 전달 검사로 변경했다.
-- 기존 테스트 230개와 새 통합 테스트 12개가 모두 통과했다. 코드 병합과 충돌 해결은 완료했으나 머지 커밋·push는 하지 않았다.
+- 기존 테스트 230개와 새 통합 테스트 12개가 모두 통과했다. 병합 커밋은 완료했으며 push는 하지 않았다.
 
 </details>
 

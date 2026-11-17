@@ -1,6 +1,5 @@
 package com.holub.life;
 
-import java.util.BitSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -8,9 +7,9 @@ import java.util.function.Consumer;
 /**
  * Calculates statistics from completed-board events without changing the board.
  *
- * <p>Deliver events sequentially, in operation order. Only the most recently
- * received state is retained as the next comparison baseline; this is not undo
- * history. No Swing component or Universe instance is needed.
+ * <p>Universe supplies the completed transition's change lists. Statistics
+ * counts them without retaining a previous board or comparing snapshots.
+ * Deliver events sequentially, in operation order.
  */
 public final class Statistics implements BoardChangeListener {
     /**
@@ -30,9 +29,6 @@ public final class Statistics implements BoardChangeListener {
     }
 
     private final Consumer<Summary> onUpdated;
-    private BitSet previousAlive;
-    private int previousBoardSize;
-    private long previousGeneration;
     private Summary currentSummary;
 
     public Statistics(Consumer<Summary> onUpdated) {
@@ -42,13 +38,7 @@ public final class Statistics implements BoardChangeListener {
     @Override
     public void onBoardChanged(BoardChangeEvent event) {
         Objects.requireNonNull(event, "event");
-        BitSet currentAlive = event.copyAliveCells();
-        Summary summary = calculate(event, currentAlive);
-
-        // Every operation, including edits and restores, establishes a new baseline.
-        previousAlive = currentAlive;
-        previousBoardSize = event.boardSize();
-        previousGeneration = event.generation();
+        Summary summary = calculate(event);
         currentSummary = summary;
 
         onUpdated.accept(summary);
@@ -59,29 +49,15 @@ public final class Statistics implements BoardChangeListener {
         return Optional.ofNullable(currentSummary);
     }
 
-    private Summary calculate(BoardChangeEvent event, BitSet currentAlive) {
-        int livingCells = currentAlive.cardinality();
-        double totalCells = (double) event.boardSize() * event.boardSize();
-
-        // Missing generations or changed dimensions cannot describe a one-generation delta.
-        boolean hasGenerationDelta = event.kind() == BoardChangeEvent.Kind.GENERATION
-                && previousAlive != null
-                && previousBoardSize == event.boardSize()
-                && event.generation() > 0
-                && previousGeneration == event.generation() - 1;
-
-        int births = 0;
-        int deaths = 0;
-        if (hasGenerationDelta) {
-            BitSet born = (BitSet) currentAlive.clone();
-            born.andNot(previousAlive);
-            births = born.cardinality();
-
-            BitSet died = (BitSet) previousAlive.clone();
-            died.andNot(currentAlive);
-            deaths = died.cardinality();
+    private Summary calculate(BoardChangeEvent event) {
+        int livingCells = 0;
+        for (boolean[] row : event.copyAliveCells()) {
+            for (boolean alive : row) if (alive) livingCells++;
         }
-
+        double totalCells = (double) event.boardSize() * event.boardSize();
+        boolean hasGenerationDelta = event.kind() == BoardChangeEvent.Kind.GENERATION;
+        int births = hasGenerationDelta ? event.copyBirths().size() : 0;
+        int deaths = hasGenerationDelta ? event.copyDeaths().size() : 0;
         return new Summary(event.generation(), livingCells,
                 livingCells * 100.0 / totalCells, births, deaths, hasGenerationDelta);
     }

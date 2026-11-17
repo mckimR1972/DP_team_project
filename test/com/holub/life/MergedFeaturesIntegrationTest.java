@@ -49,9 +49,13 @@ class MergedFeaturesIntegrationTest {
     static void initialize() throws Exception {
         LifeTestSupport.initialize();
         universe = LifeTestSupport.universe;
-        LifeTestSupport.onEdt(() -> universe.addGenerationListener((births, deaths) ->
-                sound.add(new SoundDelta(copyPoints(births), copyPoints(deaths),
-                        SwingUtilities.isEventDispatchThread()))));
+        LifeTestSupport.onEdt(() -> universe.addBoardChangeListener(event -> {
+            if (event.kind() == GENERATION
+                    && (!event.copyBirths().isEmpty() || !event.copyDeaths().isEmpty())) {
+                sound.add(new SoundDelta(copyPoints(event.copyBirths()), copyPoints(event.copyDeaths()),
+                        SwingUtilities.isEventDispatchThread()));
+            }
+        }));
     }
 
     @BeforeEach
@@ -138,7 +142,7 @@ class MergedFeaturesIntegrationTest {
             press(2, 3); drag(6, 3); drag(6, 3); release(6, 3);
             assertEquals(List.of(EDIT, EDIT), kinds());
             assertEquals(5, summary().livingCells());
-            assertEquals(5, events.get(1).copyAliveCells().cardinality());
+            assertEquals(5, LifeTestSupport.countAlive(events.get(1).copyAliveCells()));
             press(6, 3); drag(2, 3); release(2, 3);
             assertEquals(4, events.size());
             assertEquals(0, summary().livingCells());
@@ -169,7 +173,7 @@ class MergedFeaturesIntegrationTest {
     }
 
     @Test
-    void templateUndoRestoresStatisticsAndNextGenerationUsesTheRestoredBaseline() throws Exception {
+    void templateUndoRestoresStatisticsAndNextGenerationUsesTheRestoredBoard() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(10, 9); LifeTestSupport.click(10, 10); LifeTestSupport.click(10, 11);
             events.clear();

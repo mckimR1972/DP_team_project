@@ -3,7 +3,6 @@ package com.holub.life;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.BitSet;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -13,7 +12,6 @@ import javax.swing.*;
 import java.awt.event.*;
 
 import com.holub.io.Files;
-import com.holub.tools.Publisher;
 import com.holub.ui.MenuSite;
 
 import com.holub.life.Cell;
@@ -194,18 +192,18 @@ public class Universe extends JPanel
 			{	public void tick()
 				{	if (patternTools.isEditing()) return;
 					patternTools.boardChanged();
-					boolean willChange = outermostCell.figureNextState
+					outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
 						   );
-					boolean[][] before = willChange ? liveCells() : null;
+					boolean[][] before = liveCells();
 
 					// 바뀌는 셀이 없어도 매 틱 불러야 멈춘 패턴도 나이를 먹는다
 					boolean changed = outermostCell.transition();
 
-					// 통계는 생존 변화가 없는 세대에도 완료 상태를 받는다.
+					// 같은 완료 이벤트를 통계와 사운드에 전달한다.
 					generation++;
-					notifyBoardChanged(BoardChangeEvent.Kind.GENERATION);
+					notifyBoardChanged(BoardChangeEvent.Kind.GENERATION, before);
 
 					// 색상 또는 생존 상태가 바뀌면 보드와 편집 오버레이를 함께 다시 그린다
 					if( Resident.colorChangesWithAge() )
@@ -213,8 +211,6 @@ public class Universe extends JPanel
 					else if( changed )
 						refreshNow();
 
-					if( changed && before != null )
-						publishChanges( before );
 				}
 			}
 		);
@@ -258,7 +254,7 @@ public class Universe extends JPanel
     public void addBoardChangeListener(BoardChangeListener listener) {
         requireEventDispatchThread();
         if (boardListeners.add(Objects.requireNonNull(listener, "listener"))) {
-            listener.onBoardChanged(createBoardChangeEvent(BoardChangeEvent.Kind.INITIAL));
+            listener.onBoardChanged(createBoardChangeEvent(BoardChangeEvent.Kind.INITIAL, null));
         }
     }
 
@@ -269,38 +265,42 @@ public class Universe extends JPanel
     }
 
     /**
-     * Publish after a complete board operation on the EDT. Pattern tools also
-     * use this after completing a placement stroke or undo. This method does not change the board
-     * or advance the generation. Observers must not modify the board in callbacks.
-     * Subscription changes during delivery take effect for the next broadcast.
+     * Publish a completed edit/restore on the EDT. Does not change the board or
+     * generation. GENERATION is emitted only by the Clock listener, with its
+     * actual pre-transition state. Observers must not change the board in callbacks.
      */
     public void notifyBoardChanged(BoardChangeEvent.Kind kind) {
+        if (kind == BoardChangeEvent.Kind.GENERATION) {
+            throw new IllegalArgumentException("GENERATION requires an actual Clock transition");
+        }
+        notifyBoardChanged(kind, null);
+    }
+
+    private void notifyBoardChanged(BoardChangeEvent.Kind kind, boolean[][] before) {
         requireEventDispatchThread();
         Objects.requireNonNull(kind, "kind");
         if (boardListeners.isEmpty()) return;
 
-        BoardChangeEvent event = createBoardChangeEvent(kind);
+        BoardChangeEvent event = createBoardChangeEvent(kind, before);
+        // Changes to subscriptions during delivery apply to the next broadcast.
         for (BoardChangeListener listener : boardListeners.toArray(new BoardChangeListener[0])) {
             listener.onBoardChanged(event);
         }
     }
 
-    private BoardChangeEvent createBoardChangeEvent(BoardChangeEvent.Kind kind) {
-        return new BoardChangeEvent(kind, generation, outermostCell.widthInCells(),
-                captureAliveCells());
-    }
-
-    private BitSet captureAliveCells() {
-        int size = outermostCell.widthInCells();
-        BitSet aliveCells = new BitSet(size * size);
-        for (int row = 0; row < size; row++) {
-            for (int column = 0; column < size; column++) {
-                if (outermostCell.isAliveAt(row, column)) {
-                    aliveCells.set(row * size + column);
+    private BoardChangeEvent createBoardChangeEvent(BoardChangeEvent.Kind kind, boolean[][] before) {
+        boolean[][] after = liveCells();
+        List<Point> births = new ArrayList<>();
+        List<Point> deaths = new ArrayList<>();
+        if (kind == BoardChangeEvent.Kind.GENERATION) {
+            for (int row = 0; row < after.length; row++) {
+                for (int column = 0; column < after.length; column++) {
+                    if (after[row][column] && !before[row][column]) births.add(new Point(column, row));
+                    else if (!after[row][column] && before[row][column]) deaths.add(new Point(column, row));
                 }
             }
         }
-        return aliveCells;
+        return new BoardChangeEvent(kind, generation, after.length, after, births, deaths);
     }
 
     private static void requireEventDispatchThread() {
@@ -308,22 +308,6 @@ public class Universe extends JPanel
             throw new IllegalStateException("Board operations must run on the Swing EDT");
         }
     }
-
-	/** 세대마다 바뀐 셀을 알려 받는 리스너. Point에는 셀 위치가
-	 *  (x = 열, y = 행)으로 들어 있다.
-	 */
-	public interface GenerationListener
-	{	void generationChanged( List<Point> births, List<Point> deaths );
-	}
-
-	private final Publisher generationPublisher = new Publisher();
-
-	/** 판이 바뀐 세대마다 알림을 받을 리스너를 등록한다. 리스너는
-	 *  Swing 이벤트 스레드에서 불리므로 빨리 끝나야 한다.
-	 */
-	public void addGenerationListener( GenerationListener observer )
-	{	generationPublisher.subscribe( observer );
-	}
 
 	/** 판의 가로(=세로) 셀 수를 반환한다. */
 	public int widthInCells()
@@ -340,29 +324,6 @@ public class Universe extends JPanel
 				cells[row][column] = outermostCell.isAliveAt(row, column);
 
 		return cells;
-	}
-
-	private void publishChanges( boolean[][] before )
-	{	final List<Point> births = new ArrayList<Point>();
-		final List<Point> deaths = new ArrayList<Point>();
-
-		for( int row = 0; row < before.length; ++row )
-			for( int column = 0; column < before.length; ++column )
-			{	boolean isAlive = outermostCell.isAliveAt(row, column);
-				if( isAlive && !before[row][column] )
-					births.add( new Point(column, row) );
-				else if( !isAlive && before[row][column] )
-					deaths.add( new Point(column, row) );
-			}
-
-		generationPublisher.publish
-		(	new Publisher.Distributor()
-			{	public void deliverTo( Object subscriber )
-				{	((GenerationListener)subscriber)
-										.generationChanged(births, deaths);
-				}
-			}
-		);
 	}
 
 	private static final int PLAYHEAD_WIDTH = 3;

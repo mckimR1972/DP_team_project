@@ -48,7 +48,7 @@ class ClockIntegrationTest {
             LifeTestSupport.select("Go", "Tick (Single Step)");
             assertEquals(1, events.size());
             assertEquals(1, events.get(0).generation());
-            assertTrue(events.get(0).copyAliveCells().isEmpty());
+            assertTrue(LifeTestSupport.countAlive(events.get(0).copyAliveCells()) == 0);
         });
     }
 

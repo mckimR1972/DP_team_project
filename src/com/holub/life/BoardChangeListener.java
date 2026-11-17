@@ -1,7 +1,9 @@
 package com.holub.life;
 
 /**
- * Receives a snapshot after a complete game-board operation.
+ * Receives the same completed-board event as all other registered observers.
+ * GENERATION includes shared birth/death coordinates; each observer selects
+ * the information and event kinds it needs.
  * Universe delivers synchronously on the Swing EDT. Keep callbacks short and
  * do not change the game board from a callback; use the supplied snapshot.
  */

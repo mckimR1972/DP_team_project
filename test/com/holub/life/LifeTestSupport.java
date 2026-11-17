@@ -77,6 +77,12 @@ final class LifeTestSupport {
                 0L, 0, x, y, 1, false, button));
     }
 
+    static int countAlive(boolean[][] cells) {
+        int count = 0;
+        for (boolean[] row : cells) for (boolean alive : row) if (alive) count++;
+        return count;
+    }
+
     static void onEdt(Runnable task) throws Exception {
         if (SwingUtilities.isEventDispatchThread()) task.run();
         else SwingUtilities.invokeAndWait(task);
