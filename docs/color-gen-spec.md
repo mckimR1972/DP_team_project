@@ -1,6 +1,6 @@
 # 세대에 따른 셀 색 순환 기능 명세
 
-- 대상 코드: dev 브랜치 (`5600239` 기준)
+- 대상 코드: dev 브랜치 (`a480113` 기준)
 - 관련 문서: 설계 문서 「세대에 따른 셀 색 순환 기능」(설계 결정과 대안), 변경 기록 [feature-color-gen-changes.md](feature-color-gen-changes.md), 화면 갱신 지연 [color-gen-redraw-lag.md](color-gen-redraw-lag.md)
 
 이 문서는 기능이 무엇을 해야 하는지와, 그것을 어떤 테스트로 확인하는지를 적는다. 왜 그렇게 설계했는지는 설계 문서에 있다.
@@ -28,7 +28,7 @@
 | FR-4 | 세대가 진행될 때마다 전후 모두 살아 있는 셀은 나이가 1 늘고, 새로 태어난 셀은 0이다. 색 순환이 꺼져 있어도 나이를 센다 |
 | FR-5 | 색 순환이 켜져 있으면 색은 `c[⌊나이 / 10⌋ mod 3]`, c = [빨강 `#FF0000`, 파랑 `#0072B2`, 초록 `#009E73`]이다. 나이 0\~9 빨강, 10\~19 파랑, 20\~29 초록, 30부터 다시 빨강 |
 | FR-6 | 색 순환이 켜져 있으면 생사가 바뀌지 않은 세대에도 판 전체를 다시 그린다. 2×2 블록처럼 멈춘 패턴도 10세대마다 색이 바뀐다 |
-| FR-7 | 마우스 클릭으로 살린 셀, Grid > Load로 불러온 셀, 템플릿 배치로 새로 생긴 셀은 나이 0(빨강)에서 시작한다 |
+| FR-7 | 마우스 클릭으로 살린 셀, Grid > Load로 불러온 셀, 템플릿 배치(클릭이나 드래그 연속 배치)로 새로 생긴 셀은 나이 0(빨강)에서 시작한다 |
 | FR-8 | 템플릿 배치와 그 되돌리기는 이미 살아 있던 다른 셀의 나이를 바꾸지 않는다 |
 | FR-9 | 죽은 셀은 원본의 죽은 칸 색으로 그린다 |
 
@@ -123,7 +123,7 @@ flowchart LR
 
 ## 6. 요구사항과 테스트
 
-JUnit 테스트는 모두 `test/com/holub/life`에 있다. 색 기능 테스트는 39개(CellColorPolicyTest 22, CellAgeColorTest 9, DefaultCellColorTest 1, UniverseColorTest 7)이고, dev 전체 107개와 함께 통과한다. 화면에 실제로 그려지는지와 응답 시간은 JUnit으로 볼 수 없어 실제 게임 창에서 확인했다.
+JUnit 테스트는 모두 `test/com/holub/life`에 있다. 색 기능 테스트는 39개(CellColorPolicyTest 22, CellAgeColorTest 9, DefaultCellColorTest 1, UniverseColorTest 7)이고, dev 전체 145개와 함께 통과한다. 화면에 실제로 그려지는지와 응답 시간은 JUnit으로 볼 수 없어 실제 게임 창에서 확인했다.
 
 | ID | JUnit 테스트 | 실제 창 확인 |
 | --- | --- | --- |
@@ -133,8 +133,8 @@ JUnit 테스트는 모두 `test/com/holub/life`에 있다. 색 기능 테스트�
 | FR-4 | CellAgeColorTest.survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver, UniverseColorTest.ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor | |
 | FR-5 | CellColorPolicyTest.cyclingPolicyStepsEveryTenGenerationsAndWrapsAround, CellColorPolicyTest.fixedPolicyReturnsTheSameColorForEveryAge, CellAgeColorTest.stillLifeChangesColorEveryTenGenerationsAndWrapsAround | |
 | FR-6 | UniverseColorTest.stillLifeCyclesThroughColorsWhenNothingElseChanges, UniverseColorTest.cyclingTickRequestsRepaintEvenWhenNothingChanges | 블록이 9틱 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강. 다시 그리기 요청을 뺀 사본은 계속 빨강 |
-| FR-7 | CellAgeColorTest.cellRevivedByClickStartsAtAgeZero, CellAgeColorTest.cellClickedAfterClearStartsRed, CellAgeColorTest.storeThenLoadKeepsCellsAndRestartsColor, CellAgeColorTest.captureCopiesOnlyLivingCellsRegardlessOfColorAndAge | |
-| FR-8 | UniverseColorTest.placementAndUndoPreserveExistingCellAge | |
+| FR-7 | CellAgeColorTest.cellRevivedByClickStartsAtAgeZero, CellAgeColorTest.cellClickedAfterClearStartsRed, CellAgeColorTest.storeThenLoadKeepsCellsAndRestartsColor, CellAgeColorTest.captureCopiesOnlyLivingCellsRegardlessOfColorAndAge, PatternToolsTest.dragAndUndoPreserveTheAgeColorsOfExistingCells | |
+| FR-8 | UniverseColorTest.placementAndUndoPreserveExistingCellAge, PatternToolsTest.dragAndUndoPreserveTheAgeColorsOfExistingCells | |
 | FR-9 | CellAgeColorTest.survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver, CellAgeColorTest.cellClickedAfterClearStartsRed | |
 | NFR-1 | CellAgeColorTest.lifeRuleIsUnchanged (무작위 판 32개 × 100세대) | |
 | NFR-2 | UniverseColorTest.tickWithCyclingOffRepaintsOnlyWhenCellsChange, 기존 ResidentTest·NeighborhoodTest·UniverseStoreTest | |
