@@ -127,6 +127,27 @@ class UniverseColorTest {
     }
 
     @Test
+    void placementAndUndoPreserveExistingCellAge() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            Resident.setColorPolicy(new CyclingColorPolicy(10, Color.RED, BLUE, GREEN));
+            placeBlock();
+            tick(10);
+        });
+        assertEquals(BLUE, colorAt(0, 0));
+        // Use the same board and command path as the capture/template controls.
+        java.lang.reflect.Field field = Universe.class.getDeclaredField("outermostCell");
+        field.setAccessible(true);
+        BoardEditor editor = new BoardEditor((Cell) field.get(universe));
+        SwingUtilities.invokeAndWait(() -> editor.place(
+                PatternTemplate.fromRows("overlap", "OOO"), new java.awt.Point(0, 0)));
+        assertEquals(BLUE, colorAt(0, 0));
+        assertEquals(Color.RED, colorAt(2, 0));
+        SwingUtilities.invokeAndWait(editor::undo);
+        assertEquals(BLUE, colorAt(0, 0));
+        assertEquals(com.holub.ui.Colors.LIGHT_YELLOW, colorAt(2, 0));
+    }
+
+    @Test
     void cyclingTickRequestsRepaintEvenWhenNothingChanges() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             Resident.setColorPolicy(new CyclingColorPolicy(10, Color.RED, BLUE, GREEN));
@@ -137,13 +158,12 @@ class UniverseColorTest {
     }
 
     @Test
-    void tickWithCyclingOffNeverRequestsRepaint() throws Exception {
-        SwingUtilities.invokeAndWait(() -> {
-            placeBlock();
-            placeBlinker();
-        });
+    void tickWithCyclingOffRepaintsOnlyWhenCellsChange() throws Exception {
+        SwingUtilities.invokeAndWait(() -> placeBlock());
+        assertEquals(0, fullRepaintRequestsDuring(10));    // 바뀌는 셀이 없으면 다시 그리지 않는다
 
-        assertEquals(0, fullRepaintRequestsDuring(10));    // dev처럼 refreshNow()로만 그린다
+        SwingUtilities.invokeAndWait(() -> placeBlinker());
+        assertEquals(10, fullRepaintRequestsDuring(10));   // 셀이 바뀌는 틱마다 한 번
     }
 
     // 틱을 보내는 동안 Universe가 판 전체 repaint()를 요청한 횟수
