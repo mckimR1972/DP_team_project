@@ -3,6 +3,8 @@ package com.holub.life;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import java.util.*;
+import javax.swing.Timer;
 import com.holub.ui.MenuSite;
 import com.holub.tools.Publisher;
 
@@ -25,16 +27,14 @@ import com.holub.tools.Publisher;
  */
 
 public class Clock
-{	private final Timer clock = new Timer(0, event -> tick());
+{	private Timer clock;
 
 	// The clock can't be an everything-is-static singleton because
 	// it creates a menu, and it can't do that until the menus
 	// are established.
 	//
 	private Clock()
-	{	clock.setInitialDelay(0);
-		clock.setCoalesce(true);
-		createMenus();
+	{	createMenus();
 	}
 
 	private static Clock instance;
@@ -56,10 +56,12 @@ public class Clock
 	 */
 
 	public void startTicking( int millisecondsBetweenTicks )
-	{	requireEventDispatchThread();
-		clock.stop();
-		if( millisecondsBetweenTicks > 0 )
-		{	clock.setDelay(millisecondsBetweenTicks);
+	{	if (clock != null) clock.stop();
+		clock = null;
+		if (millisecondsBetweenTicks > 0) {
+			// Board edits, capture, and generation updates share the Swing
+			// event thread, so a captured region cannot contain mixed generations.
+			clock = new Timer(millisecondsBetweenTicks, e -> tick());
 			clock.start();
 		}
 	}
@@ -133,7 +135,10 @@ public class Clock
 	 *  stopped. (Life uses this for single stepping.)
 	 */
 	public void tick()
-	{	requireEventDispatchThread();
+	{	if (!SwingUtilities.isEventDispatchThread()) {
+			SwingUtilities.invokeLater(this::tick);
+			return;
+		}
 		publisher.publish
 		(	new Publisher.Distributor()
 			{	public void deliverTo( Object subscriber )
@@ -169,10 +174,4 @@ public class Clock
 					MenuSelectionManager.defaultManager().getSelectedPath();
 		return ( path != null && path.length > 0 );
 	}
-    /** Timer callbacks, menu actions and explicit clock control share the EDT. */
-    private static void requireEventDispatchThread() {
-        if (!SwingUtilities.isEventDispatchThread()) {
-            throw new IllegalStateException("Clock operations must run on the Swing EDT");
-        }
-    }
 }

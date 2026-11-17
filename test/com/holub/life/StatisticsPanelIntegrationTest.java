@@ -108,7 +108,7 @@ class StatisticsPanelIntegrationTest {
             connect();
             seedBlock();
             for (int generation = 1; generation <= 3; generation++) {
-                LifeTestSupport.universe.advanceOneGeneration();
+                LifeTestSupport.clock.tick();
                 assertDisplay(Integer.toString(generation), "4", "0.10%", "0", "0");
             }
         });

@@ -25,8 +25,13 @@ final class LifeTestSupport {
     private LifeTestSupport() { }
 
     static void initialize() throws Exception {
+        if (universe != null) return;
+        java.nio.file.Path templates = java.nio.file.Files.createTempDirectory("life-statistics-test-");
+        templates.toFile().deleteOnExit();
         onEdt(() -> {
             if (universe != null) return;
+            String previousTemplates = System.getProperty("life.templates");
+            System.setProperty("life.templates", templates.toString());
             try (MockedStatic<MenuSite> menus = mockStatic(MenuSite.class)) {
                 menus.when(() -> MenuSite.addLine(
                         any(), anyString(), anyString(), any(ActionListener.class)))
@@ -38,6 +43,9 @@ final class LifeTestSupport {
                 clock = Clock.instance();
                 universe = Universe.instance();
                 universe.setSize(universe.getPreferredSize());
+            } finally {
+                if (previousTemplates == null) System.clearProperty("life.templates");
+                else System.setProperty("life.templates", previousTemplates);
             }
         });
     }
@@ -45,6 +53,8 @@ final class LifeTestSupport {
     static void resetBoard() throws Exception {
         onEdt(() -> {
             clock.stop();
+            Resident.setColorPolicy(new FixedColorPolicy(Resident.LIVE_COLOR));
+            universe.setPlayhead(-1);
             MenuSelectionManager.defaultManager().clearSelectedPath();
             select("Grid", "Clear");
         });

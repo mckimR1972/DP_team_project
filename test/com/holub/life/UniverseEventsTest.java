@@ -153,7 +153,7 @@ class UniverseEventsTest {
             seedBlock();
             events.clear();
             for (int generation = 1; generation <= 3; generation++) {
-                LifeTestSupport.universe.advanceOneGeneration();
+                LifeTestSupport.clock.tick();
                 assertEquals(generation, last().generation());
                 assertEquals(4, summary().livingCells());
                 assertDelta(0, 0);
@@ -348,7 +348,6 @@ class UniverseEventsTest {
         assertThrows(IllegalStateException.class, () -> LifeTestSupport.universe.addBoardChangeListener(listener));
         assertThrows(IllegalStateException.class, () -> LifeTestSupport.universe.removeBoardChangeListener(listener));
         assertThrows(IllegalStateException.class, () -> LifeTestSupport.universe.notifyBoardChanged(EDIT));
-        assertThrows(IllegalStateException.class, () -> LifeTestSupport.universe.advanceOneGeneration());
     }
 
     @Test

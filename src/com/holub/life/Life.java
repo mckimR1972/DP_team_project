@@ -3,6 +3,7 @@ package com.holub.life;
 import java.awt.*;
 import javax.swing.*;
 import com.holub.ui.MenuSite;
+import com.holub.life.sound.SoundEffects;
 
 /*******************************************************************
  * An implemenation of Conway's Game of Life.
@@ -30,18 +31,29 @@ public final class Life extends JFrame
 		setDefaultCloseOperation	( EXIT_ON_CLOSE 		);
 		universe = Universe.instance();
 		StatisticsPanel statisticsPanel = new StatisticsPanel();
-		// At integration, obtain the existing shared tabs here instead.
-		JTabbedPane tabs = new JTabbedPane();
-		tabs.setName("life.sidebar");
-		tabs.addTab("통계", statisticsPanel);
+		JTabbedPane tabs = createSidebar(universe, statisticsPanel);
 		setContentPane(createContent(universe, tabs));
 		statistics = connectStatistics(universe, statisticsPanel);
+		SoundEffects.install(universe);
 
 		setResizable(false);
 		pack();
 		setLocationRelativeTo(null);
 		setVisible( true );
 	}
+
+    /** Assemble shared tools once; changing pages does not reconnect observers. */
+    static JTabbedPane createSidebar(Universe universe, StatisticsPanel statisticsPanel) {
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setName("life.sidebar");
+        JPanel patterns = universe.patternControls();
+        tabs.addTab("패턴 캡처", patterns);
+        tabs.addTab("통계", statisticsPanel);
+        tabs.addChangeListener(event -> {
+            if (tabs.getSelectedComponent() != patterns) universe.finishPatternEditing();
+        });
+        return tabs;
+    }
 
 	/** Lay out supplied tabs without replacing their pages, selection, or listeners. */
 	static JPanel createContent(Universe universe, JTabbedPane tabs) {

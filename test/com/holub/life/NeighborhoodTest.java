@@ -86,7 +86,7 @@ class NeighborhoodTest {
     void isAliveAtFindsResidentThroughNestedNeighborhoods() {
         Neighborhood board = new Neighborhood(2, new Neighborhood(2, new Resident()));
 
-        // Each cell is 10 pixels on a 40-pixel surface; click row 3, column 2.
+        // 40픽셀 판에서 셀 하나가 10픽셀. 3행 2열을 클릭한다.
         board.userClicked(new Point(25, 35), new Rectangle(0, 0, 40, 40));
 
         assertTrue(board.isAliveAt(3, 2));

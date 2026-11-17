@@ -123,11 +123,23 @@ class ClockIntegrationTest {
     }
 
     @Test
-    void clockControlRejectsCallsOutsideEdt() {
+    void tickOutsideEdtIsDeliveredOnceOnEdt() throws Exception {
+        CountDownLatch completed = new CountDownLatch(1);
+        List<BoardChangeEvent> events = new ArrayList<>();
+        AtomicBoolean deliveredOnEdt = new AtomicBoolean(false);
+        LifeTestSupport.onEdt(() -> listen(event -> {
+            deliveredOnEdt.set(SwingUtilities.isEventDispatchThread());
+            events.add(event);
+            completed.countDown();
+        }));
         assertFalse(SwingUtilities.isEventDispatchThread());
-        assertThrows(IllegalStateException.class, () -> LifeTestSupport.clock.tick());
-        assertThrows(IllegalStateException.class, () -> LifeTestSupport.clock.startTicking(20));
-        assertThrows(IllegalStateException.class, () -> LifeTestSupport.clock.stop());
+        LifeTestSupport.clock.tick();
+        assertTrue(completed.await(5, TimeUnit.SECONDS));
+        LifeTestSupport.onEdt(() -> {
+            assertTrue(deliveredOnEdt.get());
+            assertEquals(1, events.size());
+            assertEquals(1, events.get(0).generation());
+        });
     }
 
     private void listen(Consumer<BoardChangeEvent> callback) {

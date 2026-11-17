@@ -64,8 +64,8 @@ public interface Cell
 	 */
 	boolean isAlive();
 
-	/** Return true if the resident at the indicated position, relative
-	 *  to the upper-left corner of this cell, is alive.
+	/** 이 셀의 왼쪽 위를 기준으로 (row, column) 위치의 셀이 살아 있으면
+	 *  true를 반환한다.
 	 */
 	boolean isAliveAt( int row, int column );
 

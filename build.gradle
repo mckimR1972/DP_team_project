@@ -45,7 +45,25 @@ tasks.withType(Test).configureEach {
     systemProperty 'java.awt.headless', 'true'
     // Static mocking replaces the file chooser, menus and clock in the Store test.
     jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}"
+    // Universe 싱글턴은 JVM당 한 번만 메뉴와 시계를 등록하므로 테스트 클래스마다 JVM을 따로 띄운다
+    forkEvery = 1
     testLogging {
         events 'passed', 'skipped', 'failed'
+    }
+}
+
+// Runs actual Swing components and a save dialog in a separate JVM.
+// Keep this opt-in because it needs a desktop, unlike the normal JUnit suite.
+tasks.register('patternUiTest', JavaExec) {
+    group = 'verification'
+    description = 'Runs the capture/template Swing integration checks (desktop required).'
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.holub.life.PatternUiTest'
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    enableAssertions = true
+    systemProperty 'java.awt.headless', 'false'
+    doFirst {
+        layout.buildDirectory.get().asFile.mkdirs()
     }
 }

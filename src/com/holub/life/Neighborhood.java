@@ -472,12 +472,12 @@ public final class Neighborhood implements Cell
 			}
 			upperLeft.translate(-myWidth, subcellWidth );
 		}
-		// Restored residents have matching current/next state, so they report no
-		// disruptive edges. Invalidate the cached activity of every loaded block
-		// to also recompute empty neighbors across sub-neighborhood boundaries.
-		if (load)
-		{	amActive = true;
+		// A restored board must recompute empty neighbors too: new births
+		// can cross a nested Neighborhood boundary on the very next tick.
+		if (load) {
+			amActive = true;
 			activeEdges.add(Direction.ALL);
+			oneLastRefreshRequired = true;
 		}
 		return amActive;
 	}
