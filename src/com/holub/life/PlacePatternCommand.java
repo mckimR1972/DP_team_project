@@ -1,7 +1,6 @@
 package com.holub.life;
 
 import java.awt.Point;
-import java.awt.Rectangle;
 
 /** Command: one placement, with the existing Cell Memento as its undo state. */
 final class PlacePatternCommand {
@@ -46,12 +45,12 @@ final class PlacePatternCommand {
         Cell.Memento target = (Cell.Memento) state;
         Cell.Memento current = (Cell.Memento) board.createMemento();
         int size = board.widthInCells();
-        Rectangle surface = new Rectangle(0, 0, size, size);
+        PatternCells cells = new PatternCells(board);
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
                 Point cell = new Point(x, y);
                 if (current.isAlive(cell) != target.isAlive(cell)) {
-                    board.userClicked(cell, surface);
+                    cells.setAlive(cell, target.isAlive(cell));
                 }
             }
         }
