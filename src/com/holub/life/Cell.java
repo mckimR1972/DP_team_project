@@ -64,6 +64,11 @@ public interface Cell
 	 */
 	boolean isAlive();
 
+	/** 이 셀의 왼쪽 위를 기준으로 (row, column) 위치의 셀이 살아 있으면
+	 *  true를 반환한다.
+	 */
+	boolean isAliveAt( int row, int column );
+
 	/** Return the specified width plus the current cell's width
 	 */
 	int widthInCells();
@@ -142,6 +147,7 @@ public interface Cell
 
 		public Cell		 edge(int r, int c)	{return this;  			  }
 		public boolean	 isAlive()		   	{return false; 			  }
+		public boolean	 isAliveAt(int r, int c)	{return false;	  }
 		public Cell 	 create()	   	   	{return this;			  }
 		public Direction isDisruptiveTo()	{return Direction.NONE;	  }
 		public void 	 clear()		   	{						  }

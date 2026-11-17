@@ -2,6 +2,7 @@ package com.holub.life;
 
 import java.awt.*;
 import javax.swing.*;
+import com.holub.life.sound.SoundEffects;
 import com.holub.ui.MenuSite;
 
 /*******************************************************************
@@ -12,10 +13,8 @@ import com.holub.ui.MenuSite;
 
 public final class Life extends JFrame
 {	
-	private static JComponent universe;
-
 	public static void main( String[] arguments )
-	{	new Life();
+	{	SwingUtilities.invokeLater(Life::new);
 	}
 
 	private Life()
@@ -29,8 +28,13 @@ public final class Life extends JFrame
 		setDefaultCloseOperation	( EXIT_ON_CLOSE 		);
 		getContentPane().setLayout	( new BorderLayout()	);
 		getContentPane().add( Universe.instance(), BorderLayout.CENTER); //{=life.java.install}
+		getContentPane().add( Universe.instance().patternControls(), BorderLayout.EAST);
 
+		SoundEffects.install( Universe.instance() );
+
+		setResizable(false);
 		pack();
+		setLocationRelativeTo(null);
 		setVisible( true );
 	}
 }

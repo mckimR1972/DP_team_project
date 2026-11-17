@@ -4,7 +4,7 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import java.util.*;
-import java.util.Timer;		// overrides java.awt.timer
+import javax.swing.Timer;
 import com.holub.ui.MenuSite;
 import com.holub.tools.Publisher;
 
@@ -27,8 +27,7 @@ import com.holub.tools.Publisher;
  */
 
 public class Clock
-{	private Timer			clock		= new Timer();
-	private TimerTask		tick		= null;
+{	private Timer clock;
 
 	// The clock can't be an everything-is-static singleton because
 	// it creates a menu, and it can't do that until the menus
@@ -57,16 +56,13 @@ public class Clock
 	 */
 
 	public void startTicking( int millisecondsBetweenTicks )
-	{	if(tick != null)
-		{	tick.cancel();
-			tick=null;
-		}
-
-		if( millisecondsBetweenTicks > 0 )
-		{	tick =	new TimerTask()
-					{	public void run(){ tick(); }
-					};
-			clock.scheduleAtFixedRate( tick, 0, millisecondsBetweenTicks);
+	{	if (clock != null) clock.stop();
+		clock = null;
+		if (millisecondsBetweenTicks > 0) {
+			// Board edits, capture, and generation updates share the Swing
+			// event thread, so a captured region cannot contain mixed generations.
+			clock = new Timer(millisecondsBetweenTicks, e -> tick());
+			clock.start();
 		}
 	}
 
@@ -139,7 +135,11 @@ public class Clock
 	 *  stopped. (Life uses this for single stepping.)
 	 */
 	public void tick()
-	{	publisher.publish
+	{	if (!SwingUtilities.isEventDispatchThread()) {
+			SwingUtilities.invokeLater(this::tick);
+			return;
+		}
+		publisher.publish
 		(	new Publisher.Distributor()
 			{	public void deliverTo( Object subscriber )
 				{	if( !menuIsActive() )

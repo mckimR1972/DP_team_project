@@ -420,7 +420,17 @@ public final class Neighborhood implements Cell
 	}
 
 	public boolean isAlive()
-	{	return true;
+	{	for( int row = 0; row < gridSize; ++row )
+			for( int column = 0; column < gridSize; ++column )
+				if( grid[row][column].isAlive() )
+					return true;
+		return false;
+	}
+
+	public boolean isAliveAt(int row, int column)
+	{	int subcellWidth = grid[0][0].widthInCells();
+		return grid[row / subcellWidth][column / subcellWidth]
+					.isAliveAt( row % subcellWidth, column % subcellWidth );
 	}
 
 	public int widthInCells()
@@ -461,6 +471,13 @@ public final class Neighborhood implements Cell
 				upperLeft.translate( subcellWidth, 0);
 			}
 			upperLeft.translate(-myWidth, subcellWidth );
+		}
+		// A restored board must recompute empty neighbors too: new births
+		// can cross a nested Neighborhood boundary on the very next tick.
+		if (load) {
+			amActive = true;
+			activeEdges.add(Direction.ALL);
+			oneLastRefreshRequired = true;
 		}
 		return amActive;
 	}
