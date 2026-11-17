@@ -28,6 +28,7 @@ import com.holub.life.Resident;
 
 public class Universe extends JPanel
 {	private 		final Cell  	outermostCell;
+	private final PatternTools patternTools;
 	private static	final Universe 	theInstance = new Universe();
 
 	/** The default height and width of a Neighborhood in cells.
@@ -90,23 +91,28 @@ public class Universe extends JPanel
 		setMaximumSize	( PREFERRED_SIZE );
 		setMinimumSize	( PREFERRED_SIZE );
 		setOpaque		( true			 );
+		patternTools = new PatternTools(this, outermostCell);
 
 		// 누르면 셀 하나를 토글하고, 끄는 동안 지나가는 셀은 모두
 		// 같은 상태로 만든다. 그래서 한 번 끌면 그리거나 지운다.
+		// 패턴 도구가 캡처·배치 중이거나 왼쪽 버튼이 아니면 그리지 않는다.
 
 		MouseAdapter brush = new MouseAdapter()		//{=Universe.mouse}
 		{	private Point	lastCell;
 			private boolean paintsAlive;
 
 			public void mousePressed(MouseEvent e)
-			{	lastCell	= cellAt( e.getPoint() );
+			{	lastCell = null;
+				if (patternTools.isEditing() || !SwingUtilities.isLeftMouseButton(e)) return;
+				lastCell	= cellAt( e.getPoint() );
 				paintsAlive = !outermostCell.isAliveAt(lastCell.y, lastCell.x);
 				setCell( lastCell, paintsAlive );
 				repaint();
 			}
 
 			public void mouseDragged(MouseEvent e)
-			{	Point cell = cellAt( e.getPoint() );
+			{	if (lastCell == null || patternTools.isEditing()) return;
+				Point cell = cellAt( e.getPoint() );
 
 				// 빠르게 끌면 칸을 건너뛰므로 마지막 두 마우스 위치
 				// 사이의 칸을 모두 채운다.
@@ -129,7 +135,9 @@ public class Universe extends JPanel
 		MenuSite.addLine( this, "Grid", "Clear",
 			new ActionListener()
 			{	public void actionPerformed(ActionEvent e)
-				{	outermostCell.clear();
+				{	if (patternTools.isEditing()) patternTools.cancel();
+					patternTools.boardChanged();
+					outermostCell.clear();
 					repaint();
 				}
 			}
@@ -165,17 +173,50 @@ public class Universe extends JPanel
 		Clock.instance().addClockListener //{=Universe.clock.subscribe}
 		(	new Clock.Listener()
 			{	public void tick()
-				{	if( outermostCell.figureNextState
+				{	if (patternTools.isEditing()) return;
+					patternTools.boardChanged();
+					outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
-						   )
-					  )
-					{	if( outermostCell.transition() )
-							refreshNow();
-					}
+						   );
+
+					// 바뀌는 셀이 없어도 매 틱 불러야 멈춘 패턴도 나이를 먹는다
+					boolean changed = outermostCell.transition();
+
+					// 색상 또는 생존 상태가 바뀌면 보드와 편집 오버레이를 함께 다시 그린다
+					if( Resident.colorChangesWithAge() )
+						refreshNow();
+					else if( changed )
+						refreshNow();
 				}
 			}
 		);
+
+		// Go 메뉴는 위의 Clock.instance()에서 생기므로 그 뒤에 추가해야 Go 다음에 붙는다
+		MenuSite.addLine
+		(	this, "Color", "Single Color",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	useColorPolicy( new FixedColorPolicy( Resident.LIVE_COLOR ) );
+				}
+			}
+		);
+
+		MenuSite.addLine
+		(	this, "Color", "Cycle by Generation",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	// 10세대마다 빨강 → 파랑 → 초록 (적록 색약도 구분되는 색)
+					useColorPolicy( new CyclingColorPolicy
+						( 10, Resident.LIVE_COLOR, new Color(0x0072B2), new Color(0x009E73) ) );
+				}
+			}
+		);
+	}
+
+	private void useColorPolicy( CellColorPolicy policy )
+	{	Resident.setColorPolicy( policy );
+		repaint();
 	}
 
 	/** Singleton Accessor. The Universe object itself is manufactured
@@ -185,6 +226,8 @@ public class Universe extends JPanel
 	public static Universe instance()
 	{	return theInstance;
 	}
+
+	JPanel patternControls() { return patternTools.controls(); }
 
 	private int pixelsPerCell()
 	{	return Math.max( 1, getWidth() / outermostCell.widthInCells() );
@@ -205,6 +248,7 @@ public class Universe extends JPanel
 	{	if( outermostCell.isAliveAt(cell.y, cell.x) == alive )
 			return;
 
+		patternTools.boardChanged();
 		int size  = pixelsPerCell();
 		int board = size * outermostCell.widthInCells();
 		outermostCell.userClicked( new Point(cell.x * size, cell.y * size),
@@ -217,6 +261,8 @@ public class Universe extends JPanel
 			FileInputStream in = new FileInputStream(
 			   Files.userSelected(".",".life","Life File","Load"));
 
+			patternTools.cancel();
+			patternTools.boardChanged();
 			Clock.instance().stop();		// stop the game and
 			outermostCell.clear();			// clear the board.
 
@@ -258,8 +304,9 @@ public class Universe extends JPanel
 	 *  (The size is passed into the outermost <code>Cell</code>.)
 	 */
 
-	public void paint(Graphics g)
+	protected void paintComponent(Graphics g)
 	{
+		super.paintComponent(g);
 		Rectangle panelBounds = getBounds();
 		Rectangle clipBounds  = g.getClipBounds();
 
@@ -268,36 +315,11 @@ public class Universe extends JPanel
 		panelBounds.x = 0;
 		panelBounds.y = 0;
 		outermostCell.redraw(g, panelBounds, true);		//{=Universe.redraw1}
+		if (patternTools != null) patternTools.paintOverlay((Graphics2D) g);
 	}
 
-	/** Force a screen refresh by queing a request on
-	 *  the Swing event queue. This is an example of the
-	 *  Active Object pattern (not covered by the Gang of Four).
-	 *  This method is called on every clock tick. Note that
-	 *  the redraw() method on a given <code>Cell</code>
-	 *  does nothing if the <code>Cell</code> doesn't
-	 *  have to be refreshed.
-	 */
-
+	/** Repaint the board and editing overlay together through Swing. */
 	private void refreshNow()
-	{	SwingUtilities.invokeLater
-		(	new Runnable()
-			{	public void run()
-				{	Graphics g = getGraphics();
-					if( g == null )		// Universe not displayable
-						return;
-					try
-					{
-						Rectangle panelBounds = getBounds();
-						panelBounds.x = 0;
-						panelBounds.y = 0;
-						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
-					}
-					finally
-					{	g.dispose();
-					}
-				}
-			}
-		);
+	{	repaint();
 	}
 }
