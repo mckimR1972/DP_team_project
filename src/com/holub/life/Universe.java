@@ -28,6 +28,7 @@ import com.holub.life.Resident;
 
 public class Universe extends JPanel
 {	private 		final Cell  	outermostCell;
+	private final PatternTools patternTools;
 	private static	final Universe 	theInstance = new Universe();
 
 	/** The default height and width of a Neighborhood in cells.
@@ -90,13 +91,17 @@ public class Universe extends JPanel
 		setMaximumSize	( PREFERRED_SIZE );
 		setMinimumSize	( PREFERRED_SIZE );
 		setOpaque		( true			 );
+		patternTools = new PatternTools(this, outermostCell);
 
 		addMouseListener					//{=Universe.mouse}
 		(	new MouseAdapter()
 			{	public void mousePressed(MouseEvent e)
-				{	Rectangle bounds = getBounds();
+				{	if (patternTools.isEditing() || !SwingUtilities.isLeftMouseButton(e)) return;
+					Rectangle bounds = getBounds();
 					bounds.x = 0;
 					bounds.y = 0;
+					if (!bounds.contains(e.getPoint())) return;
+					patternTools.boardChanged();
 					outermostCell.userClicked(e.getPoint(),bounds);
 					repaint();
 				}
@@ -106,7 +111,9 @@ public class Universe extends JPanel
 		MenuSite.addLine( this, "Grid", "Clear",
 			new ActionListener()
 			{	public void actionPerformed(ActionEvent e)
-				{	outermostCell.clear();
+				{	if (patternTools.isEditing()) patternTools.cancel();
+					patternTools.boardChanged();
+					outermostCell.clear();
 					repaint();
 				}
 			}
@@ -142,7 +149,9 @@ public class Universe extends JPanel
 		Clock.instance().addClockListener //{=Universe.clock.subscribe}
 		(	new Clock.Listener()
 			{	public void tick()
-				{	outermostCell.figureNextState
+				{	if (patternTools.isEditing()) return;
+					patternTools.boardChanged();
+					outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
 						   );
@@ -150,11 +159,11 @@ public class Universe extends JPanel
 					// 바뀌는 셀이 없어도 매 틱 불러야 멈춘 패턴도 나이를 먹는다
 					boolean changed = outermostCell.transition();
 
-					// 나이로 색이 바뀌는 규칙이면 판 전체를, 아니면 바뀐 곳만 다시 그린다
+					// 색상 또는 생존 상태가 바뀌면 보드와 편집 오버레이를 함께 다시 그린다
 					if( Resident.colorChangesWithAge() )
-						refreshNow( true );
+						refreshNow();
 					else if( changed )
-						refreshNow( false );
+						refreshNow();
 				}
 			}
 		);
@@ -194,12 +203,16 @@ public class Universe extends JPanel
 	{	return theInstance;
 	}
 
+	JPanel patternControls() { return patternTools.controls(); }
+
 	private void doLoad()
 	{	try
 		{
 			FileInputStream in = new FileInputStream(
 			   Files.userSelected(".",".life","Life File","Load"));
 
+			patternTools.cancel();
+			patternTools.boardChanged();
 			Clock.instance().stop();		// stop the game and
 			outermostCell.clear();			// clear the board.
 
@@ -241,8 +254,9 @@ public class Universe extends JPanel
 	 *  (The size is passed into the outermost <code>Cell</code>.)
 	 */
 
-	public void paint(Graphics g)
+	protected void paintComponent(Graphics g)
 	{
+		super.paintComponent(g);
 		Rectangle panelBounds = getBounds();
 		Rectangle clipBounds  = g.getClipBounds();
 
@@ -251,37 +265,11 @@ public class Universe extends JPanel
 		panelBounds.x = 0;
 		panelBounds.y = 0;
 		outermostCell.redraw(g, panelBounds, true);		//{=Universe.redraw1}
+		if (patternTools != null) patternTools.paintOverlay((Graphics2D) g);
 	}
 
-	/** Force a screen refresh by queing a request on
-	 *  the Swing event queue. This is an example of the
-	 *  Active Object pattern (not covered by the Gang of Four).
-	 *  This method is called on every clock tick. Note that
-	 *  the redraw() method on a given <code>Cell</code>
-	 *  does nothing if the <code>Cell</code> doesn't
-	 *  have to be refreshed.
-	 *  @param drawAll true면 바뀌지 않은 셀까지 모두 다시 그린다
-	 */
-
-	private void refreshNow( final boolean drawAll )
-	{	SwingUtilities.invokeLater
-		(	new Runnable()
-			{	public void run()
-				{	Graphics g = getGraphics();
-					if( g == null )		// Universe not displayable
-						return;
-					try
-					{
-						Rectangle panelBounds = getBounds();
-						panelBounds.x = 0;
-						panelBounds.y = 0;
-						outermostCell.redraw(g, panelBounds, drawAll); //{=Universe.redraw2}
-					}
-					finally
-					{	g.dispose();
-					}
-				}
-			}
-		);
+	/** Repaint the board and editing overlay together through Swing. */
+	private void refreshNow()
+	{	repaint();
 	}
 }

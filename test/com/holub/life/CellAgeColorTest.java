@@ -40,6 +40,27 @@ class CellAgeColorTest {
     }
 
     @Test
+    void captureCopiesOnlyLivingCellsRegardlessOfColorAndAge() {
+        useCyclingColors();
+        placeBlock(0, 0);
+        tick(10);
+        assertEquals(BLUE, colorAt(0, 0));
+        BoardEditor editor = new BoardEditor(board);
+        PatternTemplate blue = editor.capture("blue", new Rectangle(0, 0, 3, 3));
+        tick(10);
+        assertEquals(GREEN, colorAt(0, 0));
+        PatternTemplate green = editor.capture("green", new Rectangle(0, 0, 3, 3));
+        assertEquals(4, blue.liveCount());
+        for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 3; x++)
+                assertEquals(blue.isAlive(x, y), green.isAlive(x, y));
+        editor.place(blue, new Point(10, 10));
+        assertEquals(Color.RED, colorAt(10, 10));
+        assertEquals(GREEN, colorAt(0, 0));
+        assertEquals(DEAD, colorAt(12, 12));
+    }
+
+    @Test
     void stillLifeChangesColorEveryTenGenerationsAndWrapsAround() {
         useCyclingColors();
         placeBlock(0, 0);
