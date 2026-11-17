@@ -75,6 +75,15 @@ class PatternToolsTest {
             assertFalse(cells.isAliveAt(10, 10));
         });
     }
+    @Test void fastDragFillsIntermediateAnchorsInBothDirections() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            choose(PatternTemplate.fromRows("Dot", "O"));
+            press(1, 1); drag(7, 1); drag(1, 7); release(1, 7);
+            for (int x = 1; x <= 7; x++) assertTrue(cells.isAliveAt(1, x));
+            for (int step = 0; step <= 6; step++) assertTrue(cells.isAliveAt(1 + step, 7 - step));
+        });
+    }
+
     @Test void holdingStillDoesNotToggleOrCreateExtraUndoEntries() throws Exception {
         SwingUtilities.invokeAndWait(() -> { choose(PatternTemplate.fromRows("Dot", "O")); press(3, 4); });
         // Let actual Swing timer events run while the pointer is stationary.

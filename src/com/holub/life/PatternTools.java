@@ -39,6 +39,7 @@ final class PatternTools {
     private Point hover;
     private Rectangle selection;
     private boolean stamping;
+    private Point lastStamp;
     private final Timer stampTimer = new Timer(80, e -> {
         if (stamping && hover != null) stampAt(hover);
     });
@@ -118,6 +119,7 @@ final class PatternTools {
                     stopStamping();
                     stamping = true;
                     hover = point;
+                    lastStamp = new Point(point);
                     stampAt(point);
                     stampTimer.start();
                 }
@@ -127,7 +129,10 @@ final class PatternTools {
                 if (mode == Mode.PLACE && stamping) {
                     if ((e.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) == 0) { stopStamping(); return; }
                     hover = cellAt(e.getPoint(), false);
-                    if (hover != null) stampAt(hover);
+                    if (hover != null) {
+                        PatternPath.visit(lastStamp == null ? hover : lastStamp, hover, PatternTools.this::stampAt);
+                        lastStamp = new Point(hover);
+                    } else lastStamp = null;
                 }
             }
             @Override public void mouseReleased(MouseEvent e) {
@@ -141,7 +146,7 @@ final class PatternTools {
                 hover = cellAt(e.getPoint(), false);
                 if (mode == Mode.PLACE) board.repaint();
             }
-            @Override public void mouseExited(MouseEvent e) { hover = null; board.repaint(); }
+            @Override public void mouseExited(MouseEvent e) { lastStamp = null; hover = null; board.repaint(); }
         };
         board.addMouseListener(mouse);
         board.addMouseMotionListener(mouse);
@@ -152,6 +157,7 @@ final class PatternTools {
     private void stopStamping() {
         stampTimer.stop();
         stamping = false;
+        lastStamp = null;
     }
 
     private void stampAt(Point point) {
