@@ -38,6 +38,10 @@ final class PatternTools {
     private Point anchor;
     private Point hover;
     private Rectangle selection;
+    private boolean stamping;
+    private final Timer stampTimer = new Timer(80, e -> {
+        if (stamping && hover != null) stampAt(hover);
+    });
 
     PatternTools(JPanel board, Cell cells) {
         this.board = board;
@@ -111,22 +115,23 @@ final class PatternTools {
                     anchor = point;
                     selectThrough(point);
                 } else {
-                    PatternTemplate pattern = list.getSelectedValue();
-                    if (!editor.fits(pattern, point)) {
-                        message("보드 밖으로 나갑니다. 안쪽에 배치하세요.");
-                        return;
-                    }
-                    boolean changed = editor.place(pattern, point);
-                    undo.setEnabled(editor.canUndo());
-                    message(changed ? "배치했습니다. 다시 클릭하면 반복 배치합니다. Esc로 종료."
-                            : "같은 위치에 이미 살아 있는 셀이 있습니다.");
-                    board.repaint();
+                    stopStamping();
+                    stamping = true;
+                    hover = point;
+                    stampAt(point);
+                    stampTimer.start();
                 }
             }
             @Override public void mouseDragged(MouseEvent e) {
                 if (mode == Mode.CAPTURE && anchor != null) selectThrough(cellAt(e.getPoint(), true));
+                if (mode == Mode.PLACE && stamping) {
+                    if ((e.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) == 0) { stopStamping(); return; }
+                    hover = cellAt(e.getPoint(), false);
+                    if (hover != null) stampAt(hover);
+                }
             }
             @Override public void mouseReleased(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) stopStamping();
                 if (mode == Mode.CAPTURE && anchor != null && SwingUtilities.isLeftMouseButton(e)) {
                     selectThrough(cellAt(e.getPoint(), true));
                     anchor = null;
@@ -144,9 +149,27 @@ final class PatternTools {
         bind("control Z", "undo-pattern", this::undo);
     }
 
+    private void stopStamping() {
+        stampTimer.stop();
+        stamping = false;
+    }
+
+    private void stampAt(Point point) {
+        PatternTemplate pattern = list.getSelectedValue();
+        if (!editor.fits(pattern, point)) {
+            message("보드 밖으로 나갑니다. 안쪽에 배치하세요.");
+            return;
+        }
+        boolean changed = editor.place(pattern, point);
+        undo.setEnabled(editor.canUndo());
+        if (changed) message("누른 채 이동하면 연속 배치합니다. Esc로 편집 종료.");
+        board.repaint();
+    }
+
     JPanel controls() { return controls; }
     boolean isEditing() { return mode != Mode.DRAW; }
     void boardChanged() {
+        stopStamping();
         editor.clearHistory();
         undo.setEnabled(false);
     }
@@ -166,6 +189,7 @@ final class PatternTools {
         });
     }
     private void begin(Mode next) {
+        stopStamping();
         Clock.instance().stop();
         mode = next;
         selection = null;
@@ -185,6 +209,7 @@ final class PatternTools {
         message("셀 클릭으로 그리기. Go 메뉴에서 시뮬레이션을 시작하세요.");
     }
     private void undo() {
+        stopStamping();
         if (!editor.canUndo()) return;
         Clock.instance().stop();
         editor.undo();
