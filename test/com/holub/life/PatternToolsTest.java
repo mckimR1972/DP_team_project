@@ -97,6 +97,45 @@ class PatternToolsTest {
         });
     }
 
+    @Test void outsideReleaseStopsStampingAndRemovesGlobalListener() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            choose(PatternTemplate.fromRows("Dot", "O"));
+            int listeners = Toolkit.getDefaultToolkit().getAWTEventListeners().length;
+            press(1, 1);
+            assertEquals(listeners + 1, Toolkit.getDefaultToolkit().getAWTEventListeners().length);
+            drag(30, 30); release(30, 30);
+            assertEquals(listeners, Toolkit.getDefaultToolkit().getAWTEventListeners().length);
+            drag(8, 8);
+            assertFalse(cells.isAliveAt(8, 8));
+            button("배치 되돌리기").doClick();
+            assertFalse(cells.isAlive());
+        });
+    }
+    @Test void invalidLargeStampLeavesBoardUntouchedAndCanReturnInside() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            choose(PatternTemplate.fromRows("Square", "OO", "OO"));
+            press(15, 15); release(15, 15);
+            assertFalse(cells.isAlive());
+            assertFalse(button("배치 되돌리기").isEnabled());
+            press(14, 14); drag(25, 25); drag(10, 10); release(10, 10);
+            assertTrue(cells.isAliveAt(15, 15));
+            assertTrue(cells.isAliveAt(10, 10));
+            assertFalse(cells.isAliveAt(12, 12)); // no bridge through off-board samples
+        });
+    }
+    @Test void focusLossStopsHeldGesture() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            choose(PatternTemplate.fromRows("Dot", "O"));
+            press(2, 2);
+            java.awt.event.FocusEvent lost = new java.awt.event.FocusEvent(board, java.awt.event.FocusEvent.FOCUS_LOST);
+            for (java.awt.event.FocusListener listener : board.getFocusListeners()) listener.focusLost(lost);
+            drag(7, 7);
+            assertFalse(cells.isAliveAt(7, 7));
+            button("배치 되돌리기").doClick();
+            assertFalse(cells.isAlive());
+        });
+    }
+
     @Test void holdingStillDoesNotToggleOrCreateExtraUndoEntries() throws Exception {
         SwingUtilities.invokeAndWait(() -> { choose(PatternTemplate.fromRows("Dot", "O")); press(3, 4); });
         // Let actual Swing timer events run while the pointer is stationary.

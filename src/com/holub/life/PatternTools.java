@@ -40,6 +40,8 @@ final class PatternTools {
     private Rectangle selection;
     private boolean stamping;
     private Point lastStamp;
+    private boolean watchingRelease;
+    private final AWTEventListener strokeEndListener = this::handleStrokeEnd;
     private final Timer stampTimer = new Timer(80, e -> {
         if (stamping && hover != null) stampAt(hover);
     });
@@ -123,6 +125,9 @@ final class PatternTools {
                     lastStamp = new Point(point);
                     stampAt(point);
                     stampTimer.start();
+                    Toolkit.getDefaultToolkit().addAWTEventListener(strokeEndListener,
+                            AWTEvent.MOUSE_EVENT_MASK | AWTEvent.WINDOW_EVENT_MASK | AWTEvent.WINDOW_FOCUS_EVENT_MASK);
+                    watchingRelease = true;
                 }
             }
             @Override public void mouseDragged(MouseEvent e) {
@@ -149,13 +154,36 @@ final class PatternTools {
             }
             @Override public void mouseExited(MouseEvent e) { lastStamp = null; hover = null; board.repaint(); }
         };
+        board.addFocusListener(new FocusAdapter() {
+            @Override public void focusLost(FocusEvent e) { stopStamping(); }
+        });
+        board.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0 && !board.isDisplayable()) stopStamping();
+        });
         board.addMouseListener(mouse);
         board.addMouseMotionListener(mouse);
         bind("ESCAPE", "cancel-pattern", this::cancel);
         bind("control Z", "undo-pattern", this::undo);
     }
 
+    private void handleStrokeEnd(AWTEvent event) {
+        if (event instanceof MouseEvent) {
+            MouseEvent mouse = (MouseEvent)event;
+            if (mouse.getID() == MouseEvent.MOUSE_RELEASED && SwingUtilities.isLeftMouseButton(mouse)) stopStamping();
+        } else if (event instanceof WindowEvent) {
+            WindowEvent window = (WindowEvent)event;
+            if (window.getWindow() == SwingUtilities.getWindowAncestor(board)
+                    && (window.getID() == WindowEvent.WINDOW_LOST_FOCUS
+                    || window.getID() == WindowEvent.WINDOW_DEACTIVATED
+                    || window.getID() == WindowEvent.WINDOW_CLOSED)) stopStamping();
+        }
+    }
+
     private void stopStamping() {
+        if (watchingRelease) {
+            Toolkit.getDefaultToolkit().removeAWTEventListener(strokeEndListener);
+            watchingRelease = false;
+        }
         stampTimer.stop();
         editor.endStroke();
         stamping = false;
