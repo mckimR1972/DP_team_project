@@ -33,7 +33,7 @@ class PatternToolsTest {
         });
     }
     @AfterEach void cleanup() throws Exception {
-        SwingUtilities.invokeAndWait(() -> { tools.cancel(); clocks.close(); });
+        SwingUtilities.invokeAndWait(() -> { tools.cancel(); clocks.close(); Resident.setColorPolicy(new FixedColorPolicy(Color.RED)); });
         if (oldDirectory == null) System.clearProperty("life.templates");
         else System.setProperty("life.templates", oldDirectory);
     }
@@ -161,6 +161,71 @@ class PatternToolsTest {
             button("배치 되돌리기").doClick();
             assertFalse(cells.isAlive());
         });
+    }
+
+    @Test void guardAppliesToEveryStampAndCompletionEventsFireOnce() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            java.util.List<String> edits = new java.util.ArrayList<>();
+            tools.controls().addPropertyChangeListener("TEMPLATE", e -> edits.add(e.getPropertyName()));
+            tools.controls().addPropertyChangeListener("TEMPLATE_UNDO", e -> edits.add(e.getPropertyName()));
+            tools.setPlacementGuard(area -> area.intersects(new Rectangle(4, 0, 2, 16)));
+            choose(PatternTemplate.fromRows("Dot", "O"));
+            press(1, 1); drag(8, 1);
+            assertTrue(edits.isEmpty()); // a held gesture is not yet complete
+            release(8, 1);
+            assertEquals(java.util.List.of("TEMPLATE"), edits);
+            assertFalse(cells.isAliveAt(1, 4));
+            assertFalse(cells.isAliveAt(1, 5));
+            assertTrue(cells.isAliveAt(1, 3));
+            assertTrue(cells.isAliveAt(1, 6));
+            press(4, 2); release(4, 2); // blocked
+            press(1, 1); release(1, 1); // no change
+            assertEquals(1, edits.size());
+            button("배치 되돌리기").doClick();
+            assertEquals(java.util.List.of("TEMPLATE", "TEMPLATE_UNDO"), edits);
+            assertFalse(cells.isAlive());
+        });
+    }
+    @Test void captureAndExternalBoardChangesDoNotLeaveAStaleStroke() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            choose(PatternTemplate.fromRows("Dot", "O"));
+            press(2, 2); drag(4, 2);
+            tools.boardChanged(); // contract called before manual edit / tick / clear / load
+            assertFalse(button("배치 되돌리기").isEnabled());
+            drag(8, 8);
+            assertFalse(cells.isAliveAt(8, 8));
+            button("영역 캡처").doClick();
+            press(1, 1); drag(5, 5); release(5, 5);
+            assertFalse(cells.isAliveAt(5, 5));
+        });
+    }
+
+    @Test void dragAndUndoPreserveTheAgeColorsOfExistingCells() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            Color blue = new Color(0x0072B2);
+            Resident.setColorPolicy(new CyclingColorPolicy(10, Color.RED, blue));
+            new BoardEditor(cells).place(PatternTemplate.fromRows("Block", "OO", "OO"), new Point(0, 0));
+            for (int i = 0; i < 10; i++) {
+                cells.figureNextState(Cell.DUMMY, Cell.DUMMY, Cell.DUMMY, Cell.DUMMY,
+                        Cell.DUMMY, Cell.DUMMY, Cell.DUMMY, Cell.DUMMY);
+                cells.transition();
+            }
+            assertEquals(blue, cellColor(0, 0));
+            choose(PatternTemplate.fromRows("Dot", "O"));
+            press(0, 0); drag(6, 0); release(6, 0);
+            assertEquals(blue, cellColor(0, 0));
+            assertEquals(Color.RED, cellColor(6, 0));
+            button("배치 되돌리기").doClick();
+            assertEquals(blue, cellColor(0, 0));
+            assertFalse(cells.isAliveAt(0, 6));
+        });
+    }
+    private Color cellColor(int x, int y) {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(128, 128, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics = image.createGraphics();
+        cells.redraw(graphics, new Rectangle(0, 0, 128, 128), true);
+        graphics.dispose();
+        return new Color(image.getRGB(x * 8 + 4, y * 8 + 4));
     }
 
     @Test void holdingStillDoesNotToggleOrCreateExtraUndoEntries() throws Exception {

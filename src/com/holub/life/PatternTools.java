@@ -48,7 +48,8 @@ final class PatternTools {
 
     PatternTools(JPanel board, Cell cells) {
         this.board = board;
-        editor = new BoardEditor(cells);
+        editor = new BoardEditor(cells, kind ->
+                controls.firePropertyChange(kind.name(), false, true));
         controls.setLayout(new BoxLayout(controls, BoxLayout.Y_AXIS));
         controls.setBorder(new EmptyBorder(14, 14, 14, 14));
         controls.setPreferredSize(new Dimension(258, 512));
@@ -196,6 +197,10 @@ final class PatternTools {
             message("보드 밖으로 나갑니다. 안쪽에 배치하세요.");
             return;
         }
+        if (!editor.canPlace(pattern, point)) {
+            message("Freezing 영역과 겹칩니다. 다른 곳에 배치하세요.");
+            return;
+        }
         boolean changed = editor.place(pattern, point);
         undo.setEnabled(editor.canUndo());
         if (changed) message("누른 채 이동하면 연속 배치합니다. Esc로 편집 종료.");
@@ -203,6 +208,11 @@ final class PatternTools {
     }
 
     JPanel controls() { return controls; }
+    // Same integration signature as the open freezing PR. The model also
+    // enforces this guard for every stamp, not just mousePressed.
+    void setPlacementGuard(java.util.function.Predicate<Rectangle> guard) {
+        editor.setPlacementGuard(guard);
+    }
     boolean isEditing() { return mode != Mode.DRAW; }
     void boardChanged() {
         stopStamping();
@@ -299,7 +309,7 @@ final class PatternTools {
                     selection.width * unit - 2, selection.height * unit - 2);
         } else if (mode == Mode.PLACE && hover != null) {
             PatternTemplate pattern = list.getSelectedValue();
-            Color color = editor.fits(pattern, hover) ? new Color(20, 130, 100) : new Color(195, 45, 45);
+            Color color = editor.canPlace(pattern, hover) ? new Color(20, 130, 100) : new Color(195, 45, 45);
             g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 130));
             for (int y = 0; y < pattern.height(); y++) for (int x = 0; x < pattern.width(); x++)
                 if (pattern.isAlive(x, y)) g.fillRect((hover.x + x) * unit, (hover.y + y) * unit, unit, unit);
