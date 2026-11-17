@@ -23,7 +23,7 @@ public final class Resident implements Cell
 	static final Color LIVE_COLOR			= Color.RED;	// Color 메뉴에서도 쓴다
 	private static final Color DEAD_COLOR   = Colors.LIGHT_YELLOW;
 
-	// 모든 셀이 함께 쓰는 색 규칙. 시계 스레드에서도 읽으므로 volatile
+	// 모든 셀이 함께 쓰는 색 규칙. 다른 스레드에서 읽어도 바뀐 값이 보이게 volatile
 	private static volatile CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
 
 	static void setColorPolicy( CellColorPolicy policy )
