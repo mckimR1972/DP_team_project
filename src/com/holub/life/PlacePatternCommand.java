@@ -32,6 +32,9 @@ final class PlacePatternCommand {
         return !added.isEmpty();
     }
 
+    /** Combine successful stamps from one held-button gesture. */
+    void include(PlacePatternCommand next) { added.addAll(next.added); }
+
     void undo() {
         for (Point cell : added) cells.setAlive(cell, false);
     }

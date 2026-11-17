@@ -84,6 +84,19 @@ class PatternToolsTest {
         });
     }
 
+    @Test void oneUndoRevertsOneWholeDragButKeepsPreviousClick() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            choose(PatternTemplate.fromRows("Dot", "O"));
+            press(0, 0); release(0, 0);
+            press(0, 0); drag(9, 0); release(9, 0);
+            button("배치 되돌리기").doClick();
+            assertTrue(cells.isAliveAt(0, 0));
+            for (int x = 1; x <= 9; x++) assertFalse(cells.isAliveAt(0, x));
+            button("배치 되돌리기").doClick();
+            assertFalse(cells.isAlive());
+        });
+    }
+
     @Test void holdingStillDoesNotToggleOrCreateExtraUndoEntries() throws Exception {
         SwingUtilities.invokeAndWait(() -> { choose(PatternTemplate.fromRows("Dot", "O")); press(3, 4); });
         // Let actual Swing timer events run while the pointer is stationary.

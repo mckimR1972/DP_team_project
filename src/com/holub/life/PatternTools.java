@@ -117,6 +117,7 @@ final class PatternTools {
                     selectThrough(point);
                 } else {
                     stopStamping();
+                    editor.beginStroke();
                     stamping = true;
                     hover = point;
                     lastStamp = new Point(point);
@@ -156,6 +157,7 @@ final class PatternTools {
 
     private void stopStamping() {
         stampTimer.stop();
+        editor.endStroke();
         stamping = false;
         lastStamp = null;
     }

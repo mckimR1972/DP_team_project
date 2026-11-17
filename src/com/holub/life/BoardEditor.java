@@ -5,10 +5,13 @@ import java.awt.Rectangle;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-/** Adapts the composite Cell's Memento protocol to rectangular editing. */
+/** Captures rectangular shapes and manages placement commands. */
 public final class BoardEditor {
     private final Cell board;
     private final Deque<PlacePatternCommand> history = new ArrayDeque<>();
+
+    private boolean grouping;
+    private PlacePatternCommand stroke;
 
     public BoardEditor(Cell board) { this.board = board; }
     public int size() { return board.widthInCells(); }
@@ -36,12 +39,30 @@ public final class BoardEditor {
     public boolean place(PatternTemplate pattern, Point origin) {
         PlacePatternCommand command = new PlacePatternCommand(board, pattern, origin);
         if (!command.execute()) return false;
-        history.push(command);
-        if (history.size() > 100) history.removeLast();
+        if (grouping && stroke != null) {
+            stroke.include(command);
+        } else {
+            history.push(command);
+            if (grouping) stroke = command;
+            if (history.size() > 100) history.removeLast();
+        }
         return true;
     }
 
+    public void beginStroke() {
+        endStroke();
+        grouping = true;
+    }
+
+    /** Finish a gesture; true only when it introduced cells. */
+    public boolean endStroke() {
+        boolean changed = grouping && stroke != null;
+        grouping = false;
+        stroke = null;
+        return changed;
+    }
+
     public boolean canUndo() { return !history.isEmpty(); }
-    public void undo() { if (canUndo()) history.pop().undo(); }
-    public void clearHistory() { history.clear(); }
+    public void undo() { endStroke(); if (canUndo()) history.pop().undo(); }
+    public void clearHistory() { endStroke(); history.clear(); }
 }
