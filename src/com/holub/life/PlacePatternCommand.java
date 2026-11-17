@@ -1,6 +1,7 @@
 package com.holub.life;
 
 import java.awt.Point;
+import java.awt.Rectangle;
 
 /** Command: one placement, with the existing Cell Memento as its undo state. */
 final class PlacePatternCommand {
@@ -40,7 +41,19 @@ final class PlacePatternCommand {
     void undo() { restore(board, before); }
 
     private static void restore(Cell board, Storable state) {
-        board.clear();
-        board.transfer(state, new Point(0, 0), Cell.LOAD);
+        // Only toggle changed cells. Loading a whole-board Memento resets every
+        // Resident's age, including cells unrelated to this placement or undo.
+        Cell.Memento target = (Cell.Memento) state;
+        Cell.Memento current = (Cell.Memento) board.createMemento();
+        int size = board.widthInCells();
+        Rectangle surface = new Rectangle(0, 0, size, size);
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                Point cell = new Point(x, y);
+                if (current.isAlive(cell) != target.isAlive(cell)) {
+                    board.userClicked(cell, surface);
+                }
+            }
+        }
     }
 }

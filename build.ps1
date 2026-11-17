@@ -9,7 +9,7 @@ try {
     $sourceList = Join-Path $PSScriptRoot 'build/standalone/sources.txt'
     $jarPath = Join-Path $PSScriptRoot 'build/HolubLife.jar'
     New-Item -ItemType Directory -Force -Path $classDirectory | Out-Null
-    $lifeSources = @(Get-ChildItem 'src' -Recurse -Filter '*.java' | ForEach-Object { '"' + $_.FullName.Replace('\', '/') + '"' })
+    $lifeSources = @(Get-ChildItem 'src' -Recurse -Filter '*.java' | ForEach-Object { '"' + $_.FullName.Substring($PSScriptRoot.Length + 1).Replace('\', '/') + '"' })
     [IO.File]::WriteAllLines($sourceList, $lifeSources, [Text.UTF8Encoding]::new($false))
     & javac -encoding UTF-8 --release 17 -d $classDirectory ('@' + $sourceList)
     if ($LASTEXITCODE -ne 0) { throw 'Compilation failed.' }

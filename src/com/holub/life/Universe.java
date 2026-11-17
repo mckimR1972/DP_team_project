@@ -151,17 +151,48 @@ public class Universe extends JPanel
 			{	public void tick()
 				{	if (patternTools.isEditing()) return;
 					patternTools.boardChanged();
-					if( outermostCell.figureNextState
+					outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
-						   )
-					  )
-					{	if( outermostCell.transition() )
-							refreshNow();
-					}
+						   );
+
+					// 바뀌는 셀이 없어도 매 틱 불러야 멈춘 패턴도 나이를 먹는다
+					boolean changed = outermostCell.transition();
+
+					// 색상 또는 생존 상태가 바뀌면 보드와 편집 오버레이를 함께 다시 그린다
+					if( Resident.colorChangesWithAge() )
+						refreshNow();
+					else if( changed )
+						refreshNow();
 				}
 			}
 		);
+
+		// Go 메뉴는 위의 Clock.instance()에서 생기므로 그 뒤에 추가해야 Go 다음에 붙는다
+		MenuSite.addLine
+		(	this, "Color", "Single Color",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	useColorPolicy( new FixedColorPolicy( Resident.LIVE_COLOR ) );
+				}
+			}
+		);
+
+		MenuSite.addLine
+		(	this, "Color", "Cycle by Generation",
+			new ActionListener()
+			{	public void actionPerformed(ActionEvent e)
+				{	// 10세대마다 빨강 → 파랑 → 초록 (적록 색약도 구분되는 색)
+					useColorPolicy( new CyclingColorPolicy
+						( 10, Resident.LIVE_COLOR, new Color(0x0072B2), new Color(0x009E73) ) );
+				}
+			}
+		);
+	}
+
+	private void useColorPolicy( CellColorPolicy policy )
+	{	Resident.setColorPolicy( policy );
+		repaint();
 	}
 
 	/** Singleton Accessor. The Universe object itself is manufactured
@@ -237,8 +268,7 @@ public class Universe extends JPanel
 		if (patternTools != null) patternTools.paintOverlay((Graphics2D) g);
 	}
 
-	/** Repaint through Swing so the board and editing overlay stay together. */
-
+	/** Repaint the board and editing overlay together through Swing. */
 	private void refreshNow()
 	{	repaint();
 	}
