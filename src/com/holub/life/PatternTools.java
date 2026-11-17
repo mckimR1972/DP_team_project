@@ -38,10 +38,18 @@ final class PatternTools {
     private Point anchor;
     private Point hover;
     private Rectangle selection;
+    private boolean stamping;
+    private Point lastStamp;
+    private boolean watchingRelease;
+    private final AWTEventListener strokeEndListener = this::handleStrokeEnd;
+    private final Timer stampTimer = new Timer(80, e -> {
+        if (stamping && hover != null) stampAt(hover);
+    });
 
     PatternTools(JPanel board, Cell cells) {
         this.board = board;
-        editor = new BoardEditor(cells);
+        editor = new BoardEditor(cells, kind ->
+                controls.firePropertyChange(kind.name(), false, true));
         controls.setLayout(new BoxLayout(controls, BoxLayout.Y_AXIS));
         controls.setBorder(new EmptyBorder(14, 14, 14, 14));
         controls.setPreferredSize(new Dimension(258, 512));
@@ -111,22 +119,31 @@ final class PatternTools {
                     anchor = point;
                     selectThrough(point);
                 } else {
-                    PatternTemplate pattern = list.getSelectedValue();
-                    if (!editor.fits(pattern, point)) {
-                        message("보드 밖으로 나갑니다. 안쪽에 배치하세요.");
-                        return;
-                    }
-                    boolean changed = editor.place(pattern, point);
-                    undo.setEnabled(editor.canUndo());
-                    message(changed ? "배치했습니다. 다시 클릭하면 반복 배치합니다. Esc로 종료."
-                            : "같은 위치에 이미 살아 있는 셀이 있습니다.");
-                    board.repaint();
+                    stopStamping();
+                    editor.beginStroke();
+                    stamping = true;
+                    hover = point;
+                    lastStamp = new Point(point);
+                    stampAt(point);
+                    stampTimer.start();
+                    Toolkit.getDefaultToolkit().addAWTEventListener(strokeEndListener,
+                            AWTEvent.MOUSE_EVENT_MASK | AWTEvent.WINDOW_EVENT_MASK | AWTEvent.WINDOW_FOCUS_EVENT_MASK);
+                    watchingRelease = true;
                 }
             }
             @Override public void mouseDragged(MouseEvent e) {
                 if (mode == Mode.CAPTURE && anchor != null) selectThrough(cellAt(e.getPoint(), true));
+                if (mode == Mode.PLACE && stamping) {
+                    if ((e.getModifiersEx() & MouseEvent.BUTTON1_DOWN_MASK) == 0) { stopStamping(); return; }
+                    hover = cellAt(e.getPoint(), false);
+                    if (hover != null) {
+                        PatternPath.visit(lastStamp == null ? hover : lastStamp, hover, PatternTools.this::stampAt);
+                        lastStamp = new Point(hover);
+                    } else lastStamp = null;
+                }
             }
             @Override public void mouseReleased(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) stopStamping();
                 if (mode == Mode.CAPTURE && anchor != null && SwingUtilities.isLeftMouseButton(e)) {
                     selectThrough(cellAt(e.getPoint(), true));
                     anchor = null;
@@ -136,17 +153,69 @@ final class PatternTools {
                 hover = cellAt(e.getPoint(), false);
                 if (mode == Mode.PLACE) board.repaint();
             }
-            @Override public void mouseExited(MouseEvent e) { hover = null; board.repaint(); }
+            @Override public void mouseExited(MouseEvent e) { lastStamp = null; hover = null; board.repaint(); }
         };
+        board.addFocusListener(new FocusAdapter() {
+            @Override public void focusLost(FocusEvent e) { stopStamping(); }
+        });
+        board.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0 && !board.isDisplayable()) stopStamping();
+        });
         board.addMouseListener(mouse);
         board.addMouseMotionListener(mouse);
         bind("ESCAPE", "cancel-pattern", this::cancel);
         bind("control Z", "undo-pattern", this::undo);
     }
 
+    private void handleStrokeEnd(AWTEvent event) {
+        if (event instanceof MouseEvent) {
+            MouseEvent mouse = (MouseEvent)event;
+            if (mouse.getID() == MouseEvent.MOUSE_RELEASED && SwingUtilities.isLeftMouseButton(mouse)) stopStamping();
+        } else if (event instanceof WindowEvent) {
+            WindowEvent window = (WindowEvent)event;
+            if (window.getWindow() == SwingUtilities.getWindowAncestor(board)
+                    && (window.getID() == WindowEvent.WINDOW_LOST_FOCUS
+                    || window.getID() == WindowEvent.WINDOW_DEACTIVATED
+                    || window.getID() == WindowEvent.WINDOW_CLOSED)) stopStamping();
+        }
+    }
+
+    private void stopStamping() {
+        if (watchingRelease) {
+            Toolkit.getDefaultToolkit().removeAWTEventListener(strokeEndListener);
+            watchingRelease = false;
+        }
+        stampTimer.stop();
+        editor.endStroke();
+        stamping = false;
+        lastStamp = null;
+    }
+
+    private void stampAt(Point point) {
+        PatternTemplate pattern = list.getSelectedValue();
+        if (!editor.fits(pattern, point)) {
+            message("보드 밖으로 나갑니다. 안쪽에 배치하세요.");
+            return;
+        }
+        if (!editor.canPlace(pattern, point)) {
+            message("Freezing 영역과 겹칩니다. 다른 곳에 배치하세요.");
+            return;
+        }
+        boolean changed = editor.place(pattern, point);
+        undo.setEnabled(editor.canUndo());
+        if (changed) message("누른 채 이동하면 연속 배치합니다. Esc로 편집 종료.");
+        board.repaint();
+    }
+
     JPanel controls() { return controls; }
+    // Same integration signature as the open freezing PR. The model also
+    // enforces this guard for every stamp, not just mousePressed.
+    void setPlacementGuard(java.util.function.Predicate<Rectangle> guard) {
+        editor.setPlacementGuard(guard);
+    }
     boolean isEditing() { return mode != Mode.DRAW; }
     void boardChanged() {
+        stopStamping();
         editor.clearHistory();
         undo.setEnabled(false);
     }
@@ -166,6 +235,7 @@ final class PatternTools {
         });
     }
     private void begin(Mode next) {
+        stopStamping();
         Clock.instance().stop();
         mode = next;
         selection = null;
@@ -178,19 +248,21 @@ final class PatternTools {
     private void beginPlacement() {
         if (list.getSelectedValue() == null) return;
         begin(Mode.PLACE);
-        message("보드를 클릭해 배치하세요. 빈 칸은 기존 셀을 지우지 않습니다.");
+        message("누르고 있으면 반복 배치합니다. 드래그로 이동, 한 번의 Undo로 되돌리기.");
     }
     void cancel() {
+        if (!isEditing()) return;
         begin(Mode.DRAW);
         message("셀 클릭으로 그리기. Go 메뉴에서 시뮬레이션을 시작하세요.");
     }
     private void undo() {
+        stopStamping();
         if (!editor.canUndo()) return;
         Clock.instance().stop();
         editor.undo();
         undo.setEnabled(editor.canUndo());
         board.repaint();
-        message("마지막 배치를 되돌렸습니다.");
+        message("마지막 배치 또는 드래그를 되돌렸습니다.");
     }
     private Point cellAt(Point point, boolean clamp) {
         int unit = board.getWidth() / editor.size();
@@ -237,7 +309,7 @@ final class PatternTools {
                     selection.width * unit - 2, selection.height * unit - 2);
         } else if (mode == Mode.PLACE && hover != null) {
             PatternTemplate pattern = list.getSelectedValue();
-            Color color = editor.fits(pattern, hover) ? new Color(20, 130, 100) : new Color(195, 45, 45);
+            Color color = editor.canPlace(pattern, hover) ? new Color(20, 130, 100) : new Color(195, 45, 45);
             g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 130));
             for (int y = 0; y < pattern.height(); y++) for (int x = 0; x < pattern.width(); x++)
                 if (pattern.isAlive(x, y)) g.fillRect((hover.x + x) * unit, (hover.y + y) * unit, unit, unit);
