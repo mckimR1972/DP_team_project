@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 
 /** Behavioral scenarios, including a separate reference Life algorithm. */
 public final class PatternFeatureTest {
-    private static int passed;
     private static Cell board() { return new Neighborhood(4, new Neighborhood(4, new Resident())); }
     private static PatternTemplate glider() { return PatternTemplate.fromRows("Glider", ".O.", "..O", "OOO"); }
     private static void check(boolean value, String message) {
@@ -19,7 +18,6 @@ public final class PatternFeatureTest {
         try { action.run(); } catch (IllegalArgumentException expected) { return; }
         throw new AssertionError("Invalid operation was accepted");
     }
-    private static void passed(String name) { passed++; System.out.println("PASS " + name); }
     private static boolean[][] snapshot(Cell board) {
         Cell.Memento state = (Cell.Memento) board.createMemento();
         int n = board.widthInCells();
@@ -50,12 +48,7 @@ public final class PatternFeatureTest {
     }
 
     @Test
-    void capturePlacementPersistenceAndLifeEvolutionScenarios() throws Exception {
-        main(new String[0]);
-    }
-
-    public static void main(String[] args) throws Exception {
-        passed = 0;
+    void capturePreservesOffsetsAndMargins() throws Exception {
         Files.createDirectories(Paths.get("build"));
         Cell board = board();
         BoardEditor editor = new BoardEditor(board);
@@ -65,7 +58,16 @@ public final class PatternFeatureTest {
         check(captured.width() == 5 && captured.height() == 5 && captured.liveCount() == 5, "Capture dimensions/live count");
         check(captured.isAlive(2, 1) && captured.isAlive(3, 2), "Capture local coordinates");
         same(original, snapshot(board));
-        passed("rectangular capture preserves cells, offsets, and empty margins");
+    }
+
+    @Test
+    void repeatPlacementAndUndo() throws Exception {
+        Files.createDirectories(Paths.get("build"));
+        Cell board = board();
+        BoardEditor editor = new BoardEditor(board);
+        editor.place(glider(), new Point(3, 4));
+        boolean[][] original = snapshot(board);
+        PatternTemplate captured = editor.capture("Captured", new Rectangle(2, 3, 5, 5));
 
         editor.place(captured, new Point(8, 8));
         check(snapshot(board)[9][10], "Repositioned cell missing");
@@ -74,7 +76,13 @@ public final class PatternFeatureTest {
         same(original, snapshot(board));
         editor.undo();
         same(new boolean[16][16], snapshot(board));
-        passed("repeat placement and multiple exact undo operations");
+    }
+
+    @Test
+    void transparentOverlapAndNoOp() throws Exception {
+        Files.createDirectories(Paths.get("build"));
+        Cell board = board();
+        BoardEditor editor = new BoardEditor(board);
 
         editor.place(PatternTemplate.fromRows("Seed", "O"), new Point(7, 7));
         editor.place(glider(), new Point(7, 7));
@@ -83,7 +91,13 @@ public final class PatternFeatureTest {
         check(!editor.place(glider(), new Point(7, 7)), "Duplicate placement should be a no-op");
         editor.undo();
         check(snapshot(board)[7][7] && !snapshot(board)[7][8], "No-op polluted undo history");
-        passed("transparent merge, overlap, and no-op history");
+    }
+
+    @Test
+    void boundsAndEmptyCapture() throws Exception {
+        Files.createDirectories(Paths.get("build"));
+        Cell board = board();
+        BoardEditor editor = new BoardEditor(board);
 
         boolean[][] beforeInvalid = snapshot(board);
         rejects(() -> editor.place(glider(), new Point(14, 14)));
@@ -94,14 +108,25 @@ public final class PatternFeatureTest {
         check(editor.fits(glider(), new Point(13, 13)), "Exact bottom-right fit rejected");
         editor.place(glider(), new Point(13, 13));
         check(snapshot(board)[15][15], "Last cell not placed");
-        passed("bounds reject atomically, empty capture rejects, exact edge fits");
+    }
+
+    @Test
+    void historyInvalidation() throws Exception {
+        Files.createDirectories(Paths.get("build"));
+        Cell board = board();
+        BoardEditor editor = new BoardEditor(board);
+        editor.place(glider(), new Point(3, 4));
 
         editor.clearHistory();
         check(!editor.canUndo(), "History should be invalidated after unrelated edits/ticks");
         boolean[][] afterClear = snapshot(board);
         editor.undo();
         same(afterClear, snapshot(board));
-        passed("history invalidation prevents reverting later board edits");
+    }
+
+    @Test
+    void templateValidation() throws Exception {
+        Files.createDirectories(Paths.get("build"));
 
         boolean[][] source = {{true, false}};
         PatternTemplate immutable = new PatternTemplate("Immutable", source);
@@ -110,7 +135,12 @@ public final class PatternFeatureTest {
         rejects(() -> new PatternTemplate("Bad", new boolean[][] {{true}, {true, false}}));
         rejects(() -> PatternTemplate.fromRows("Bad", "X"));
         rejects(() -> PatternTemplate.fromRows("Bad\nName", "O"));
-        passed("template immutability and validation");
+    }
+
+    @Test
+    void saveReloadAndDuplicateNames() throws Exception {
+        Files.createDirectories(Paths.get("build"));
+        PatternTemplate captured = PatternTemplate.fromRows("Saved", ".O.", "..O", "OOO");
 
         Path folder = Files.createTempDirectory(Paths.get("build"), "pattern-tests-");
         PatternLibrary library = new PatternLibrary(folder);
@@ -118,12 +148,19 @@ public final class PatternFeatureTest {
         PatternLibrary reopened = new PatternLibrary(folder);
         check(reopened.patterns().size() == 6, "Saved pattern did not reload");
         PatternTemplate loaded = reopened.patterns().get(5);
-        check(loaded.name().equals("Captured") && loaded.width() == 5, "Name or size not persisted");
-        for (int y = 0; y < 5; y++) for (int x = 0; x < 5; x++)
+        check(loaded.name().equals(captured.name()) && loaded.width() == captured.width(), "Name or size not persisted");
+        for (int y = 0; y < captured.height(); y++) for (int x = 0; x < captured.width(); x++)
             check(loaded.isAlive(x, y) == captured.isAlive(x, y), "Persisted cells differ");
         try { reopened.save(captured); throw new AssertionError("Duplicate saved"); }
         catch (IllegalArgumentException expected) { }
-        passed("UTF-8 file save, restart reload, and duplicate-name rejection");
+    }
+
+    @Test
+    void corruptFilesAndSaveFailure() throws Exception {
+        Files.createDirectories(Paths.get("build"));
+        Path folder = Files.createTempDirectory(Paths.get("build"), "pattern-tests-");
+        PatternTemplate captured = PatternTemplate.fromRows("Saved", ".O.", "..O", "OOO");
+        new PatternLibrary(folder).save(captured);
 
         Files.writeString(folder.resolve("broken.lifepattern"), "LIFE_PATTERN 1\nBroken\n99 2\nO\n", StandardCharsets.UTF_8);
         PatternLibrary withBroken = new PatternLibrary(folder);
@@ -133,7 +170,11 @@ public final class PatternFeatureTest {
         try { unavailable.save(captured); throw new AssertionError("Save unexpectedly succeeded"); }
         catch (java.io.IOException expected) { }
         check(unavailable.patterns().size() == 5, "Failed save changed library");
-        passed("corrupt-file isolation and failed-save atomicity");
+    }
+
+    @Test
+    void gliderAcrossNeighborhoods() throws Exception {
+        Files.createDirectories(Paths.get("build"));
 
         Cell crossing = board();
         new BoardEditor(crossing).place(glider(), new Point(2, 2));
@@ -143,7 +184,12 @@ public final class PatternFeatureTest {
             step(crossing);
             same(expected, snapshot(crossing));
         }
-        passed("40 glider generations across nested neighborhood boundaries");
+    }
+
+    @Test
+    void randomLifeComparison() throws Exception {
+        Files.createDirectories(Paths.get("build"));
+        boolean[][] expected;
 
         Random random = new Random(1972);
         for (int trial = 0; trial < 12; trial++) {
@@ -158,8 +204,6 @@ public final class PatternFeatureTest {
                 same(expected, snapshot(randomBoard));
             }
         }
-        passed("360 random-board generations match an independent Life implementation");
-
-        System.out.println("All " + passed + " behavioral scenarios passed.");
     }
+
 }
