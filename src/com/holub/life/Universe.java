@@ -93,20 +93,44 @@ public class Universe extends JPanel
 		setOpaque		( true			 );
 		patternTools = new PatternTools(this, outermostCell);
 
-		addMouseListener					//{=Universe.mouse}
-		(	new MouseAdapter()
-			{	public void mousePressed(MouseEvent e)
-				{	if (patternTools.isEditing() || !SwingUtilities.isLeftMouseButton(e)) return;
-					Rectangle bounds = getBounds();
-					bounds.x = 0;
-					bounds.y = 0;
-					if (!bounds.contains(e.getPoint())) return;
-					patternTools.boardChanged();
-					outermostCell.userClicked(e.getPoint(),bounds);
-					repaint();
-				}
+		// 누르면 셀 하나를 토글하고, 끄는 동안 지나가는 셀은 모두
+		// 같은 상태로 만든다. 그래서 한 번 끌면 그리거나 지운다.
+		// 패턴 도구가 캡처·배치 중이거나 왼쪽 버튼이 아니면 그리지 않는다.
+
+		MouseAdapter brush = new MouseAdapter()		//{=Universe.mouse}
+		{	private Point	lastCell;
+			private boolean paintsAlive;
+
+			public void mousePressed(MouseEvent e)
+			{	lastCell = null;
+				if (patternTools.isEditing() || !SwingUtilities.isLeftMouseButton(e)) return;
+				lastCell	= cellAt( e.getPoint() );
+				paintsAlive = !outermostCell.isAliveAt(lastCell.y, lastCell.x);
+				setCell( lastCell, paintsAlive );
+				repaint();
 			}
-		);
+
+			public void mouseDragged(MouseEvent e)
+			{	if (lastCell == null || patternTools.isEditing()) return;
+				Point cell = cellAt( e.getPoint() );
+
+				// 빠르게 끌면 칸을 건너뛰므로 마지막 두 마우스 위치
+				// 사이의 칸을 모두 채운다.
+				int columns = cell.x - lastCell.x;
+				int rows	= cell.y - lastCell.y;
+				int steps	= Math.max( Math.abs(columns), Math.abs(rows) );
+
+				for( int step = 1; step <= steps; ++step )
+					setCell( new Point( lastCell.x + columns * step / steps,
+										lastCell.y + rows    * step / steps ),
+							 paintsAlive );
+
+				lastCell = cell;
+				repaint();
+			}
+		};
+		addMouseListener( brush );
+		addMouseMotionListener( brush );
 
 		MenuSite.addLine( this, "Grid", "Clear",
 			new ActionListener()
@@ -204,6 +228,32 @@ public class Universe extends JPanel
 	}
 
 	JPanel patternControls() { return patternTools.controls(); }
+
+	private int pixelsPerCell()
+	{	return Math.max( 1, getWidth() / outermostCell.widthInCells() );
+	}
+
+	/** 마우스 위치 아래의 셀을 (x = 열, y = 행)으로 반환한다.
+	 *  판 밖이면 가장 가까운 가장자리 셀로 맞춘다.
+	 */
+	private Point cellAt( Point pixel )
+	{	int last = outermostCell.widthInCells() - 1;
+		return new Point
+		(	Math.max( 0, Math.min(last, pixel.x / pixelsPerCell()) ),
+			Math.max( 0, Math.min(last, pixel.y / pixelsPerCell()) )
+		);
+	}
+
+	private void setCell( Point cell, boolean alive )
+	{	if( outermostCell.isAliveAt(cell.y, cell.x) == alive )
+			return;
+
+		patternTools.boardChanged();
+		int size  = pixelsPerCell();
+		int board = size * outermostCell.widthInCells();
+		outermostCell.userClicked( new Point(cell.x * size, cell.y * size),
+								   new Rectangle(0, 0, board, board) );
+	}
 
 	private void doLoad()
 	{	try
