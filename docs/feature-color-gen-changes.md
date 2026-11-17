@@ -16,7 +16,7 @@
 | 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
 | 5 | Universe의 Color 메뉴 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
 | 6 | 주석 한글화와 정리 | `build.gradle`, 색 규칙 3개, `Resident.java`, `Universe.java`, 테스트 4개 | 반영 (2026-11-15) |
-| 7 | 색 순환 중 판 전체를 repaint()로 다시 그리기 | `Universe.java`, `UniverseColorTest.java` | 반영 (2026-11-17) |
+| 7 | 색 순환 중 다시 그리기 요청 테스트 (화면 갱신 지연 해결) | `UniverseColorTest.java` | 반영 (2026-11-17) |
 
 1\~5번은 설계 문서 6절 "구현 순서"의 번호와 같다. 6번은 구현을 마친 뒤 한 주석 정리다. 7번은 구현 순서의 6번 조각이다.
 
@@ -587,89 +587,71 @@ Grid, Go 메뉴 뒤에 Color 메뉴를 추가했다. Single Color를 고르면 �
 - 한글 주석은 `build.gradle`의 `options.encoding = 'UTF-8'` 설정으로 컴파일된다.
 - 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, Windows 11, 2026-11-15.
 
-## 7. 색 순환 중 판 전체를 repaint()로 다시 그리기
+## 7. 색 순환 중 다시 그리기 요청 테스트 (화면 갱신 지연 해결)
 
 ### 요약
 
-색 순환이 켜져 있으면 틱마다 판 전체를 `repaint()`로 다시 그리게 했다. 색 순환이 꺼져 있으면 dev처럼 `refreshNow()`가 바뀐 블록만 그린다. `refreshNow()`는 dev의 원래 모양(인자 없음)으로 되돌렸다. 설계 문서 구현 순서의 6번 조각이다.
+색 순환을 켜고 Fast·Medium으로 돌리면 클릭과 메뉴가 늦게 반영되던 지연을 해결하고, 다시 그리기 요청을 지키는 테스트 2개를 더했다. 설계 문서 구현 순서의 6번 조각이다.
+
+처음에는 Universe의 틱 처리가 색 순환 중에만 `repaint()`를 부르게 고쳤다(커밋 `62504a5`). 그 사이 캡처·템플릿 기능(#9)이 dev에 병합되면서 `refreshNow()`가 `repaint()`를 부르도록 바뀌었다. 편집 오버레이를 판과 함께 그리기 위한 변경이다. dev를 이 브랜치에 merge할 때(`e2ebb08`) `Universe.java`는 dev 쪽을 그대로 썼다. 그래서 이 항목이 dev에 더하는 코드는 테스트뿐이다.
 
 | 파일 | 내용 |
 | --- | --- |
-| `src/com/holub/life/Universe.java` | 틱 처리의 다시 그리기 두 줄과 주석, `refreshNow()`를 dev 모양으로 |
 | `test/com/holub/life/UniverseColorTest.java` | 아래 테스트 2개와 도우미 메서드 2개 추가 |
 
 ### 바꾼 이유
 
 4번 조각의 `refreshNow( true )`는 판 전체를 `getGraphics()`로 화면에 바로 그리는 작업을 틱마다 이벤트 큐에 하나씩 넣었다. 실제 창에서 이 한 장면에 75\~143 ms가 걸려 Fast(30 ms)와 Medium(70 ms)의 틱 간격보다 길었다. 그래서 작업이 쌓여 클릭과 메뉴가 수 초에서 수십 초 늦게 처리됐다. `repaint()`는 처리 전 요청을 Swing이 하나로 합치고, `paint()`가 이중 버퍼에 판 전체를 그려 한 장면이 1.7\~5.5 ms다. 원인, 측정, 다른 방안과의 비교는 [color-gen-redraw-lag.md](color-gen-redraw-lag.md)에 있다.
 
-### 변경 내용
+### 지금 dev의 다시 그리기
 
-```diff
+```java
+// Universe.java (틱 처리)
+if( Resident.colorChangesWithAge() )
+	refreshNow();
+else if( changed )
+	refreshNow();
+
 // Universe.java
-@@ -151,9 +151,10 @@ public class Universe extends JPanel
- 					boolean changed = outermostCell.transition();
- 
--					// 나이로 색이 바뀌는 규칙이면 판 전체를, 아니면 바뀐 곳만 다시 그린다
-+					// 나이로 색이 바뀌면 판 전체를, 아니면 바뀐 곳만 다시 그린다.
-+					// 판 전체는 repaint()로 요청해야 밀린 요청이 하나로 합쳐진다
- 					if( Resident.colorChangesWithAge() )
--						refreshNow( true );
-+						repaint();
- 					else if( changed )
--						refreshNow( false );
-+						refreshNow();
- 				}
- 			}
-@@ -261,8 +262,7 @@ public class Universe extends JPanel
- 	 *  does nothing if the <code>Cell</code> doesn't
- 	 *  have to be refreshed.
--	 *  @param drawAll true면 바뀌지 않은 셀까지 모두 다시 그린다
- 	 */
- 
--	private void refreshNow( final boolean drawAll )
-+	private void refreshNow()
- 	{	SwingUtilities.invokeLater
- 		(	new Runnable()
-@@ -276,5 +276,5 @@ public class Universe extends JPanel
- 						panelBounds.x = 0;
- 						panelBounds.y = 0;
--						outermostCell.redraw(g, panelBounds, drawAll); //{=Universe.redraw2}
-+						outermostCell.redraw(g, panelBounds, false); //{=Universe.redraw2}
- 					}
- 					finally
+private void refreshNow()
+{	repaint();
+}
 ```
+
+색 순환이 켜져 있으면 매 틱, 꺼져 있으면 셀이 바뀐 틱에만 `repaint()`를 요청한다. 색 순환을 끈 상태도 이제 화면에 바로 그리지 않고 Swing 버퍼로 그린다.
 
 ### 테스트
 
 | 테스트 | 판 | 확인 내용 |
 | --- | --- | --- |
 | `cyclingTickRequestsRepaintEvenWhenNothingChanges` | 색 순환 켬, 블록만 | 10틱 동안 판 전체 `repaint()` 요청 10번 |
-| `tickWithCyclingOffNeverRequestsRepaint` | 색 순환 끔, 블록과 블링커 | 10틱 동안 판 전체 `repaint()` 요청 0번. 꺼진 상태는 dev처럼 `refreshNow()`로 그린다 |
+| `tickWithCyclingOffRepaintsOnlyWhenCellsChange` | 색 순환 끔 | 블록만 있으면 10틱 동안 요청 0번, 블링커를 더하면 10틱 동안 10번 |
 
-테스트 안에서 RepaintManager를 바꿔 끼워, 틱을 보내는 동안 Universe가 요청한 판 전체 다시 그리기를 세고, 끝나면 원래 RepaintManager로 되돌린다. 게임 코드에는 아무것도 더하지 않았다.
+테스트 안에서 RepaintManager를 바꿔 끼워, 틱을 보내는 동안 Universe가 요청한 판 전체 다시 그리기를 세고, 끝나면 원래 RepaintManager로 되돌린다. 게임 코드에는 아무것도 더하지 않았다. 두 번째 테스트는 처음에 "색 순환을 끄면 `repaint()`를 요청하지 않는다"였으나, #9 병합 뒤 꺼진 상태도 `repaint()`로 그리게 되어 지금 내용으로 바꿨다.
 
 ### 검증
 
+모두 merge 뒤의 코드(`e2ebb08`)로 확인했다.
+
 | 항목 | 결과 |
 | --- | --- |
-| 전체 테스트 (`gradlew clean test`) | 69개 통과, 실패 0 |
-| 결함 사본: `repaint()`를 지움 | cyclingTickRequestsRepaintEvenWhenNothingChanges 실패 |
-| 결함 사본: 4번 조각의 `refreshNow( true )` | cyclingTickRequestsRepaintEvenWhenNothingChanges 실패 |
-| 결함 사본: 꺼진 상태에서도 `repaint()` | tickWithCyclingOffNeverRequestsRepaint 실패 |
-| 실제 창의 화면 색 (블록, 순환 규칙) | 9틱 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강. `repaint()`를 지운 대조 사본은 계속 빨강 |
+| 전체 테스트 (`gradlew clean test`) | 72개 통과, 실패 0 (dev의 70개 + 이 항목의 2개) |
+| 결함 사본: 색 순환 중 다시 그리기 요청을 지움 | cyclingTickRequestsRepaintEvenWhenNothingChanges 실패 |
+| 결함 사본: 꺼진 상태에서 바뀐 셀이 없어도 매 틱 다시 그림 | tickWithCyclingOffRepaintsOnlyWhenCellsChange 실패 |
+| 실제 창의 화면 색 (블록, 순환 규칙) | 9틱 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강. 다시 그리기 요청을 지운 대조 사본은 계속 빨강 |
 
 실제 창에서 6초 동안 돌리며 0.1초마다 이벤트 큐에 넣은 빈 작업이 실행되기까지 걸린 시간이다. 클릭과 메뉴도 같은 큐에서 기다린다.
 
-| 판 | 색 순환 | 속도 | 바꾸기 전 (마지막 1초) | 바꾼 뒤 (마지막 1초) | 바꾼 뒤 최대 | 바꾼 뒤, 멈춘 다음 큐가 비기까지 |
+| 판 | 색 순환 | 속도 | 4번 조각 코드 (마지막 1초) | merge 뒤 (마지막 1초) | merge 뒤 최대 | merge 뒤, 멈춘 다음 큐가 비기까지 |
 | --- | --- | --- | --- | --- | --- | --- |
-| 패턴 | 켬 | Fast | 14.1초 | 0 ms | 5 ms | 3 ms |
-| 패턴 | 켬 | Medium | 4.5초 | 0 ms | 5 ms | 4 ms |
-| 무작위 | 켬 | Fast | 20.5초 | 0 ms | 5 ms | 3 ms |
-| 무작위 | 켬 | Medium | 5.9초 | 0 ms | 7 ms | 6 ms |
-| 패턴 | 끔 | Fast | 0 ms | 0 ms | 12 ms | 5 ms |
-| 무작위 | 끔 | Fast | 6.6초 | 6.5초 | 7.0초 | 7.0초 |
+| 패턴 | 켬 | Fast | 14.1초 | 0 ms | 1 ms | 8 ms |
+| 무작위 | 켬 | Fast | 20.5초 | 0 ms | 3 ms | 7 ms |
+| 무작위 | 끔 | Fast | 6.6초 | 0 ms | 1 ms | 5 ms |
+| 무작위 | 끔 | Medium | 2.2초 | 0 ms | 1 ms | 8 ms |
 
 - 패턴 판은 2×2 블록 6개와 블링커 2개, 무작위 판은 64×64 전체에서 30%의 셀을 살린 판이다.
-- 색 순환을 끈 무작위 판은 dev와 같은 코드라 dev처럼 밀린다. 원본에서 온 한계이고 지연 문서 5절에 적었다.
+- 무작위 판·끔·Medium의 "4번 조각 코드" 값은 같은 경로를 쓰던 dev(`c49ca39`)에서 잰 값이다.
+- 색 순환을 끈 무작위 판의 지연도 사라졌다. 꺼진 상태도 `repaint()`로 그리게 된 #9의 변경 덕분이다.
+- #9에서 시계가 Swing 타이머로 바뀐 뒤 틱은 Fast에서 초당 약 31.8번, Medium에서 약 13.0번이었다. 원본 `java.util.Timer`일 때는 33.3번, 14.3번이었다.
 - 결함을 넣은 확인과 실제 창 확인은 시험용 사본에서만 했다.
 - 환경: Gradle 9.5.1(래퍼), JDK 17(테스트), 실행 JDK 21.0.12, JUnit Jupiter 6.0.3, Mockito 5.23.0, Windows 11(1920×1080, 배율 100%), 2026-11-17.
