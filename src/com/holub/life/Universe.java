@@ -1,12 +1,15 @@
 package com.holub.life;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
 
 import com.holub.io.Files;
+import com.holub.tools.Publisher;
 import com.holub.ui.MenuSite;
 
 import com.holub.life.Cell;
@@ -175,10 +178,11 @@ public class Universe extends JPanel
 			{	public void tick()
 				{	if (patternTools.isEditing()) return;
 					patternTools.boardChanged();
-					outermostCell.figureNextState
+					boolean willChange = outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
 						   );
+					boolean[][] before = willChange ? liveCells() : null;
 
 					// 바뀌는 셀이 없어도 매 틱 불러야 멈춘 패턴도 나이를 먹는다
 					boolean changed = outermostCell.transition();
@@ -188,6 +192,9 @@ public class Universe extends JPanel
 						refreshNow();
 					else if( changed )
 						refreshNow();
+
+					if( changed && before != null )
+						publishChanges( before );
 				}
 			}
 		);
@@ -225,6 +232,91 @@ public class Universe extends JPanel
 
 	public static Universe instance()
 	{	return theInstance;
+	}
+
+	/** 세대마다 바뀐 셀을 알려 받는 리스너. Point에는 셀 위치가
+	 *  (x = 열, y = 행)으로 들어 있다.
+	 */
+	public interface GenerationListener
+	{	void generationChanged( List<Point> births, List<Point> deaths );
+	}
+
+	private final Publisher generationPublisher = new Publisher();
+
+	/** 판이 바뀐 세대마다 알림을 받을 리스너를 등록한다. 리스너는
+	 *  Swing 이벤트 스레드에서 불리므로 빨리 끝나야 한다.
+	 */
+	public void addGenerationListener( GenerationListener observer )
+	{	generationPublisher.subscribe( observer );
+	}
+
+	/** 판의 가로(=세로) 셀 수를 반환한다. */
+	public int widthInCells()
+	{	return outermostCell.widthInCells();
+	}
+
+	/** 판의 스냅샷을 [행][열] 순서로 반환한다. */
+	public boolean[][] liveCells()
+	{	int width = outermostCell.widthInCells();
+		boolean[][] cells = new boolean[width][width];
+
+		for( int row = 0; row < width; ++row )
+			for( int column = 0; column < width; ++column )
+				cells[row][column] = outermostCell.isAliveAt(row, column);
+
+		return cells;
+	}
+
+	private void publishChanges( boolean[][] before )
+	{	final List<Point> births = new ArrayList<Point>();
+		final List<Point> deaths = new ArrayList<Point>();
+
+		for( int row = 0; row < before.length; ++row )
+			for( int column = 0; column < before.length; ++column )
+			{	boolean isAlive = outermostCell.isAliveAt(row, column);
+				if( isAlive && !before[row][column] )
+					births.add( new Point(column, row) );
+				else if( !isAlive && before[row][column] )
+					deaths.add( new Point(column, row) );
+			}
+
+		generationPublisher.publish
+		(	new Publisher.Distributor()
+			{	public void deliverTo( Object subscriber )
+				{	((GenerationListener)subscriber)
+										.generationChanged(births, deaths);
+				}
+			}
+		);
+	}
+
+	private static final int PLAYHEAD_WIDTH = 3;
+	private static final Color PLAYHEAD_COLOR = new Color( 0, 170, 80 );
+
+	private volatile int playhead = -1;
+
+	/** 해당 열의 왼쪽 가장자리에 세로선을 그린다.
+	 *  @param column 표시할 열. -1이면 선을 지운다.
+	 */
+	public void setPlayhead( int column )
+	{	int previous = playhead;
+		playhead = column;
+		repaintPlayhead( previous );
+		repaintPlayhead( column );
+	}
+
+	private void repaintPlayhead( int column )
+	{	if( column >= 0 )
+			repaint( column * pixelsPerCell(), 0, PLAYHEAD_WIDTH, getHeight() );
+	}
+
+	private void drawPlayhead( Graphics g )
+	{	int column = playhead;
+		if( column >= 0 )
+		{	g.setColor( PLAYHEAD_COLOR );
+			g.fillRect( column * pixelsPerCell(), 0,
+						PLAYHEAD_WIDTH, getHeight() );
+		}
 	}
 
 	JPanel patternControls() { return patternTools.controls(); }
@@ -315,6 +407,7 @@ public class Universe extends JPanel
 		panelBounds.x = 0;
 		panelBounds.y = 0;
 		outermostCell.redraw(g, panelBounds, true);		//{=Universe.redraw1}
+		drawPlayhead( g );
 		if (patternTools != null) patternTools.paintOverlay((Graphics2D) g);
 	}
 
