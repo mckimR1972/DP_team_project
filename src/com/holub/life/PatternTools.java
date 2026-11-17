@@ -238,9 +238,10 @@ final class PatternTools {
     private void beginPlacement() {
         if (list.getSelectedValue() == null) return;
         begin(Mode.PLACE);
-        message("보드를 클릭해 배치하세요. 빈 칸은 기존 셀을 지우지 않습니다.");
+        message("누르고 있으면 반복 배치합니다. 드래그로 이동, 한 번의 Undo로 되돌리기.");
     }
     void cancel() {
+        if (!isEditing()) return;
         begin(Mode.DRAW);
         message("셀 클릭으로 그리기. Go 메뉴에서 시뮬레이션을 시작하세요.");
     }
@@ -251,7 +252,7 @@ final class PatternTools {
         editor.undo();
         undo.setEnabled(editor.canUndo());
         board.repaint();
-        message("마지막 배치를 되돌렸습니다.");
+        message("마지막 배치 또는 드래그를 되돌렸습니다.");
     }
     private Point cellAt(Point point, boolean clamp) {
         int unit = board.getWidth() / editor.size();

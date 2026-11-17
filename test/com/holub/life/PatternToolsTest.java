@@ -136,6 +136,33 @@ class PatternToolsTest {
         });
     }
 
+    @Test void cancelInDrawModeDoesNotStopSimulation() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            tools.cancel();
+            board.getActionMap().get("cancel-pattern").actionPerformed(null);
+            mouse(MouseEvent.MOUSE_PRESSED, 2, 2, MouseEvent.BUTTON3, 0);
+            assertFalse(tools.isEditing());
+            verify(clock, never()).stop();
+        });
+    }
+    @Test void cancelEndsStrokeButKeepsItUndoable() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            choose(PatternTemplate.fromRows("Dot", "O"));
+            clearInvocations(clock);
+            press(2, 2); drag(4, 2);
+            board.getActionMap().get("cancel-pattern").actionPerformed(null);
+            assertFalse(tools.isEditing());
+            assertTrue(cells.isAliveAt(2, 4));
+            verify(clock).stop();
+            tools.cancel();
+            verify(clock, times(1)).stop();
+            drag(10, 10);
+            assertFalse(cells.isAliveAt(10, 10));
+            button("배치 되돌리기").doClick();
+            assertFalse(cells.isAlive());
+        });
+    }
+
     @Test void holdingStillDoesNotToggleOrCreateExtraUndoEntries() throws Exception {
         SwingUtilities.invokeAndWait(() -> { choose(PatternTemplate.fromRows("Dot", "O")); press(3, 4); });
         // Let actual Swing timer events run while the pointer is stationary.
