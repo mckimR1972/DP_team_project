@@ -16,7 +16,7 @@
 | 4 | Universe의 틱 처리와 화면 갱신 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
 | 5 | Universe의 Color 메뉴 | `Universe.java`, `Resident.java` | 반영 (2026-11-12) |
 | 6 | 주석 한글화와 정리 | `build.gradle`, 색 규칙 3개, `Resident.java`, `Universe.java`, 테스트 4개 | 반영 (2026-11-15) |
-| 7 | 색 순환 중 다시 그리기 요청 테스트 (화면 갱신 지연 해결) | `UniverseColorTest.java` | 반영 (2026-11-17) |
+| 7 | 색 순환 중 다시 그리기 요청 테스트 (화면 갱신 지연 해결) | `UniverseColorTest.java`, `Resident.java`(주석) | 반영 (2026-11-17) |
 
 1\~5번은 설계 문서 6절 "구현 순서"의 번호와 같다. 6번은 구현을 마친 뒤 한 주석 정리다. 7번은 구현 순서의 6번 조각이다.
 
@@ -598,6 +598,7 @@ Grid, Go 메뉴 뒤에 Color 메뉴를 추가했다. Single Color를 고르면 �
 | 파일 | 내용 |
 | --- | --- |
 | `test/com/holub/life/UniverseColorTest.java` | 아래 테스트 2개와 도우미 메서드 2개 추가 |
+| `src/com/holub/life/Resident.java` | `colorPolicy`의 주석 한 줄. #9로 시계가 Swing 타이머가 되어 "시계 스레드에서도 읽으므로"가 맞지 않게 됐다. `volatile`은 그대로 둔다 |
 
 ### 바꾼 이유
 
