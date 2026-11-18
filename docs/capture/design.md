@@ -7,7 +7,7 @@
 | 단계 | 확인 가능한 변경 | 근거 |
 |---|---|---|
 | 초기 캡처 | 영역을 Memento로 읽고 불변 템플릿과 파일 저장을 분리했다. 배치 Command는 전체 보드를 저장·복원했다. | 초기 커밋 [cd2fdb1](https://github.com/mckimR1972/DP_team_project/commit/cd2fdb1), PR #9 |
-| dev 통합 | 색상·일반 드래그·사운드가 있는 dev와 합치며 기존 셀의 나이와 갱신 경로를 보존했다. | [PR #9](https://github.com/mckimR1972/DP_team_project/pull/9), [기존 사용법](../capture-templates.md) |
+| dev 통합 | PR #9에서 색상 기능과 통합하며 기존 셀의 나이와 갱신 경로를 보존했다. 이후 일반 드래그(#5)·사운드(#3)가 반영된 dev를 기준으로 PR #13을 보완했다. | [PR #9](https://github.com/mckimR1972/DP_team_project/pull/9), [PR #5](https://github.com/mckimR1972/DP_team_project/pull/5), [PR #3](https://github.com/mckimR1972/DP_team_project/pull/3), [PR #13](https://github.com/mckimR1972/DP_team_project/pull/13) |
 | 템플릿 드래그 보완 | 시나리오를 독립 JUnit으로 나누고, 좌표 편집을 분리한 뒤 변경 좌표 Undo·누름 반복·보간·작업 묶음을 차례로 도입했다. | [PR #13의 10개 커밋](https://github.com/mckimR1972/DP_team_project/pull/13/commits) |
 | 입력·연계 안정화 | 해제·포커스 상실·취소를 정리하고 모델 수준 guard와 완료 알림을 추가했다. | PR #13의 `8bb9142`, `5c88c29`, `c9162b6` |
 | 현재 문서화 | 요구·결정·검사·그림을 연결하고 미병합 기능과의 접점을 구분한다. | 이 문서 묶음 |
