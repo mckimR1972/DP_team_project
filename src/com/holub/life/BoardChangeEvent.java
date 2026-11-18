@@ -1,5 +1,6 @@
 package com.holub.life;
 
+import java.awt.Color;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -14,7 +15,7 @@ import java.util.Set;
  */
 public final class BoardChangeEvent {
     public enum Kind {
-        INITIAL, GENERATION, EDIT, TEMPLATE, TEMPLATE_UNDO, CLEAR, LOAD
+        INITIAL, GENERATION, EDIT, TEMPLATE, TEMPLATE_UNDO, CLEAR, LOAD, COLOR_POLICY_CHANGED
     }
 
     private final Kind kind;
@@ -23,9 +24,11 @@ public final class BoardChangeEvent {
     private final boolean[][] aliveCells;
     private final List<Point> births;
     private final List<Point> deaths;
+    private final List<Color> aliveColors;
 
     public BoardChangeEvent(Kind kind, long generation, int boardSize,
-                            boolean[][] aliveCells, List<Point> births, List<Point> deaths) {
+                            boolean[][] aliveCells, List<Point> births, List<Point> deaths,
+                            List<Color> aliveColors) {
         this.kind = Objects.requireNonNull(kind, "kind");
         Objects.requireNonNull(aliveCells, "aliveCells");
         Objects.requireNonNull(births, "births");
@@ -50,6 +53,14 @@ public final class BoardChangeEvent {
         this.aliveCells = copyBoard(aliveCells);
         this.births = copyAndValidatePoints(births, true);
         this.deaths = copyAndValidatePoints(deaths, false);
+        this.aliveColors = List.copyOf(Objects.requireNonNull(aliveColors, "aliveColors"));
+        int livingCells = 0;
+        for (boolean[] row : this.aliveCells) {
+            for (boolean alive : row) if (alive) livingCells++;
+        }
+        if (this.aliveColors.size() != livingCells) {
+            throw new IllegalArgumentException("aliveColors must contain one color per living cell");
+        }
     }
 
     public Kind kind() { return kind; }
@@ -62,6 +73,9 @@ public final class BoardChangeEvent {
     /** Both the list and each mutable Point are copied. */
     public List<Point> copyBirths() { return copyPoints(births); }
     public List<Point> copyDeaths() { return copyPoints(deaths); }
+
+    /** Unmodifiable colors of living cells only; no coordinate or age meaning. */
+    public List<Color> aliveColors() { return aliveColors; }
 
     private List<Point> copyAndValidatePoints(List<Point> source, boolean aliveAfter) {
         List<Point> result = new ArrayList<>();

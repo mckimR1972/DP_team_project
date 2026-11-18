@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -219,7 +220,10 @@ class CellAgeColorTest {
         Graphics2D g = image.createGraphics();
         board.redraw(g, new Rectangle(0, 0, BOARD, BOARD), true);
         g.dispose();
-        return new Color(image.getRGB(x * CELL + 4, y * CELL + 4));
+        Color rendered = new Color(image.getRGB(x * CELL + 4, y * CELL + 4));
+        if (board.isAliveAt(y, x)) assertEquals(rendered, board.colorAt(y, x));
+        else assertNull(board.colorAt(y, x));
+        return rendered;
     }
 
     private boolean[] liveCells() {

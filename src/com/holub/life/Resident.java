@@ -127,6 +127,10 @@ public final class Resident implements Cell
 	{	assert row==0 && column==0;
 		return amAlive;
 	}
+	public Color colorAt(int row, int column)
+	{	assert row==0 && column==0;
+		return amAlive ? colorPolicy.colorOf(age) : null;
+	}
 	public Cell    create()			{return new Resident();			}
 	public int 	   widthInCells()	{return 1;}
 

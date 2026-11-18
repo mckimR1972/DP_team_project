@@ -17,7 +17,7 @@ class BoardChangeEventTest {
         boolean[][] cells = new boolean[3][3];
         cells[1][2] = true;
         BoardChangeEvent event = new BoardChangeEvent(GENERATION, 42, 3, cells,
-                List.of(new Point(2, 1)), List.of(new Point(0, 2)));
+                List.of(new Point(2, 1)), List.of(new Point(0, 2)), LifeTestSupport.redColors(cells));
         assertEquals(GENERATION, event.kind());
         assertEquals(42, event.generation());
         assertEquals(3, event.boardSize());
@@ -40,7 +40,7 @@ class BoardChangeEventTest {
         Point born = new Point(2, 1), died = new Point(0, 2);
         List<Point> births = new ArrayList<>(List.of(born));
         List<Point> deaths = new ArrayList<>(List.of(died));
-        BoardChangeEvent event = new BoardChangeEvent(GENERATION, 1, 3, cells, births, deaths);
+        BoardChangeEvent event = new BoardChangeEvent(GENERATION, 1, 3, cells, births, deaths, LifeTestSupport.redColors(cells));
         cells[1][2] = false;
         cells[0] = null;
         born.move(0, 0); died.move(1, 1);
@@ -55,7 +55,7 @@ class BoardChangeEventTest {
         boolean[][] cells = new boolean[3][3];
         cells[1][2] = true;
         BoardChangeEvent event = new BoardChangeEvent(GENERATION, 1, 3, cells,
-                List.of(new Point(2, 1)), List.of(new Point(0, 2)));
+                List.of(new Point(2, 1)), List.of(new Point(0, 2)), LifeTestSupport.redColors(cells));
         boolean[][] copy = event.copyAliveCells();
         copy[1][2] = false; copy[0] = null;
         event.copyBirths().get(0).move(0, 0);
@@ -69,9 +69,9 @@ class BoardChangeEventTest {
     @Test void rejectsMissingKindBoardListsAndPoints() {
         assertThrows(NullPointerException.class, () -> event(null, 0, 1, new boolean[1][1]));
         assertThrows(NullPointerException.class, () -> event(INITIAL, 0, 1, null));
-        assertThrows(NullPointerException.class, () -> new BoardChangeEvent(GENERATION, 1, 1, new boolean[1][1], null, List.of()));
-        assertThrows(NullPointerException.class, () -> new BoardChangeEvent(GENERATION, 1, 1, new boolean[1][1], List.of(), null));
-        assertThrows(NullPointerException.class, () -> new BoardChangeEvent(GENERATION, 1, 1, new boolean[1][1], Arrays.asList((Point) null), List.of()));
+        assertThrows(NullPointerException.class, () -> new BoardChangeEvent(GENERATION, 1, 1, new boolean[1][1], null, List.of(), LifeTestSupport.redColors(new boolean[1][1])));
+        assertThrows(NullPointerException.class, () -> new BoardChangeEvent(GENERATION, 1, 1, new boolean[1][1], List.of(), null, LifeTestSupport.redColors(new boolean[1][1])));
+        assertThrows(NullPointerException.class, () -> new BoardChangeEvent(GENERATION, 1, 1, new boolean[1][1], Arrays.asList((Point) null), List.of(), LifeTestSupport.redColors(new boolean[1][1])));
     }
 
     @ParameterizedTest @ValueSource(longs = {-1, Long.MIN_VALUE})
@@ -97,27 +97,27 @@ class BoardChangeEventTest {
     @ParameterizedTest @ValueSource(ints = {-1, 3})
     void rejectsCoordinatesOutsideEitherAxis(int outside) {
         assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 3,
-                new boolean[3][3], List.of(), List.of(new Point(outside, 0))));
+                new boolean[3][3], List.of(), List.of(new Point(outside, 0)), LifeTestSupport.redColors(new boolean[3][3])));
         assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 3,
-                new boolean[3][3], List.of(), List.of(new Point(0, outside))));
+                new boolean[3][3], List.of(), List.of(new Point(0, outside)), LifeTestSupport.redColors(new boolean[3][3])));
     }
 
     @Test void rejectsDuplicateOrInconsistentChanges() {
         boolean[][] cells = new boolean[2][2]; cells[0][1] = true;
         Point born = new Point(1, 0), dead = new Point(0, 1);
-        assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 2, cells, List.of(born, born), List.of()));
-        assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 2, cells, List.of(), List.of(dead, dead)));
-        assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 2, cells, List.of(dead), List.of()));
-        assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 2, cells, List.of(), List.of(born)));
+        assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 2, cells, List.of(born, born), List.of(), LifeTestSupport.redColors(cells)));
+        assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 2, cells, List.of(), List.of(dead, dead), LifeTestSupport.redColors(cells)));
+        assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 2, cells, List.of(dead), List.of(), LifeTestSupport.redColors(cells)));
+        assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(GENERATION, 1, 2, cells, List.of(), List.of(born), LifeTestSupport.redColors(cells)));
     }
 
     @ParameterizedTest @EnumSource(value = BoardChangeEvent.Kind.class, names = {"GENERATION"}, mode = EnumSource.Mode.EXCLUDE)
     void nonGenerationCannotClaimBirthsOrDeaths(BoardChangeEvent.Kind kind) {
         assertThrows(IllegalArgumentException.class, () -> new BoardChangeEvent(kind, 0, 1,
-                new boolean[1][1], List.of(), List.of(new Point(0, 0))));
+                new boolean[1][1], List.of(), List.of(new Point(0, 0)), LifeTestSupport.redColors(new boolean[1][1])));
     }
 
     private static BoardChangeEvent event(BoardChangeEvent.Kind kind, long generation, int size, boolean[][] cells) {
-        return new BoardChangeEvent(kind, generation, size, cells, List.of(), List.of());
+        return new BoardChangeEvent(kind, generation, size, cells, List.of(), List.of(), LifeTestSupport.redColors(cells));
     }
 }

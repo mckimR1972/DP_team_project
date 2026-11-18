@@ -150,7 +150,7 @@ class SoundEffectsIntegrationTest {
             LifeTestSupport.select("Grid", "Clear");
             boolean[][] cells = new boolean[64][64];
             cells[20][0] = kind != CLEAR;
-            BoardChangeEvent event = new BoardChangeEvent(kind, 0, 64, cells, List.of(), List.of());
+            BoardChangeEvent event = new BoardChangeEvent(kind, 0, 64, cells, List.of(), List.of(), LifeTestSupport.redColors(cells));
             sound.onBoardChanged(event);
             statistics.onBoardChanged(event);
             assertTrue(jobs.isEmpty());
@@ -158,6 +158,24 @@ class SoundEffectsIntegrationTest {
             sweepStep.run(); runNotes();
             assertEquals(kind != CLEAR, played.stream().anyMatch(note -> note.channel() == 7));
             assertEquals(kind == CLEAR ? 0 : 1, summary().livingCells());
+        });
+    }
+
+    @Test void realColorMenuRefreshesStatisticsWithoutSchedulingGenerationSound() throws Exception {
+        LifeTestSupport.onEdt(() -> {
+            LifeTestSupport.select("Grid", "Clear");
+            LifeTestSupport.click(10, 9); LifeTestSupport.click(10, 10); LifeTestSupport.click(10, 11);
+            for (int i = 0; i < 10; i++) LifeTestSupport.clock.tick();
+            jobs.clear();
+            LifeTestSupport.select("Color", "Cycle by Generation");
+            assertTrue(jobs.isEmpty());
+            assertEquals(10, summary().generation());
+            assertEquals(2, summary().births()); assertEquals(2, summary().deaths());
+            assertEquals(2, summary().colorCounts().size()); // age 10 center and age 0 ends
+            LifeTestSupport.select("Color", "Single Color");
+            assertTrue(jobs.isEmpty());
+            assertEquals(1, summary().colorCounts().size());
+            assertEquals(3, summary().colorCounts().get(0).cells());
         });
     }
 
@@ -192,7 +210,7 @@ class SoundEffectsIntegrationTest {
         LifeTestSupport.onEdt(() -> {
             boolean[][] cells = new boolean[64][64]; cells[1][2] = cells[60][60] = true;
             sound.onBoardChanged(new BoardChangeEvent(GENERATION, 1, 64, cells,
-                    List.of(new Point(2, 1), new Point(60, 60)), List.of(new Point(3, 4))));
+                    List.of(new Point(2, 1), new Point(60, 60)), List.of(new Point(3, 4)), LifeTestSupport.redColors(cells)));
             assertEquals(5, jobs.size());
             assertTrue(jobs.get(0).delay() >= 0 && jobs.get(0).delay() <= 15);
             assertEquals(220, jobs.get(1).delay() - jobs.get(0).delay());
@@ -210,7 +228,7 @@ class SoundEffectsIntegrationTest {
             boolean[][] cells = new boolean[64][64];
             List<Point> births = new ArrayList<>();
             for (int row = 0; row < 60; row += 5) { cells[row][0] = true; births.add(new Point(0, row)); }
-            sound.onBoardChanged(new BoardChangeEvent(GENERATION, 1, 64, cells, births, List.of()));
+            sound.onBoardChanged(new BoardChangeEvent(GENERATION, 1, 64, cells, births, List.of(), LifeTestSupport.redColors(cells)));
             runNotes();
             assertTrue(played.stream().anyMatch(note -> note.channel() == 5));
         });
@@ -220,7 +238,7 @@ class SoundEffectsIntegrationTest {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.select("Grid", "Clear");
             boolean[][] cells = new boolean[64][64]; cells[20][0] = true;
-            BoardChangeEvent event = new BoardChangeEvent(EDIT, 0, 64, cells, List.of(), List.of());
+            BoardChangeEvent event = new BoardChangeEvent(EDIT, 0, 64, cells, List.of(), List.of(), LifeTestSupport.redColors(cells));
             sound.onBoardChanged(event);
             cells[20][0] = false;
             event.copyAliveCells()[20][0] = false;

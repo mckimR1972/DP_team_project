@@ -239,6 +239,7 @@ public class Universe extends JPanel
 
 	private void useColorPolicy( CellColorPolicy policy )
 	{	Resident.setColorPolicy( policy );
+		notifyBoardChanged( BoardChangeEvent.Kind.COLOR_POLICY_CHANGED );
 		repaint();
 	}
 
@@ -292,15 +293,17 @@ public class Universe extends JPanel
         boolean[][] after = liveCells();
         List<Point> births = new ArrayList<>();
         List<Point> deaths = new ArrayList<>();
-        if (kind == BoardChangeEvent.Kind.GENERATION) {
-            for (int row = 0; row < after.length; row++) {
-                for (int column = 0; column < after.length; column++) {
+        List<Color> aliveColors = new ArrayList<>();
+        for (int row = 0; row < after.length; row++) {
+            for (int column = 0; column < after.length; column++) {
+                if (after[row][column]) aliveColors.add(outermostCell.colorAt(row, column));
+                if (kind == BoardChangeEvent.Kind.GENERATION) {
                     if (after[row][column] && !before[row][column]) births.add(new Point(column, row));
                     else if (!after[row][column] && before[row][column]) deaths.add(new Point(column, row));
                 }
             }
         }
-        return new BoardChangeEvent(kind, generation, after.length, after, births, deaths);
+        return new BoardChangeEvent(kind, generation, after.length, after, births, deaths, aliveColors);
     }
 
     private static void requireEventDispatchThread() {

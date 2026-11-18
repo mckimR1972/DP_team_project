@@ -65,7 +65,7 @@ class StatisticsTest {
         assertEquals(3, current().livingCells()); assertDelta(3, 0);
     }
 
-    @ParameterizedTest @EnumSource(value = BoardChangeEvent.Kind.class, names = {"GENERATION"}, mode = EnumSource.Mode.EXCLUDE)
+    @ParameterizedTest @EnumSource(value = BoardChangeEvent.Kind.class, names = {"GENERATION", "COLOR_POLICY_CHANGED"}, mode = EnumSource.Mode.EXCLUDE)
     void nonGenerationUpdatesPopulationAndClearsDisplayedDelta(BoardChangeEvent.Kind kind) {
         statistics.onBoardChanged(generation(5, 3, new int[]{1, 2}, new int[]{0}, 1, 2));
         assertDelta(2, 1);
@@ -124,10 +124,10 @@ class StatisticsTest {
         assertEquals(0, current().births()); assertEquals(0, current().deaths());
     }
     private static BoardChangeEvent event(BoardChangeEvent.Kind kind, long generation, int size, int... alive) {
-        return new BoardChangeEvent(kind, generation, size, board(size, alive), List.of(), List.of());
+        return new BoardChangeEvent(kind, generation, size, board(size, alive), List.of(), List.of(), LifeTestSupport.redColors(board(size, alive)));
     }
     private static BoardChangeEvent generation(long generation, int size, int[] births, int[] deaths, int... alive) {
-        return new BoardChangeEvent(GENERATION, generation, size, board(size, alive), points(size, births), points(size, deaths));
+        return new BoardChangeEvent(GENERATION, generation, size, board(size, alive), points(size, births), points(size, deaths), LifeTestSupport.redColors(board(size, alive)));
     }
     private static boolean[][] board(int size, int... indices) {
         boolean[][] cells = new boolean[size][size];

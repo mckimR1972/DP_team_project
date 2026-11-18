@@ -141,6 +141,7 @@ class StatisticsPanelIntegrationTest {
                 LifeTestSupport.select("Grid", "Load");
             }
             assertDisplay("0", "3", "0.07%", "—", "—");
+            assertEquals("3개 · 100.00%", label(panel, "color.#FF0000").getText());
             LifeTestSupport.clock.tick();
             assertDisplay("1", "3", "0.07%", "2", "2");
         });
@@ -262,10 +263,34 @@ class StatisticsPanelIntegrationTest {
             JTabbedPane tabs = new JTabbedPane();
             tabs.addTab("통계", panel);
             JPanel content = Life.createContent(LifeTestSupport.universe, tabs);
-            panel.showStatistics(new Statistics.Summary(3_000_000_000L, 4096, 100, 4096, 4096, true));
+            panel.showStatistics(new Statistics.Summary(3_000_000_000L, 4096, 100, 4096, 4096, true, List.of(new Statistics.ColorCount(java.awt.Color.RED, 4096, 100.0))));
             layoutAtPreferredSize(content);
             assertLabelsFit(panel);
             assertBoardAndSidebarBounds(content, tabs);
+        });
+    }
+
+    @Test
+    void threeColorRowsAndLargeValuesFitInsideTheExistingSharedTab() throws Exception {
+        LifeTestSupport.onEdt(() -> {
+            JTabbedPane tabs = new JTabbedPane();
+            tabs.addTab("통계", panel);
+            JPanel content = Life.createContent(LifeTestSupport.universe, tabs);
+            panel.showStatistics(new Statistics.Summary(3_000_000_000L, 4096, 100, 4096, 4096, true,
+                    List.of(new Statistics.ColorCount(java.awt.Color.RED, 2048, 50),
+                            new Statistics.ColorCount(new java.awt.Color(0x0072B2), 1024, 25),
+                            new Statistics.ColorCount(new java.awt.Color(0x009E73), 1024, 25))));
+            layoutAtPreferredSize(content);
+            assertLabelsFit(panel);
+            assertBoardAndSidebarBounds(content, tabs);
+            JLabel mainValue = label(panel, "livingCells");
+            JLabel colorValue = label(panel, "color.#FF0000");
+            assertEquals(mainValue.getFont(), colorValue.getFont(), "All statistics values share one font");
+            assertEquals(mainValue.getParent().getHeight(), colorValue.getParent().getHeight(),
+                    "All statistics rows share one height");
+            int mainStep = mainValue.getParent().getY() - label(panel, "generation").getParent().getY();
+            int colorStep = label(panel, "color.#0072B2").getParent().getY() - colorValue.getParent().getY();
+            assertEquals(mainStep, colorStep, "Row spacing is consistent across sections");
         });
     }
 

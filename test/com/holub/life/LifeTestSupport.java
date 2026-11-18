@@ -77,6 +77,15 @@ final class LifeTestSupport {
                 0L, 0, x, y, 1, false, button));
     }
 
+    /** Synthetic colors for existing event fixtures, not a production color rule. */
+    static java.util.List<java.awt.Color> redColors(boolean[][] cells) {
+        java.util.List<java.awt.Color> colors = new java.util.ArrayList<>();
+        if (cells != null) for (boolean[] row : cells) {
+            if (row != null) for (boolean alive : row) if (alive) colors.add(java.awt.Color.RED);
+        }
+        return colors;
+    }
+
     static int countAlive(boolean[][] cells) {
         int count = 0;
         for (boolean[] row : cells) for (boolean alive : row) if (alive) count++;

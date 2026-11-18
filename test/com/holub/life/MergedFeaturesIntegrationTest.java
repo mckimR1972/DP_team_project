@@ -167,6 +167,7 @@ class MergedFeaturesIntegrationTest {
             assertEquals(List.of(TEMPLATE), kinds());
             assertEquals(5, summary().livingCells());
             assertEquals("5", value("livingCells").getText());
+            assertEquals(List.of(new Statistics.ColorCount(Color.RED, 5, 100)), summary().colorCounts());
             assertFalse(summary().hasGenerationDelta());
             assertTrue(sound.isEmpty());
         });
@@ -179,9 +180,11 @@ class MergedFeaturesIntegrationTest {
             events.clear();
             chooseBlinker(); press(20, 20); drag(22, 20); release(22, 20);
             assertEquals(8, summary().livingCells());
+            assertEquals(List.of(new Statistics.ColorCount(Color.RED, 8, 100)), summary().colorCounts());
             button("배치 되돌리기").doClick(0);
             assertEquals(List.of(TEMPLATE, TEMPLATE_UNDO), kinds());
             assertEquals(3, summary().livingCells());
+            assertEquals(List.of(new Statistics.ColorCount(Color.RED, 3, 100)), summary().colorCounts());
             assertFalse(button("배치 되돌리기").isEnabled());
             button("편집 끝내기 (Esc)").doClick(0);
             LifeTestSupport.clock.tick();
