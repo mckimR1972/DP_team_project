@@ -47,6 +47,17 @@
       "code": "PatternTools.stampAt, BoardEditor, PlacePatternCommand",
       "document": "design.md, test-cases.md",
       "orientation": "portrait"
+    },
+    {
+      "id": "D-05",
+      "slug": "05-edit-states",
+      "title": "편집 모드와 누른 작업의 상태",
+      "summary": "편집 종료는 셀 복원이 아니다. 반복 입력을 끝내고 DRAW로 돌아가며, 복원은 Undo가 담당한다.",
+      "note": "실제 Mode enum은 DRAW/CAPTURE/PLACE의 3개다. 내부 두 상태는 stamping 값의 설명이며 State 패턴 클래스가 아니다.",
+      "requirements": "R-04, R-06~R-08 / E-05 / ADR-06",
+      "tests": "T-18~T-22, T-25",
+      "code": "PatternTools.begin, cancel, stopStamping; Universe tick",
+      "document": "feature-spec.md, design.md"
     }
   ]
 }
