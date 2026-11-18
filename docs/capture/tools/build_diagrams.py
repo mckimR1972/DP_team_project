@@ -123,6 +123,18 @@ def build_atlas(meta):
     with output.open('wb') as stream:
         writer.write(stream)
     print(f'Atlas: {len(writer.pages)} pages')
+    files = [DIAGRAMS / 'manifest.json', DIAGRAMS / 'theme.puml', Path(__file__), output]
+    for item in meta['diagrams']:
+        files.extend([DIAGRAMS / (item['slug'] + '.puml'),
+                      DIAGRAMS / 'svg' / (item['slug'] + '.svg'),
+                      DIAGRAMS / 'pdf' / (item['slug'] + '.pdf')])
+    hashes = {}
+    for path in files:
+        data = path.read_bytes() if path.suffix == '.pdf' else path.read_text(encoding='utf-8').replace('\r\n', '\n').encode('utf-8')
+        hashes[path.relative_to(ROOT).as_posix()] = hashlib.sha256(data).hexdigest()
+    artifacts = {'source_commit': meta['source_commit'], 'date': meta['date'],
+                 'text_hash_policy': 'UTF-8 with LF newlines', 'pdf_pages': len(writer.pages), 'sha256': hashes}
+    (DIAGRAMS / 'artifacts.json').write_text(json.dumps(artifacts, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
 
 def main():

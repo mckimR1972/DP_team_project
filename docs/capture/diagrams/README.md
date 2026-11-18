@@ -18,7 +18,10 @@ e9bc9e6b2eb715e8c0c929f3dcb5fc1923be13f37599b09c293c66d354e88686
 python docs/capture/tools/build_diagrams.py --jar C:\tools\plantuml-1.2026.10.jar --id D-01
 python docs/capture/tools/build_diagrams.py --jar C:\tools\plantuml-1.2026.10.jar --all
 python docs/capture/tools/build_diagrams.py --atlas
+python docs/capture/tools/verify_documents.py
 ```
+
+다른 OS에서는 PDF 제목용 `--font`뿐 아니라 `theme.puml`의 `defaultFontName`도 설치된 한글 폰트로 맞춘다. 최종 검증에는 `pypdfium2`도 필요하다. 검증 도구는 파일 해시·로컬 링크·기준 소스·PDF 페이지 수를 확인하고, 합본의 각 그림 페이지가 개별 PDF와 같은 이미지로 렌더링되는지 비교한다.
 
 Smetana 내장 레이아웃을 사용하므로 별도 Graphviz 설치가 필요 없다. 내용은 로컬에서 렌더링하며 원본을 외부 서버에 보내지 않는다. [PlantUML의 Smetana 설명](https://plantuml.com/smetana02)
 
