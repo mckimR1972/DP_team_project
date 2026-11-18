@@ -1,23 +1,17 @@
 package com.holub.life;
 
 import com.holub.io.Files;
-import com.holub.ui.MenuSite;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ObjectInputStream;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import javax.swing.SwingUtilities;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -29,48 +23,24 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 
 class UniverseStoreTest {
-    private static final Map<String, ActionListener> gridActions = new HashMap<>();
-    private static Universe universe;
-    private static Clock stoppedClock;
-
     @TempDir
     Path directory;
+    private static Universe universe;
 
     @BeforeAll
     static void initializeUniverseWithoutOpeningWindows() throws Exception {
-        SwingUtilities.invokeAndWait(() -> {
-            stoppedClock = mock(Clock.class);
-            // Capture the real menu callbacks without creating a JFrame or timer.
-            try (MockedStatic<MenuSite> menus = mockStatic(MenuSite.class);
-                 MockedStatic<Clock> clocks = mockStatic(Clock.class)) {
-                clocks.when(Clock::instance).thenReturn(stoppedClock);
-                menus.when(() -> MenuSite.addLine(
-                    any(), eq("Grid"), anyString(), any(ActionListener.class)
-                )).thenAnswer(invocation -> {
-                    gridActions.put(invocation.getArgument(2), invocation.getArgument(3));
-                    return null;
-                });
-                universe = Universe.instance();
-                universe.setSize(universe.getPreferredSize());
-            }
-            assertNotNull(gridActions.get("Clear"));
-            assertNotNull(gridActions.get("Store"));
-        });
+        LifeTestSupport.initialize();
+        universe = LifeTestSupport.universe;
     }
 
     @BeforeEach
     @AfterEach
     void clearBoard() throws Exception {
-        SwingUtilities.invokeAndWait(() -> selectGridAction("Clear"));
+        LifeTestSupport.resetBoard();
     }
 
     @ParameterizedTest(name = "store {0} live cell(s) without duplicates")
@@ -97,7 +67,7 @@ class UniverseStoreTest {
 
     @Test
     void liveCellsSnapshotIsIndexedByRowThenColumn() throws Exception {
-        SwingUtilities.invokeAndWait(() -> mouse(MouseEvent.MOUSE_PRESSED, 5, 2));
+        LifeTestSupport.onEdt(() -> mouse(MouseEvent.MOUSE_PRESSED, 5, 2));
 
         boolean[][] cells = universe.liveCells();
 
@@ -110,17 +80,19 @@ class UniverseStoreTest {
         final int column = 10;
         final int pixel = column * 8;
 
-        try {
-            universe.setPlayhead(column);
-            int shown = renderedPixel(pixel);
-            universe.setPlayhead(-1);
-            int hidden = renderedPixel(pixel);
+        LifeTestSupport.onEdt(() -> {
+            try {
+                universe.setPlayhead(column);
+                int shown = renderedPixel(pixel);
+                universe.setPlayhead(-1);
+                int hidden = renderedPixel(pixel);
 
-            assertEquals(new Color(0, 170, 80).getRGB(), shown);
-            assertTrue(shown != hidden);
-        } finally {
-            universe.setPlayhead(-1);
-        }
+                assertEquals(new Color(0, 170, 80).getRGB(), shown);
+                assertTrue(shown != hidden);
+            } finally {
+                universe.setPlayhead(-1);
+            }
+        });
     }
 
     private static int renderedPixel(int x) {
@@ -134,7 +106,7 @@ class UniverseStoreTest {
 
     @Test
     void draggingDrawsACellForEveryPositionPassed() throws Exception {
-        SwingUtilities.invokeAndWait(() -> {
+        LifeTestSupport.onEdt(() -> {
             mouse(MouseEvent.MOUSE_PRESSED, 2, 3);
             mouse(MouseEvent.MOUSE_DRAGGED, 6, 3);   // 세 칸을 건너뜀
             mouse(MouseEvent.MOUSE_DRAGGED, 6, 5);
@@ -151,7 +123,7 @@ class UniverseStoreTest {
 
     @Test
     void draggingFromALiveCellErases() throws Exception {
-        SwingUtilities.invokeAndWait(() -> {
+        LifeTestSupport.onEdt(() -> {
             mouse(MouseEvent.MOUSE_PRESSED, 1, 1);
             mouse(MouseEvent.MOUSE_DRAGGED, 2, 1);
             mouse(MouseEvent.MOUSE_DRAGGED, 3, 1);
@@ -169,7 +141,7 @@ class UniverseStoreTest {
 
     @Test
     void draggingOffTheBoardStopsAtTheEdge() throws Exception {
-        SwingUtilities.invokeAndWait(() -> {
+        LifeTestSupport.onEdt(() -> {
             mouse(MouseEvent.MOUSE_PRESSED, 62, 0);
             mouse(MouseEvent.MOUSE_DRAGGED, 70, 0);
         });
@@ -189,22 +161,15 @@ class UniverseStoreTest {
 
     private Collection<?> storeAndRead(List<Point> liveCells) throws Exception {
         Path destination = directory.resolve("board.life");
-        SwingUtilities.invokeAndWait(() -> {
+        LifeTestSupport.onEdt(() -> {
             for (Point cell : liveCells) {
-                universe.dispatchEvent(new MouseEvent(
-                    universe, MouseEvent.MOUSE_PRESSED, 0L, 0,
-                    cell.x * 8 + 1, cell.y * 8 + 1, 1, false, MouseEvent.BUTTON1
-                ));
+                LifeTestSupport.click(cell.y, cell.x);
             }
-            // Only replace external boundaries. The actual Store callback, doStore(),
-            // cells, memento, serialization and file output all run unchanged.
-            // Static mocks are scoped to the EDT because they are thread-local.
-            try (MockedStatic<Files> chooser = mockStatic(Files.class);
-                 MockedStatic<Clock> clocks = mockStatic(Clock.class)) {
+            // Real Store callback, clock, cells, memento and output; no file chooser UI.
+            try (MockedStatic<Files> chooser = mockStatic(Files.class)) {
                 chooser.when(() -> Files.userSelected(".", ".life", "Life File", "Write"))
                        .thenReturn(destination.toFile());
-                clocks.when(Clock::instance).thenReturn(stoppedClock);
-                selectGridAction("Store");
+                LifeTestSupport.select("Grid", "Store");
             }
         });
         try (ObjectInputStream input = new ObjectInputStream(
@@ -213,9 +178,4 @@ class UniverseStoreTest {
         }
     }
 
-    private static void selectGridAction(String name) {
-        gridActions.get(name).actionPerformed(
-            new ActionEvent(universe, ActionEvent.ACTION_PERFORMED, name)
-        );
-    }
 }

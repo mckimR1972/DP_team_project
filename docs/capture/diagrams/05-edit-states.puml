@@ -1,0 +1,26 @@
+@startuml
+!include theme.puml
+skinparam nodesep 65
+skinparam ranksep 70
+state "편집 모드 (Mode enum)" as Modes {
+  state "DRAW\n일반 그리기" as Draw
+  state "CAPTURE\n영역 선택" as Capture
+  state "PLACE\n템플릿 배치" as Place
+  [*] --> Draw
+  Draw --> Capture : E-01 캡처
+  Draw --> Place : E-02 배치
+  Capture --> Place : 저장 / E-02
+  Place --> Capture : E-01
+  Capture --> Draw : E-05 종료
+  Place --> Draw : E-05 종료
+}
+state "PLACE 내부의 입력 작업" as Gesture {
+  state "미리보기\nstamping=false" as Preview
+  state "누른 작업 진행\nstamping=true" as Held
+  [*] --> Preview
+  Preview --> Held : 왼쪽 누름\nbeginStroke
+  Held --> Held : Timer / drag
+  Held --> Preview : 해제·포커스 상실·제거\nendStroke
+}
+Modes -[hidden]right-> Gesture
+@enduml

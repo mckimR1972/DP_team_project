@@ -433,6 +433,12 @@ public final class Neighborhood implements Cell
 					.isAliveAt( row % subcellWidth, column % subcellWidth );
 	}
 
+	public Color colorAt(int row, int column)
+	{	int subcellWidth = grid[0][0].widthInCells();
+		return grid[row / subcellWidth][column / subcellWidth]
+					.colorAt( row % subcellWidth, column % subcellWidth );
+	}
+
 	public int widthInCells()
 	{	return gridSize * grid[0][0].widthInCells();
 	}

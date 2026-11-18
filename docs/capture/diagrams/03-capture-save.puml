@@ -1,0 +1,32 @@
+@startuml
+!include theme.puml
+actor "사용자" as User
+participant PatternTools as UI
+participant BoardEditor as Editor
+participant "Cell / Memento" as Cell
+participant PatternLibrary as Library
+database "템플릿 폴더" as Disk
+User -> UI : 영역 선택 후 저장 / 이름 입력
+UI -> Editor : capture(name, selection)
+Editor -> Cell : createMemento()
+Cell --> Editor : 생존 상태 조회용 Memento
+Editor -> Editor : 상대 좌표·여백 복사 / 검증
+Editor --> UI : 불변 PatternTemplate
+UI -> Library : save(pattern)
+Library -> Library : 빈 패턴·중복 이름 검증
+Library -> Disk : 임시 파일에 UTF-8 쓰기
+Disk --> Library : 쓰기 완료
+Library -> Disk : 목적 파일로 이동
+Disk --> Library : 이동 완료
+Library -> Library : 목록에 추가
+Library --> UI : 정상 반환
+UI --> User : 새 항목 선택 / 배치 모드
+note over UI, Editor
+이름 입력 취소는 capture 호출 전 종료.
+캡처 검증 실패는 예외 안내 후 저장하지 않음.
+end note
+note over Library, Disk
+위는 성공 흐름. 검증·파일 작업 실패 시
+후속 단계를 중단하고 목록을 추가하지 않음.
+end note
+@enduml

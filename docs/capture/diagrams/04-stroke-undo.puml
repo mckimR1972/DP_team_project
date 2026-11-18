@@ -1,0 +1,32 @@
+@startuml
+!include theme.puml
+actor "사용자" as User
+participant PatternTools as UI
+participant BoardEditor as Editor
+participant PlacePatternCommand as Cmd
+participant "PatternCells / Cell" as Cells
+User -> UI : 왼쪽 버튼 누름
+UI -> Editor : beginStroke()
+loop 최초 찍기 / 80ms 반복 / 이동 구간의 보간 기준점
+  UI -> Editor : place(pattern, origin)
+  Editor -> Editor : fits / placement guard
+  alt 허용된 배치
+    Editor -> Cmd : 새 Command.execute()
+    Cmd -> Cells : 죽어 있던 대상만 setAlive(true)
+    Cmd -> Cmd : 실제 추가 좌표를 기록
+    Cmd --> Editor : 변경 여부
+    Editor -> Editor : 최초 성공은 history에 추가\n후속 성공은 stroke.include(command)
+  else 범위 초과 / guard 거부
+    Editor --> UI : 거부 (변경·이력 없음)
+  end
+end
+User -> UI : 버튼 해제
+UI -> Editor : endStroke()
+Editor -> UI : onEdit(TEMPLATE) [변경이 있었을 때]
+UI -> UI : PropertyChange / 외부 구독자에 전달
+User -> UI : Undo 버튼 / Ctrl+Z
+UI -> Editor : undo()
+Editor -> Cmd : 마지막 작업.undo()
+Cmd -> Cells : 기록한 추가 좌표만 setAlive(false)
+Editor -> UI : onEdit(TEMPLATE_UNDO)
+@enduml
