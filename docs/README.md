@@ -7,7 +7,8 @@
 | 캡처·템플릿 | [캡처 문서 묶음](capture/README.md) | 기능 명세, 설계 결정, 연계, 테스트, 도식의 추적 시작점 |
 | 캡처 사용법 | [capture-templates.md](capture-templates.md) | 사용법과 기존 설명 |
 | 캡처 드래그 구현 이력 | [capture-drag-design.md](capture-drag-design.md) | PR #13 당시의 설계·시험 병합 기록 |
-| 세대별 색상 | [feature-color-gen-changes.md](feature-color-gen-changes.md) | 변경 이유·대안·검증 |
+| 세대별 색상 | [color-gen.md](color-gen.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
+| 세대별 색상 구현 이력 | [feature-color-gen-changes.md](feature-color-gen-changes.md) | 커밋 단위 변경 이유·대안·검증 |
 | 화면 갱신 지연 | [color-gen-redraw-lag.md](color-gen-redraw-lag.md) | 원인 분석과 대안 비교 |
 | 기본 오류 | [fix-life-game-changes.md](fix-life-game-changes.md) | 기존 코드 오류 수정과 회귀 검사 |
 | 사운드 이펙트 | [sound-effects.md](sound-effects.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
