@@ -13,6 +13,17 @@
       "tests": "T-01~T-25",
       "code": "PatternTools, BoardEditor, PatternLibrary, Universe",
       "document": "feature-spec.md"
+    },
+    {
+      "id": "D-02",
+      "slug": "02-classes",
+      "title": "캡처 객체의 책임과 협력",
+      "summary": "입력·저장·편집 이력을 분리하고 기존 Cell Composite를 공개 계약으로 재사용한다.",
+      "note": "현재 배치 Undo는 변경 좌표 Command다. 캡처 조회에만 기존 Memento를 사용한다. 일부 메서드는 가독성을 위해 생략했다.",
+      "requirements": "R-01~R-06, R-09 / ADR-01~ADR-08",
+      "tests": "T-01~T-19, T-23",
+      "code": "PatternTools, BoardEditor, PlacePatternCommand, Cell",
+      "document": "design.md"
     }
   ]
 }
