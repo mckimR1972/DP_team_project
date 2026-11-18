@@ -58,6 +58,18 @@
       "tests": "T-18~T-22, T-25",
       "code": "PatternTools.begin, cancel, stopStamping; Universe tick",
       "document": "feature-spec.md, design.md"
+    },
+    {
+      "id": "D-06",
+      "slug": "06-integration",
+      "title": "타 기능과의 설계 접점",
+      "summary": "캡처는 모델 guard와 완료 알림으로 연결한다. 프리징·통계 구현을 직접 소유하거나 세대 이벤트를 만들어내지 않는다.",
+      "note": "점선은 확인한 PR 소스의 계약이며 현재 dev의 통합 완료를 뜻하지 않는다. 실제 병합 검증은 IT-01~IT-06에 남아 있다.",
+      "requirements": "R-05, R-08, R-09 / IF-01~IF-06",
+      "tests": "T-14, T-15, T-22~T-25 / IT-01~IT-06 (예정)",
+      "code": "PatternTools, BoardEditor; PR #7, #10 Universe",
+      "document": "integration.md, test-plan.md",
+      "orientation": "portrait"
     }
   ]
 }
