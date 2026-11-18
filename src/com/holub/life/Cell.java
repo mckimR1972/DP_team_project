@@ -69,6 +69,11 @@ public interface Cell
 	 */
 	boolean isAliveAt( int row, int column );
 
+	/** Return the current display color of a living cell, or null if dead.
+	 *  Coordinates are local to this cell, as in isAliveAt(). Does not advance age.
+	 */
+	Color colorAt( int row, int column );
+
 	/** Return the specified width plus the current cell's width
 	 */
 	int widthInCells();
@@ -148,6 +153,7 @@ public interface Cell
 		public Cell		 edge(int r, int c)	{return this;  			  }
 		public boolean	 isAlive()		   	{return false; 			  }
 		public boolean	 isAliveAt(int r, int c)	{return false;	  }
+		public Color     colorAt(int r, int c)   {return null;       }
 		public Cell 	 create()	   	   	{return this;			  }
 		public Direction isDisruptiveTo()	{return Direction.NONE;	  }
 		public void 	 clear()		   	{						  }
