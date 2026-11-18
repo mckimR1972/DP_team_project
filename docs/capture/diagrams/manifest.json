@@ -35,6 +35,18 @@
       "tests": "T-01, T-02, T-05~T-07, T-25",
       "code": "PatternTools.saveSelection, BoardEditor.capture, PatternLibrary.save",
       "document": "feature-spec.md, design.md"
+    },
+    {
+      "id": "D-04",
+      "slug": "04-stroke-undo",
+      "title": "연속 배치와 작업 단위 Undo",
+      "summary": "많은 찍기를 하나의 작업에 합치고 변경 완료를 한 번 알린다. Undo는 그 작업이 추가한 좌표만 되돌린다.",
+      "note": "UI가 범위·guard를 먼저 검사하고 모델에서도 재검사한다. 무변경 찍기·빈 작업·빈 Undo는 이력과 알림을 만들지 않는다.",
+      "requirements": "R-03~R-06, R-09 / ADR-03~ADR-05, ADR-07",
+      "tests": "T-03, T-10~T-19, T-23, T-24",
+      "code": "PatternTools.stampAt, BoardEditor, PlacePatternCommand",
+      "document": "design.md, test-cases.md",
+      "orientation": "portrait"
     }
   ]
 }

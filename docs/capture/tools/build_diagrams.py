@@ -37,7 +37,8 @@ def wrapped(c, text, x, y, width, size=10, leading=15):
     return y - leading
 
 
-def page_header(c, number, title, meta):
+def page_header(c, number, title, meta, page_size=None):
+    WIDTH, HEIGHT = page_size or landscape(A4)
     c.setFillColor(HexColor('#37728A'))
     c.setFont('Korean', 9)
     c.drawString(32, HEIGHT - 28, f'LIFE GAME / CAPTURE DESIGN / {number}')
@@ -53,6 +54,7 @@ def page_header(c, number, title, meta):
 
 
 def render_diagram(item, meta, jar):
+    WIDTH, HEIGHT = A4 if item.get('orientation') == 'portrait' else landscape(A4)
     source = DIAGRAMS / (item['slug'] + '.puml')
     for extension in ('svg', 'png'):
         target = DIAGRAMS / 'svg' if extension == 'svg' else BUILD
@@ -70,7 +72,7 @@ def render_diagram(item, meta, jar):
     c = canvas.Canvas(str(destination), pagesize=(WIDTH, HEIGHT), invariant=1)
     c.setTitle(item['id'] + ' ' + item['title'])
     c.setAuthor('DP_team_project / capture documentation')
-    page_header(c, item['id'], item['title'], meta)
+    page_header(c, item['id'], item['title'], meta, (WIDTH, HEIGHT))
     image = ImageReader(str(png))
     iw, ih = image.getSize()
     box_x, box_y, box_w, box_h = 32, 136, WIDTH - 64, HEIGHT - 222

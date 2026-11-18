@@ -22,4 +22,4 @@ python docs/capture/tools/build_diagrams.py --atlas
 
 Smetana 내장 레이아웃을 사용하므로 별도 Graphviz 설치가 필요 없다. 내용은 로컬에서 렌더링하며 원본을 외부 서버에 보내지 않는다. [PlantUML의 Smetana 설명](https://plantuml.com/smetana02)
 
-각 PDF는 A4 가로, 한글 폰트가 포함된 제목·설명, 고해상도 도식으로 구성한다. 원본 수정 → 해당 PDF/SVG 재생성 → 페이지 검토 → manifest 연결 확인 → 커밋 순서를 따른다. 합본은 개별 PDF를 묶으므로 개별 파일과 내용이 다르지 않다.
+각 PDF는 A4이며 도식 비율에 맞춰 가로·세로를 선택한다. 한글 폰트가 포함된 제목·설명과 고해상도 도식으로 구성한다. 원본 수정 → 해당 PDF/SVG 재생성 → 페이지 검토 → manifest 연결 확인 → 커밋 순서를 따른다. 합본은 개별 PDF를 묶으므로 개별 파일과 내용이 다르지 않다.
