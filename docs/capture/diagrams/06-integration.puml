@@ -1,0 +1,29 @@
+@startuml
+!include theme.puml
+skinparam componentStyle rectangle
+skinparam componentBackgroundColor #EFF7FA
+skinparam componentBorderColor #51768B
+skinparam nodesep 65
+skinparam ranksep 65
+rectangle "현재 dev a480113" {
+  component "Universe / Clock\n입력·세대 중재" as Universe
+  component "캡처 편집\nPatternTools + BoardEditor" as Capture
+  component "Cell 트리\n기존 셀의 나이·색" as Cells
+  component "PropertyChange\nTEMPLATE / TEMPLATE_UNDO" as Signal
+  Universe --> Capture : IF-01/03\nisEditing / boardChanged
+  Capture --> Cells : IF-02\n변경 셀만 편집
+  Capture --> Signal : IF-05\n완료 후 한 번
+}
+rectangle "미병합 PR의 연결" #FFF7E6 {
+  component "PR #7 FreezingManager\nee1e763" as Freeze #FFF7E6
+  component "PR #10 Universe\nBoardChangeEvent\n8eb1dfe" as Events #FFF7E6
+  component "PR #10 통계·사운드 구독자" as Observers #FFF7E6
+  Events ..> Observers : IF-05/06\n완료 스냅샷 / 종류 구분
+}
+Freeze ..> Capture : IF-04\nRectangle guard (true=차단)
+Signal ..> Events : IF-05\nTEMPLATE / TEMPLATE_UNDO 구독
+legend bottom
+실선: 현재 dev 계약     점선: 미병합 PR의 조립 계약
+PR #10 브랜치에는 이미 리스너가 있음. 병합 시 중복 등록 금지.
+endlegend
+@enduml
