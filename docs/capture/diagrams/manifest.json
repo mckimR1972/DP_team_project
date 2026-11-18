@@ -24,6 +24,17 @@
       "tests": "T-01~T-19, T-23",
       "code": "PatternTools, BoardEditor, PlacePatternCommand, Cell",
       "document": "design.md"
+    },
+    {
+      "id": "D-03",
+      "slug": "03-capture-save",
+      "title": "영역 캡처와 파일 저장의 흐름",
+      "summary": "캡처는 원본을 읽고 상대 생존 모양을 만든다. 파일 저장이 성공해야 목록과 배치 모드를 갱신한다.",
+      "note": "중복 이름은 실제 파일 쓰기 전에 거부한다. 원자 이동 미지원 시 일반 이동으로 대체하며 전원 장애 안전성 전체를 보장하지는 않는다.",
+      "requirements": "R-01, R-02 / E-01 / ADR-01, ADR-08",
+      "tests": "T-01, T-02, T-05~T-07, T-25",
+      "code": "PatternTools.saveSelection, BoardEditor.capture, PatternLibrary.save",
+      "document": "feature-spec.md, design.md"
     }
   ]
 }
