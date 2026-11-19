@@ -17,16 +17,20 @@ Color 메뉴에서 Cycle by Generation을 고르면, 살아 있는 셀이 10세�
 
 ### 1.1 유스케이스
 
-확장 유스케이스는 과제 안내문의 규칙대로 이름 끝에 `E`를 붙였다.
+확장 유스케이스는 과제 안내문의 규칙대로 이름 끝에 `E`를 붙였다. 그림에는 색 순환 유스케이스와, 이들이 맞물리는 원본 유스케이스(Run / Halt Game, Step One Generation, Advance Generation)만 그렸다.
+
+![색 순환 유스케이스 다이어그램](diagrams/color-gen/usecase-color.png)
 
 | 유스케이스 | 시작하는 곳 | 기존 유스케이스와의 관계 | 내용 |
 | --- | --- | --- | --- |
 | Turn On Color Cycling E | Color > Cycle by Generation | Recolor Cells by Age E를 «include» | 색 순환을 켜고, 고르는 즉시 판 전체를 각 셀의 나이에 맞는 색으로 다시 그린다 |
 | Turn Off Color Cycling E | Color > Single Color | | 원본 빨강으로 되돌린다. 처음 켰을 때와 같은 상태다 |
-| Count Cell Age E | 세대가 진행될 때마다 | 세대 진행(Run / Halt Game, Step One Generation)을 «extend» | 살아남은 셀은 나이 +1, 새로 태어난 셀은 0. 색 순환이 꺼져 있어도 센다 |
-| Recolor Cells by Age E | 색 순환이 켜져 있을 때 세대마다 | 세대 진행을 «extend» (조건: 색 순환이 켜져 있음) | 판 전체를 나이에 맞는 색으로 다시 그린다. 멈춘 패턴도 10세대마다 색이 바뀐다 |
+| Count Cell Age E | 세대가 진행될 때마다 | Advance Generation을 «extend» | 살아남은 셀은 나이 +1, 새로 태어난 셀은 0. 색 순환이 꺼져 있어도 센다 |
+| Recolor Cells by Age E | 색 순환이 켜져 있을 때 세대마다 | Advance Generation을 «extend» (조건: 색 순환이 켜져 있음) | 판 전체를 나이에 맞는 색으로 다시 그린다. 멈춘 패턴도 10세대마다 색이 바뀐다 |
 
-나이 세기와 색 다시 그리기를 «extend»로 둔 것은, 원본의 세대 진행을 고치지 않고 그 위에 덧붙는 구조이기 때문이다.
+- Advance Generation은 원본에서 한 세대를 계산하고 확정하는 부분이다. Run / Halt Game(Go 메뉴의 속도 선택)과 Step One Generation(Go > Tick)이 모두 이것을 «include»한다. 두 확장 유스케이스는 이 공통 부분의 확장 지점 "세대 확정 후"에 붙으므로, Run과 Step에 따로 그리지 않았다.
+- 나이 세기와 색 다시 그리기를 «extend»로 둔 것은, 원본의 세대 진행을 고치지 않고 그 위에 덧붙는 구조이기 때문이다.
+- Recolor Cells by Age E는 Turn On Color Cycling E가 «include»하기도 한다. 켜는 순간 한 번 다시 그리는 것도 같은 동작이기 때문이다.
 
 **Turn On Color Cycling E**
 
