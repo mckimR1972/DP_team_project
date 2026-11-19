@@ -1,0 +1,30 @@
+@startuml state-color-mode
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+hide empty description
+mainframe stm 색 모드 (Resident.colorPolicy)
+
+state "Single Color" as Single
+state Single : entry / repaint()
+state Single : tick() [changed] / repaint()
+
+state "Cycle by Generation" as Cycling
+state Cycling : entry / repaint()
+state Cycling : tick() / repaint()
+
+[*] --> Single : 프로그램 시작
+
+Single --> Cycling : Cycle by Generation 선택\n/ setColorPolicy(new CyclingColorPolicy(...))
+Cycling --> Single : Single Color 선택\n/ setColorPolicy(new FixedColorPolicy(LIVE_COLOR))
+Single --> Single : Single Color 선택\n/ setColorPolicy(new FixedColorPolicy(LIVE_COLOR))
+Cycling --> Cycling : Cycle by Generation 선택\n/ setColorPolicy(new CyclingColorPolicy(...))
+
+note bottom of Cycling
+  Single: colorPolicy가 FixedColorPolicy
+  Cycling: colorPolicy가 CyclingColorPolicy
+  셀의 나이는 모드와 상관없이 매 틱 센다.
+  모드를 바꿔도 나이는 그대로다
+end note
+@enduml

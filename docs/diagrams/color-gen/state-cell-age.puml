@@ -1,0 +1,29 @@
+@startuml state-cell-age
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+hide empty description
+mainframe stm Resident (셀 하나)
+
+state Dead
+state Alive : entry / age = 0
+state Alive : transition() [willBeAlive] / age = age + 1
+
+[*] -down-> Dead : 생성
+
+Dead -down-> Alive : transition() [willBeAlive]
+Dead -down-> Alive : userClicked()
+Dead -down-> Alive : transfer(LOAD) [파일에서 살아 있음]
+
+Alive -up-> Dead : transition() [not willBeAlive]
+Alive -up-> Dead : userClicked()
+Alive -up-> Dead : clear()
+
+note right of Alive
+  그릴 때의 색 = colorPolicy.colorOf(age)
+end note
+note right of Dead
+  나이와 상관없이 죽은 칸 색으로 그린다
+end note
+@enduml
