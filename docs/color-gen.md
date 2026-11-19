@@ -363,6 +363,12 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
 ### 3.2 한 세대가 진행되는 순서
 
+원본과 지금의 틱 처리를 시퀀스 다이어그램으로 비교한다. Neighborhood는 블록 안의 블록을 거쳐 Resident까지 내려가지만, 그림에서는 이 Composite 재귀를 "칸마다" loop 하나로 줄였다.
+
+![원본 틱 처리 시퀀스 다이어그램](diagrams/color-gen/sd-tick-before.png)
+
+![지금 틱 처리 시퀀스 다이어그램](diagrams/color-gen/sd-tick-after.png)
+
 1. 시계(Swing 타이머)가 Universe의 틱 리스너를 부른다.
 2. 캡처·배치 편집 중이면 여기서 끝난다.
 3. `outermostCell.figureNextState()`: 블록마다, 셀마다 다음 생사를 계산한다. 활성 상태가 아닌 블록은 원본처럼 건너뛴다. 이어서 확정 전의 판을 복사해 둔다(통계 #10).
@@ -375,8 +381,10 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
 ### 3.3 Color 메뉴를 고를 때
 
-1. 메뉴 항목의 `ActionListener`가 규칙 객체를 만든다. Single Color는 `new FixedColorPolicy(Resident.LIVE_COLOR)`, Cycle by Generation은 `new CyclingColorPolicy(10, 빨강, 파랑, 초록)`이다.
-2. `useColorPolicy()`가 `Resident.setColorPolicy()`로 static 참조를 바꾼다. 셀의 나이는 바뀌지 않는다.
+![Color 메뉴 시퀀스 다이어그램](diagrams/color-gen/sd-color-menu.png)
+
+1. 메뉴 항목의 `ActionListener`가 규칙 객체를 만든다. Single Color는 `new FixedColorPolicy(Resident.LIVE_COLOR)`, Cycle by Generation은 `new CyclingColorPolicy(10, 빨강, 파랑, 초록)`이다. 그림은 Cycle by Generation이고, Single Color도 만드는 객체만 다르다.
+2. `useColorPolicy()`가 `Resident.setColorPolicy()`로 static 참조를 바꾼다. 셀의 나이는 바뀌지 않는다. 이어서 `COLOR_POLICY_CHANGED` 이벤트로 통계에 알린다(통계 #10).
 3. `repaint()`로 판 전체를 다시 그린다. 시계가 멈춰 있어도 새 규칙의 색이 바로 보인다.
 4. 다음 틱부터 Universe는 `colorChangesWithAge()`로 새 규칙에 물어 다시 그릴 범위를 정한다. 메뉴는 규칙만 바꾸고, 다시 그리는 방식을 따로 바꾸지 않는다.
 
@@ -398,7 +406,9 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
 ### 3.5 시스템 연산과 연산 계약
 
-게임을 블랙박스로 보면, 이 기능이 새로 만들거나 바꾼 시스템 연산은 셋이다.
+게임을 블랙박스로 보면, 이 기능이 새로 만들거나 바꾼 시스템 연산은 셋이다. 아래 시스템 시퀀스 다이어그램은 색 순환을 켜고 돌린 뒤 끄는 한 시나리오다.
+
+![시스템 시퀀스 다이어그램](diagrams/color-gen/ssd.png)
 
 | 시스템 연산 | 실제 입력 | 이 기능과의 관계 |
 | --- | --- | --- |
@@ -412,7 +422,7 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 | --- | --- | --- | --- |
 | `selectCycleByGeneration()` | Turn On Color Cycling E | 없음 | `CyclingColorPolicy` 인스턴스 cp가 생성되었다. cp.period가 10, cp.colors가 \[빨강, 파랑, 초록\]이 되었다. `Resident.colorPolicy`가 이전 규칙과의 연관을 끊고 cp와 연관되었다. 모든 Resident의 `age`는 바뀌지 않았다 |
 | `selectSingleColor()` | Turn Off Color Cycling E | 없음 | `FixedColorPolicy` 인스턴스 fp가 생성되었다. fp.color가 `Resident.LIVE_COLOR`가 되었다. `Resident.colorPolicy`가 fp와 연관되었다. 모든 Resident의 `age`는 바뀌지 않았다 |
-| `tick()` | Run / Halt Game, Count Cell Age E, Recolor Cells by Age E | 캡처·배치 편집 중이 아니다 | 모든 Resident r의 r.amAlive가 이번 틱에 계산된 다음 생사가 되었다. 틱 전후 모두 살아 있는 r은 r.age가 틱 전의 r.age + 1이 되었다. 그 밖의 r은 r.age가 0이 되었다. 생사가 바뀐 셀이 없는 틱에도 이 나이 변화가 일어났다 |
+| `tick()` | Run / Halt Game, Step One Generation, Advance Generation, Count Cell Age E, Recolor Cells by Age E | 캡처·배치 편집 중이 아니다 | 모든 Resident r의 r.amAlive가 이번 틱에 계산된 다음 생사가 되었다. 틱 전후 모두 살아 있는 r은 r.age가 틱 전의 r.age + 1이 되었다. 그 밖의 r은 r.age가 0이 되었다. 생사가 바뀐 셀이 없는 틱에도 이 나이 변화가 일어났다 |
 
 원본의 `tick()`은 바뀔 셀이 없으면 확정하지 않았다. 원본에는 나이가 없어서 그래도 상태가 같았지만, 이 기능에서는 멈춘 패턴도 나이를 먹어야 하므로 마지막 사후 조건이 생겼다. 클릭(Edit Cells)과 Load(Store / Load Board)에도 "그 셀의 `age`가 0이 되었다"는 사후 조건이 하나씩 더해졌다.
 

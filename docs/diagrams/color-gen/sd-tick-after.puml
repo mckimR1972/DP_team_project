@@ -1,0 +1,49 @@
+@startuml sd-tick-after
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd tick (dev 94f50b3)
+
+participant ":Clock" as C
+participant ":Universe" as U
+participant "outermostCell : Neighborhood" as N
+participant ":Resident" as R
+participant "Resident" as RC
+participant "colorPolicy : CellColorPolicy" as P
+
+[o-> C : 시간 이벤트
+C -> U : tick()
+
+alt 캡처·배치 편집 중
+  U --> C
+else
+  U -> N : figureNextState(DUMMY × 8)
+  loop 활성 블록의 칸마다
+    N -> R : figureNextState(이웃 8칸)
+  end
+  U -> U : before = liveCells()
+
+  U -> N : transition()
+  loop 모든 블록의 칸마다
+    N -> R : transition()
+    R -> R : age = (전후 모두 생존) ? age + 1 : 0
+    R -> R : amAlive = willBeAlive
+    R --> N : changed
+  end
+  N --> U : changed
+
+  U -> U : generation++\nnotifyBoardChanged(GENERATION, before)
+
+  U -> RC : colorChangesWithAge()
+  note left of RC : static 메서드라\n클래스에 보낸다
+  RC -> P : changesWithAge()
+  P --> RC : withAge
+  RC --> U : withAge
+  opt withAge 또는 changed
+    U -> U : refreshNow()
+  end
+end
+@enduml
