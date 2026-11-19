@@ -12,6 +12,7 @@
 | 화면 갱신 지연 | [color-gen-redraw-lag.md](color-gen-redraw-lag.md) | 원인 분석과 대안 비교 |
 | 기본 오류 | [fix-life-game-changes.md](fix-life-game-changes.md) | 기존 코드 오류 수정과 회귀 검사 |
 | 사운드 이펙트 | [sound-effects.md](sound-effects.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
+| 단일 진행 오류 | [fix-single-step-halt.md](fix-single-step-halt.md) | 실행 중 Tick이 멈추지 않던 원본 오류의 원인, 수정, 테스트 |
 
 캡처 문서 묶음에서는 요구사항 → 설계 결정 → 코드 → 테스트 → 도식의 ID를 연결한다. 이는 캡처 자료의 정리 방식이며, 다른 팀원의 문서 형식을 일괄 변경하는 규칙은 아니다.
 
