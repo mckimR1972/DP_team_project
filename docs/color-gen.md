@@ -338,6 +338,17 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
 ### 3.1 클래스 구조
 
+바꾸기 전(원본 dev `c49ca39`)과 바꾼 후(dev `94f50b3`)의 클래스 다이어그램이다. 이 기능과 관계있는 클래스와 멤버만 그렸다.
+
+![바꾸기 전 클래스 다이어그램](diagrams/color-gen/class-before.png)
+
+![바꾼 후 클래스 다이어그램](diagrams/color-gen/class-after.png)
+
+- 밑줄은 static 멤버다. `colorPolicy` 연관 이름에 밑줄을 그어 Resident 클래스가 참조 하나를 가진다는 것을 나타냈다.
+- `LIVE_COLOR`는 Color 메뉴도 쓰므로 private(`-`)에서 package(`~`)로 바뀌었다.
+- `Cell.colorAt()`은 통계 기능(#10)이 더한 메서드다. 같은 `colorPolicy.colorOf(age)`로 색을 받으므로 함께 그렸다.
+- Universe의 `paint()`가 `paintComponent()`로 바뀐 것은 캡처·템플릿 기능(#9)의 변경이다.
+
 | 클래스 | 원본에서의 역할 | 이 기능에서 바뀐 역할 |
 | --- | --- | --- |
 | `Cell` (인터페이스) | Composite의 Component | 바뀌지 않음 |
