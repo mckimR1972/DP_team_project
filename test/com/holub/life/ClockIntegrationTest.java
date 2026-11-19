@@ -87,6 +87,20 @@ class ClockIntegrationTest {
     }
 
     @Test
+    void singleStepWhileRunningAdvancesOneGenerationAndHalts() throws Exception {
+        List<BoardChangeEvent> events = new ArrayList<>();
+        LifeTestSupport.onEdt(() -> {
+            listen(events::add);
+            LifeTestSupport.clock.startTicking(10);
+            LifeTestSupport.select("Go", "Tick (Single Step)");
+            assertEquals(1, events.size());
+        });
+        awaitEdtDelay(80);
+        // 실행 중에 눌러도 한 세대 뒤 멈춘다
+        LifeTestSupport.onEdt(() -> assertEquals(1, events.size()));
+    }
+
+    @Test
     void changingSpeedRestartsOneTimerWithoutLeavingOldTicksRunning() throws Exception {
         CountDownLatch completed = new CountDownLatch(1);
         List<Long> generations = new ArrayList<>();
