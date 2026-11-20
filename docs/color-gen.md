@@ -767,7 +767,15 @@ Universe는 JVM에서 한 번만 만들어지고, 그때 메뉴와 시계 리스
 ./gradlew test
 ```
 
-dev `94f50b3` 기준으로 전체 293개 테스트가 모두 통과한다. 이 중 색 순환 기능의 테스트는 39개다.
+dev `d215c7a`(Tick 수정 #16까지 병합) 기준으로 전체 294개 테스트가 모두 통과한다. 이 중 색 순환 기능의 테스트는 39개다. 아래는 2026-11-19에 Gradle 9.7.1 / JDK 17(build.gradle의 툴체인)로 실행한 Gradle 테스트 보고서 화면이다.
+
+색 순환 테스트 4개 클래스만 실행한 결과:
+
+![색 순환 테스트 결과](color-gen/test-color.png)
+
+전체 테스트 결과:
+
+![전체 테스트 결과](color-gen/test-all.png)
 
 | 테스트 클래스 | 개수 | 대상 | 게임 창 |
 | --- | --- | --- | --- |
@@ -776,7 +784,7 @@ dev `94f50b3` 기준으로 전체 293개 테스트가 모두 통과한다. 이 �
 | `DefaultCellColorTest` | 1 | Resident의 처음 값 | 쓰지 않음 |
 | `UniverseColorTest` | 7 | Universe의 실제 틱 처리와 메뉴 | 창 없이 실제 Universe |
 
-원래 있던 테스트 32개(`ResidentTest`, `NeighborhoodTest`, `UniverseStoreTest`)는 고치지 않고 통과했다. `CellAgeColorTest`와 `UniverseColorTest`의 각 1개는 캡처·템플릿 기능을 붙인 팀원이 색 기능과의 연계를 확인하려고 더한 것이다. 통계 기능(#10)은 `CellAgeColorTest`의 색 읽기 도우미에, 그린 색과 `colorAt()`이 같은지 확인하는 줄을 더했다. PR #8의 커밋은 하나씩 빌드하고 테스트를 돌려, 중간 커밋에서도 실패가 없게 했다.
+색 기능을 붙일 때(PR #8) 원래 있던 테스트 32개(`ResidentTest`, `NeighborhoodTest`, `UniverseStoreTest`)는 고치지 않고 통과했다. `CellAgeColorTest`와 `UniverseColorTest`의 각 1개는 캡처·템플릿 기능을 붙인 팀원이 색 기능과의 연계를 확인하려고 더한 것이다. 통계 기능(#10)은 `CellAgeColorTest`의 색 읽기 도우미에, 그린 색과 `colorAt()`이 같은지 확인하는 줄을 더했다. PR #8의 커밋은 하나씩 빌드하고 테스트를 돌려, 중간 커밋에서도 실패가 없게 했다.
 
 ### 6.2 화면 없이 테스트하는 방법
 
