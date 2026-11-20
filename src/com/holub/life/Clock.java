@@ -89,7 +89,9 @@ public class Clock
 					char toDo = name.charAt(0);
 
 					if( toDo=='T' )
+					{	stop();		// 실행 중이면 멈추고 한 세대만 진행
 						tick();				      // single tick
+					}
 					else
 						startTicking(   toDo=='A' ? 500:	  // agonizing
 										toDo=='S' ? 150:	  // slow

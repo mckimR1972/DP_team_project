@@ -1,0 +1,21 @@
+@startuml
+!include theme.puml
+left to right direction
+actor "게임 사용자" as Player
+rectangle "Life Game" {
+  usecase "일반 셀 그리기\n(기존 기능)" as Draw #F3F4F6
+  usecase "세대 진행 / 전체 보드 저장\n(기존 기능)" as Run #F3F4F6
+  usecase "E-01\n영역 캡처를 템플릿으로 저장" as Save
+  usecase "E-02\n선택한 템플릿 배치" as Place
+  usecase "E-03\n누른 채 연속 배치" as Drag
+  usecase "E-04\n마지막 배치 작업 되돌리기" as Undo
+  usecase "E-05\n편집 종료" as End
+  Drag ..> Place : <<extend>>\n버튼 유지·이동 시
+}
+Player -- Draw
+Player -- Run
+Player -- Save
+Player -- Place
+Player -- Undo
+Player -- End
+@enduml

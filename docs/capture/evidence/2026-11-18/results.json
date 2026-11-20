@@ -1,0 +1,354 @@
+{
+  "date": "2026-11-18",
+  "timezone": "Asia/Seoul",
+  "source_commit": "a480113331b9c6541f03a920c4b37be07b6f1b16",
+  "command": ".\\gradlew.bat test patternUiTest --console=plain",
+  "runtime": {
+    "jdk": "17.0.6",
+    "gradle": "9.5.1",
+    "junit": "6.0.3",
+    "mockito": "5.23.0"
+  },
+  "totals": {
+    "tests": 145,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.CellAgeColorTest",
+      "xml_sha256": "c5c08fb5a83fca12bbf424f62704204f274c57dd1dc1064b382955d58ae33c85",
+      "cases": [
+        "captureCopiesOnlyLivingCellsRegardlessOfColorAndAge()",
+        "survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver()",
+        "cellRevivedByClickStartsAtAgeZero()",
+        "storeThenLoadKeepsCellsAndRestartsColor()",
+        "colorChangesWithAgeFollowsTheCurrentPolicy()",
+        "setColorPolicyRejectsNullAndKeepsThePreviousPolicy()",
+        "stillLifeChangesColorEveryTenGenerationsAndWrapsAround()",
+        "cellClickedAfterClearStartsRed()",
+        "lifeRuleIsUnchanged()"
+      ]
+    },
+    {
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.CellColorPolicyTest",
+      "xml_sha256": "58bd326bbeda556fb7bd1b127580589e282b66023d496071b60a4d619ddd5633",
+      "cases": [
+        "\"fixed color is null\"",
+        "\"period is 0\"",
+        "\"period is -10\"",
+        "\"no colors\"",
+        "\"only one color\"",
+        "\"colors array is null\"",
+        "\"a color is null\"",
+        "onlyTheCyclingPolicyChangesWithAge()",
+        "age 0",
+        "age 9",
+        "age 10",
+        "age 30",
+        "age 1000",
+        "age \"0\": \"RED\"",
+        "age \"9\": \"RED\"",
+        "age \"10\": \"BLUE\"",
+        "age \"19\": \"BLUE\"",
+        "age \"20\": \"GREEN\"",
+        "age \"29\": \"GREEN\"",
+        "age \"30\": \"RED\"",
+        "age \"1000\": \"BLUE\"",
+        "cyclingPolicyKeepsItsOwnCopyOfTheColors()"
+      ]
+    },
+    {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.DefaultCellColorTest",
+      "xml_sha256": "35c36e87b52ef4076f9d850850cb02994a73924a7b421b935bf5fccec54c5283",
+      "cases": [
+        "liveCellsStayRedWhenNoColorPolicyIsChosen()"
+      ]
+    },
+    {
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.NeighborhoodTest",
+      "xml_sha256": "b4cb7888dd32b914ea832cd660d52bd0122c11f47d9c16b1c8fcde8aaec03883",
+      "cases": [
+        "isAliveReturnsFalseForEmptyNeighborhood()",
+        "isAliveReturnsFalseForEmptyNestedNeighborhood()",
+        "isAliveAtFindsResidentThroughNestedNeighborhoods()",
+        "nested live child at (\"0\", \"0\")",
+        "nested live child at (\"4\", \"4\")",
+        "nested live child at (\"8\", \"8\")",
+        "isAliveReturnsTrueWhileAnotherChildRemainsAlive()",
+        "live child at (\"0\", \"0\")",
+        "live child at (\"1\", \"1\")",
+        "live child at (\"2\", \"2\")",
+        "isAliveReturnsFalseAfterLastLivingChildDies()",
+        "isAliveReturnsFalseAfterClear()"
+      ]
+    },
+    {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.PatternCellsTest",
+      "xml_sha256": "61e92e2411aff8158fb5f6a0602d91bb7a586a4ddabe5c1185486248c7fbb85e",
+      "cases": [
+        "editsUseColumnRowCoordinatesAndAreIdempotent()",
+        "invalidCoordinatesCannotEditBoard()"
+      ]
+    },
+    {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.PatternCompletionTest",
+      "xml_sha256": "81d2d96bb2638a1ec566e506144df8ae1d1333f735227d132f2b5ef6a4174f76",
+      "cases": [
+        "modelRejectsGuardedRectanglesIncludingTransparentMargins()",
+        "observersSeeCompletedStateAndNoEventsForNoOps()"
+      ]
+    },
+    {
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.PatternFeatureTest",
+      "xml_sha256": "c40f6268c7313a322b57d4d82e57006d18e437665484779fbd1c59ad5e3b7ccd",
+      "cases": [
+        "templateValidation()",
+        "corruptFilesAndSaveFailure()",
+        "boundsAndEmptyCapture()",
+        "transparentOverlapAndNoOp()",
+        "capturePreservesOffsetsAndMargins()",
+        "historyInvalidation()",
+        "randomLifeComparison()",
+        "gliderAcrossNeighborhoods()",
+        "saveReloadAndDuplicateNames()",
+        "repeatPlacementAndUndo()"
+      ]
+    },
+    {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.PatternHistoryTest",
+      "xml_sha256": "55d151bc8fd8128da52742d30131a4eb2b0c7ef7624170e2bf518ef2eacee384",
+      "cases": [
+        "historyKeepsOnlyTheLastHundredChangedPlacements()",
+        "aStrokeIsOneCommandEvenWithRepeatedAndOverlappingStamps()",
+        "overlappingCommandsUndoOnlyTheirOwnAdditions()",
+        "emptyStrokeAndInvalidationDoNotLeaveAnUndoCommand()"
+      ]
+    },
+    {
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.PatternPathTest",
+      "xml_sha256": "fc6007d88301fdf529979847460b719d8ee408c56ff539556c7dfeeb94c9684d",
+      "cases": [
+        "[1] \"1\", \"1\", \"9\", \"1\"",
+        "[2] \"9\", \"1\", \"1\", \"1\"",
+        "[3] \"1\", \"9\", \"1\", \"1\"",
+        "[4] \"1\", \"1\", \"1\", \"9\"",
+        "[5] \"1\", \"1\", \"9\", \"9\"",
+        "[6] \"9\", \"9\", \"1\", \"1\"",
+        "[7] \"1\", \"1\", \"9\", \"4\"",
+        "[8] \"9\", \"4\", \"1\", \"1\"",
+        "[9] \"3\", \"3\", \"3\", \"3\""
+      ]
+    },
+    {
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.PatternToolsTest",
+      "xml_sha256": "e8206cc75b8315af9af6b4f20eb9791ae7cc66ca8be4aa719fd5918ab0d5d893",
+      "cases": [
+        "focusLossStopsHeldGesture()",
+        "dotAndLargerTemplatesStampWithoutErasing()",
+        "outsideReleaseStopsStampingAndRemovesGlobalListener()",
+        "guardAppliesToEveryStampAndCompletionEventsFireOnce()",
+        "cancelInDrawModeDoesNotStopSimulation()",
+        "holdingStillDoesNotToggleOrCreateExtraUndoEntries()",
+        "cancelEndsStrokeButKeepsItUndoable()",
+        "invalidLargeStampLeavesBoardUntouchedAndCanReturnInside()",
+        "captureAndExternalBoardChangesDoNotLeaveAStaleStroke()",
+        "dragAndUndoPreserveTheAgeColorsOfExistingCells()",
+        "fastDragFillsIntermediateAnchorsInBothDirections()",
+        "oneUndoRevertsOneWholeDragButKeepsPreviousClick()"
+      ]
+    },
+    {
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.ResidentTest",
+      "xml_sha256": "a43d4aae9b2492d8b85ba4603228594e1a784aa069d2bc7dba5781f64e18e591",
+      "cases": [
+        "alive=\"false\", neighbors=\"3\": changed",
+        "alive=\"true\", neighbors=\"0\": changed",
+        "alive=\"true\", neighbors=\"1\": changed",
+        "alive=\"true\", neighbors=\"4\": changed",
+        "alive=\"true\", neighbors=\"5\": changed",
+        "alive=\"true\", neighbors=\"6\": changed",
+        "alive=\"true\", neighbors=\"7\": changed",
+        "alive=\"true\", neighbors=\"8\": changed",
+        "alive=\"false\", neighbors=\"0\": unchanged",
+        "alive=\"false\", neighbors=\"1\": unchanged",
+        "alive=\"false\", neighbors=\"2\": unchanged",
+        "alive=\"false\", neighbors=\"4\": unchanged",
+        "alive=\"false\", neighbors=\"5\": unchanged",
+        "alive=\"false\", neighbors=\"6\": unchanged",
+        "alive=\"false\", neighbors=\"7\": unchanged",
+        "alive=\"false\", neighbors=\"8\": unchanged",
+        "alive=\"true\", neighbors=\"2\": unchanged",
+        "alive=\"true\", neighbors=\"3\": unchanged"
+      ]
+    },
+    {
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.sound.NoteMapperTest",
+      "xml_sha256": "46708fef704ee0d4e7eb8fd797aabe458e83b8366922cecf105e82acd5276502",
+      "cases": [
+        "sameCellChangesPitchAcrossTheProgression()",
+        "sweepOfAnEmptyBlockIsSilent()",
+        "fullBoardStaysWithinVoiceLimitAndValidMidiRange()",
+        "everyPitchIsInCMajor()",
+        "sweepLimitsVoicesAndAccentsTheBeat()",
+        "sweepPlaysOnlyCellsInTheColumnBlock()",
+        "notesAreOrderedLeftToRightForStrumming()",
+        "columnSetsStereoPosition()",
+        "noBirthsMakeNoNotes()",
+        "moreDeathsHitHarderUpToACap()",
+        "smallGenerationsHaveNoBurstLayer()",
+        "padGrowsWithLiveCellsUpToACapAndStopsOnAnEmptyBoard()",
+        "scalingLowersLoudnessOnly()",
+        "burstLayerDoublesNotesAnOctaveHigherAndQuieter()",
+        "endingChordIsAboveThePadOfTheSameChord()",
+        "[1] 0",
+        "[2] 1",
+        "[3] 2",
+        "[4] 3",
+        "progressionWrapsAround()",
+        "timingJitterStaysSmall()",
+        "padFollowsTheProgression()",
+        "humanizingKeepsNotesValidAndVariesThem()"
+      ]
+    },
+    {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.sound.RepeatTrackerTest",
+      "xml_sha256": "538a71955800208249391ae3d1c9f84189f101a8fa97d792049f180b9301e88d",
+      "cases": [
+        "newGenerationsStayAtFullVolume()",
+        "somethingNewRestoresTheVolume()",
+        "oscillatorFadesToSilence()"
+      ]
+    },
+    {
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.sound.SoundSettingsTest",
+      "xml_sha256": "f1fa957cb5f0f5d1b71e6af823dd544441cfc24990501a52971403a0bba4621b",
+      "cases": [
+        "turningOneFeatureOffLeavesTheOthersOn()",
+        "everyFeatureStartsOnWithItsFirstInstrument()",
+        "changingAnInstrumentNotifiesTheListener()"
+      ]
+    },
+    {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.UniverseColorTest",
+      "xml_sha256": "b6ca9eedbbcea3d91078dd1713a2e44ccf1e67c08fc5ae17719a631a830ab4f4",
+      "cases": [
+        "ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor()",
+        "cyclingTickRequestsRepaintEvenWhenNothingChanges()",
+        "stillLifeCyclesThroughColorsWhenNothingElseChanges()",
+        "stillLifeStaysRedWhileCyclingIsOff()",
+        "singleColorBringsBackTheOriginalRed()",
+        "tickWithCyclingOffRepaintsOnlyWhenCellsChange()",
+        "placementAndUndoPreserveExistingCellAge()"
+      ]
+    },
+    {
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "name": "com.holub.life.UniverseStoreTest",
+      "xml_sha256": "aaed6ef74a5d6ec3e46204e4429e51852487ff48dd1489b7ac0fbc3c23b379ee",
+      "cases": [
+        "liveCellsSnapshotIsIndexedByRowThenColumn()",
+        "draggingDrawsACellForEveryPositionPassed()",
+        "draggingOffTheBoardStopsAtTheEdge()",
+        "store 1 live cell(s) without duplicates",
+        "store 4 live cell(s) without duplicates",
+        "playheadIsDrawnOverTheBoardAndCanBeRemoved()",
+        "draggingFromALiveCellErases()",
+        "saveWritesNoCoordinatesForEmptyBoard()"
+      ]
+    }
+  ],
+  "desktop_checks": {
+    "count": 17,
+    "status": "passed",
+    "observed_console_result": "PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, reload, undo, escape, draw, tick, cancel.",
+    "note": "Separate JavaExec checks, not included in the JUnit total. Programmatically injected Swing events."
+  },
+  "screenshots": [
+    {
+      "file": "life-selection.png",
+      "sha256": "3f62ab158fd07b9e2e67a1ac5473e79c594d62d4c890ae7f7e2b83064935e118"
+    },
+    {
+      "file": "life-placement.png",
+      "sha256": "3d905e8e3c5a3cf4191a45fab5eeab13cac747c879f04bdd5244b6020a9b0238"
+    },
+    {
+      "file": "life-template-drag.png",
+      "sha256": "9e8a4bbf1f48aa90ee9481e22b2736123a0243d9520f15db2133150adf4384e2"
+    },
+    {
+      "file": "life-template-drag-undo.png",
+      "sha256": "ef5ea1cb055786bbf07abf97e875b79795ff59539651186ce26fdca6fa17b237"
+    }
+  ],
+  "excluded": [
+    "Unmerged freezing PR #7",
+    "Unmerged statistics PR #10",
+    "Physical mouse and OS window-manager validation"
+  ]
+}

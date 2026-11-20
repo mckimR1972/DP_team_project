@@ -39,6 +39,7 @@ public final class Resident implements Cell
 	private boolean amAlive 	= false;
 	private boolean willBeAlive	= false;
 	private int		age			= 0;	// 연속으로 살아남은 세대 수 (태어나면 0)
+	private boolean heldThisGeneration = false;	// [Freezing] 이번 전이에서는 나이도 멈춘다
 
 	private boolean isStable(){return amAlive == willBeAlive; }
 
@@ -96,9 +97,24 @@ public final class Resident implements Cell
 	 */
 	public boolean transition()
 	{	boolean changed = amAlive != willBeAlive;
-		age = (amAlive && willBeAlive) ? age + 1 : 0;
+		if( !heldThisGeneration )			// [Freezing] 고정된 셀은 나이와 색도 그대로 둔다
+			age = (amAlive && willBeAlive) ? age + 1 : 0;
+		heldThisGeneration = false;
 		amAlive = willBeAlive;
 		return changed;
+	}
+
+	/** [Freezing] figureNextState()가 계산한 다음 상태만 바꾼다. 이웃이
+	 *  이번 세대에 읽는 amAlive는 건드리지 않는다. 이어지는 transition()
+	 *  한 번 동안은 나이도 세지 않으므로, 고정된 셀은 색 규칙
+	 *  (CellColorPolicy)이 무엇이든 설치 순간의 색을 유지한다.
+	 */
+	public boolean holdNextState(Point location, boolean alive)
+	{	assert location.x == 0 && location.y == 0;
+		boolean overridden = willBeAlive != alive;
+		willBeAlive = alive;
+		heldThisGeneration = true;
+		return overridden;
 	}
 
 	public void redraw(Graphics g, Rectangle here, boolean drawAll)
@@ -126,6 +142,10 @@ public final class Resident implements Cell
 	public boolean isAliveAt(int row, int column)
 	{	assert row==0 && column==0;
 		return amAlive;
+	}
+	public Color colorAt(int row, int column)
+	{	assert row==0 && column==0;
+		return amAlive ? colorPolicy.colorOf(age) : null;
 	}
 	public Cell    create()			{return new Resident();			}
 	public int 	   widthInCells()	{return 1;}

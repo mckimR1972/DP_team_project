@@ -419,6 +419,19 @@ public final class Neighborhood implements Cell
 		rememberThatCellAtEdgeChangedState(row, column);
 	}
 
+	/** [Freezing] Delegate to the subcell that holds the location, like
+	 *  isAliveAt() and colorAt(). No activity flag is touched: a pending
+	 *  state can only differ from the held one when figureNextState() has
+	 *  just found this block unstable, so the block is already active and
+	 *  is computed again on the next tick.
+	 */
+	public boolean holdNextState(Point location, boolean alive)
+	{	int subcellWidth = grid[0][0].widthInCells();
+		return grid[location.y / subcellWidth][location.x / subcellWidth]
+				.holdNextState( new Point( location.x % subcellWidth,
+										   location.y % subcellWidth ), alive );
+	}
+
 	public boolean isAlive()
 	{	for( int row = 0; row < gridSize; ++row )
 			for( int column = 0; column < gridSize; ++column )
@@ -431,6 +444,12 @@ public final class Neighborhood implements Cell
 	{	int subcellWidth = grid[0][0].widthInCells();
 		return grid[row / subcellWidth][column / subcellWidth]
 					.isAliveAt( row % subcellWidth, column % subcellWidth );
+	}
+
+	public Color colorAt(int row, int column)
+	{	int subcellWidth = grid[0][0].widthInCells();
+		return grid[row / subcellWidth][column / subcellWidth]
+					.colorAt( row % subcellWidth, column % subcellWidth );
 	}
 
 	public int widthInCells()

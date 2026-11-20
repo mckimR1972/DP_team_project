@@ -15,6 +15,8 @@ import javax.sound.midi.Synthesizer;
 import javax.swing.SwingUtilities;
 
 import com.holub.life.Universe;
+import com.holub.life.BoardChangeEvent;
+import com.holub.life.BoardChangeListener;
 import com.holub.life.sound.SoundSettings.Feature;
 import com.holub.ui.MenuSite;
 
@@ -33,7 +35,7 @@ import com.holub.ui.MenuSite;
  * 각 기능은 {@link SoundSettings}에서 끄거나 악기를 바꿀 수 있다.
  * {@link #install}로 붙이며, 붙이지 않아도 게임은 똑같이 동작한다.
  */
-public final class SoundEffects implements Universe.GenerationListener
+public final class SoundEffects implements BoardChangeListener
 {
 	private static final int PAN_CONTROLLER     = 10;
 	private static final int EXPRESSION_CONTROLLER = 11;
@@ -64,6 +66,7 @@ public final class SoundEffects implements Universe.GenerationListener
 	private final RepeatTracker		repeats = new RepeatTracker();
 	private final ScheduledExecutorService noteScheduler;
 
+	private volatile boolean[][] latestCells; // 이벤트의 독립 복사본; 발행 후 수정하지 않는다
 	private volatile boolean enabled = true;
 	private volatile int	 chord	 = 0;
 	private long  lastPhraseNanos = 0;
@@ -80,7 +83,9 @@ public final class SoundEffects implements Universe.GenerationListener
 			synthesizer.open();
 
 			SoundEffects effects = new SoundEffects( universe, synthesizer );
-			universe.addGenerationListener( effects );
+			universe.addBoardChangeListener( effects ); // INITIAL을 먼저 받아 재생선 상태를 준비한다
+			effects.noteScheduler.scheduleAtFixedRate( effects::playStep, 0, STEP_MS,
+													  TimeUnit.MILLISECONDS );
 			effects.createMenus();
 		}
 		catch( MidiUnavailableException e )
@@ -114,8 +119,6 @@ public final class SoundEffects implements Universe.GenerationListener
 		(	() -> noteScheduler.execute( this::applyInstruments )
 		);
 
-		noteScheduler.scheduleAtFixedRate( this::playStep, 0, STEP_MS,
-										   TimeUnit.MILLISECONDS );
 	}
 
 	private void applyInstruments()
@@ -172,7 +175,8 @@ public final class SoundEffects implements Universe.GenerationListener
 			return;
 		}
 
-		boolean[][] cells  = universe.liveCells();
+		boolean[][] cells = latestCells;
+		if (cells == null) return;
 		int columnsPerStep = cells.length / STEPS_PER_SWEEP;
 		int firstColumn	   = step * columnsPerStep;
 
@@ -207,7 +211,17 @@ public final class SoundEffects implements Universe.GenerationListener
 		return count;
 	}
 
-	public void generationChanged( List<Point> births, List<Point> deaths )
+	/** 모든 작업은 재생선 상태를 갱신하고, 실제 세대 변화만 효과음을 낸다. */
+	@Override public void onBoardChanged(BoardChangeEvent event)
+	{	latestCells = event.copyAliveCells();
+		if (event.kind() != BoardChangeEvent.Kind.GENERATION) return;
+		List<Point> births = event.copyBirths();
+		List<Point> deaths = event.copyDeaths();
+		if (births.isEmpty() && deaths.isEmpty()) return;
+		generationChanged(births, deaths);
+	}
+
+	private void generationChanged( List<Point> births, List<Point> deaths )
 	{
 		if( !enabled )
 			return;
@@ -228,7 +242,7 @@ public final class SoundEffects implements Universe.GenerationListener
 		lastPhraseNanos = now;
 
 		List<NoteMapper.Note> notes = mapper.scaled
-		(	varied( mapper.notesFor( births, universe.widthInCells(),
+		(	varied( mapper.notesFor( births, latestCells.length,
 									 currentChord() ) ),
 			gain
 		);
@@ -253,7 +267,7 @@ public final class SoundEffects implements Universe.GenerationListener
 	}
 
 	private boolean boardDiedOut( List<Point> births )
-	{	return births.isEmpty() && countLive( universe.liveCells() ) == 0;
+	{	return births.isEmpty() && countLive( latestCells ) == 0;
 	}
 
 	private void playEnding()
