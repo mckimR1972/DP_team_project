@@ -296,6 +296,7 @@ Strategy가 아니라 State를 고른 이유: 고정은 사용자가 골라 끼�
 `Universe`는 세대가 끝날 때 `BoardChangeEvent(GENERATION)`을 만들어 모든 `BoardChangeListener`에 보낸다. 통계와 사운드는 이 이벤트만 본다.
 
 - **세대 번호를 하나로 맞췄다.** 병합 전 `FreezingManager`는 세대 카운터를 따로 가지고 있었다. 병합 후 `Universe`에도 카운터가 생겨서 둘이 어긋날 수 있었다. 그래서 `FreezingManager`의 카운터를 없애고 `Universe`의 값을 읽게 했다(`new FreezingManager(outermostCell, () -> generation)`). 통계 탭의 "세대"와 Freezing 탭의 "현재 세대", 영역의 시작 세대가 항상 같은 숫자다.
+- **고정된 셀은 소리를 내지 않는다.** 실제 `SoundEffects`로 확인했다. 고정된 블링커는 음을 예약하지 않고, 풀린 첫 세대에 다시 소리가 난다. 재생선은 고정된 살아 있는 셀을 계속 연주한다.
 - **고정된 셀은 출생·사망 목록에 들어가지 않는다.** 이벤트는 전이 전(`before`)과 전이 후의 보드를 비교해 만든다. 고정된 셀은 전이 전후가 같으므로, 이벤트 쪽 코드를 고치지 않아도 목록에서 빠진다. 통계의 출생·사망 수와 사운드가 내는 소리에 고정된 셀이 섞이지 않는다.
 - **고정된 살아 있는 셀은 생존 수에 포함된다.** 실제로 보드에 살아 있기 때문이다.
 - **설치와 해제는 `BoardChangeEvent`를 보내지 않는다.** 셀이 하나도 바뀌지 않기 때문이다. 이 이벤트는 "보드가 바뀌었다"는 뜻이고, 통계는 받을 때마다 다시 집계한다.
@@ -468,10 +469,11 @@ Freezing이 **새로 만든** 패턴 구조는 State와 Observer 두 가지다. 
 
 com.holub.life.FreezingModelTest               50 tests  0 failures
 com.holub.life.FreezingIntegrationTest         37 tests  0 failures
+com.holub.life.FreezingSoundIntegrationTest     3 tests  0 failures
 com.holub.life.MergedFeaturesIntegrationTest   12 tests  0 failures
 (그 밖의 기존 클래스 26개)                      282 tests  0 failures
 
-BUILD SUCCESSFUL  (29개 클래스, 381 tests, 0 failures, 0 errors, 0 skipped)
+BUILD SUCCESSFUL  (30개 클래스, 384 tests, 0 failures, 0 errors, 0 skipped)
 
 > .\gradlew.bat patternUiTest
 
@@ -479,7 +481,7 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 ```
 
 - `dev`의 기존 테스트 294개가 모두 통과한다. 기존 테스트 코드에서 고친 것은 `MergedFeaturesIntegrationTest`의 탭 개수 단언 한 곳(2 → 3, Freezing 탭 확인 1줄 추가)뿐이다.
-- Freezing 테스트는 87개다(모델 50, 통합 37).
+- Freezing 테스트는 90개다(모델 50, 통합 37, 사운드 3).
 - 캡처 기능의 데스크톱 Swing 검사(`patternUiTest`) 17개도 그대로 통과한다.
 
 ### 9.2 Freezing 테스트 구성
@@ -513,6 +515,16 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 | Clear·Load·Store | Clear가 영역·세대를 초기화하고 `CLEAR` 한 번, Load 성공 시 초기화, Load 취소 시 유지, Store는 영역을 안 건드림 |
 | 그리기 | 영역이 하늘색으로 칠해지고 풀리면 사라짐, 재생선·템플릿 미리보기와 함께 그려도 오류 없음, 영역이 없으면 다시 그리기 요청 없음, 영역이 있어도 보드 전체는 다시 그리지 않음 |
 | 무작위 비교 | 무작위 보드 5종 × 120세대. 색 순환을 켜고 세대마다 설치·해제·클릭을 섞어, 이벤트의 생존 배열·출생·사망·색 목록과 통계 값을 따로 작성한 계산과 비교 |
+
+**`FreezingSoundIntegrationTest`: 실제 `SoundEffects`와 함께**
+
+`SoundEffectsIntegrationTest`와 같은 방식이다. `SoundEffects`는 실제 객체이고, MIDI 장치와 음 예약기만 대역으로 바꿔 어떤 음이 예약되는지 읽는다.
+
+| 테스트 | 확인하는 것 |
+| --- | --- |
+| `aFrozenBlinkerIsSilentAndIsHeardAgainOnItsFirstFreeGeneration` | 고정된 블링커는 3세대 동안 음을 하나도 예약하지 않는다. 풀린 첫 세대에 탄생 화음과 타악기 1번이 난다 |
+| `onlyTheFreeCellIsHeardDyingAndTheFrozenCellIsHeardWhenItIsReleased` | 고정된 셀과 자유 셀이 함께 있으면 자유 셀의 사망 타악기만 난다. 고정된 셀이 살아 있으므로 전멸 마무리 화음은 나지 않는다. 풀려서 죽는 세대에 마무리 화음이 난다 |
+| `thePlaybackLineKeepsPlayingAFrozenLiveCellThatWouldOtherwiseBeGone` | 재생선이 고정된 살아 있는 셀을 계속 연주한다 |
 
 ### 9.3 캡처 문서가 남겨 둔 통합 검사
 
@@ -548,7 +560,7 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 | Freezing이 세대 번호를 따로 가짐 | 잡음 | 7 |
 | 남은 세대가 0이 돼도 풀리지 않음 | 잡음 | 7 |
 
-16개 사본 모두에서 테스트가 실패했다. 사본은 한 줄씩만 바꾼 것이고, 검사 뒤에는 원래 코드로 되돌렸다.
+16개 사본 모두에서 테스트가 실패했다. 사본은 한 줄씩만 바꾼 것이고, 검사 뒤에는 원래 코드로 되돌렸다. 위 표는 `FreezingModelTest`와 `FreezingIntegrationTest`로 잰 숫자다. 나중에 추가한 `FreezingSoundIntegrationTest` 3개도 "스냅샷 적용 단계를 뺌" 사본에서 3개 모두 실패하는 것을 따로 확인했다.
 
 이 검사를 하다가 필요 없는 코드를 하나 찾아 지웠다. `Neighborhood.holdNextState()`에 있던 "값이 바뀌면 블록을 활성으로 표시"하는 줄은 지워도 어떤 테스트도 실패하지 않았다. 코드를 따져 보니, 다음 상태가 덮어써지는 경우에는 그 블록이 이미 활성이라 이 줄이 하는 일이 없었다([4절](#generation)).
 
@@ -576,7 +588,7 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 
 ![고정 영역 위의 템플릿 미리보기](freezing-template-guard.png)
 
-데모에서 확인하지 못한 것: 소리가 맞게 들리는지(사운드는 켜져 있었고 오류는 없었다), 사람이 직접 마우스로 끌 때의 느낌.
+데모에서 확인하지 못한 것: 소리가 듣기에 맞는지(사운드는 켜져 있었고 오류는 없었다), 사람이 직접 마우스로 끌 때의 느낌.
 
 <a id="files"></a>
 ## 11. 변경 파일
@@ -591,7 +603,7 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 | `src/.../Resident.java` | `holdNextState()`, 고정된 세대의 나이 유지 (+17 / -1) |
 | `src/.../Universe.java` | Freezing 도구 생성과 연결, 세대 처리 3줄, 브러시 검사, Clear / Load 초기화, 그리기 (+51 / -3) |
 | `src/.../Life.java` | Freezing 탭 (+3) |
-| `test/.../FreezingModelTest.java`, `FreezingIntegrationTest.java` | 새 파일 |
+| `test/.../FreezingModelTest.java`, `FreezingIntegrationTest.java`, `FreezingSoundIntegrationTest.java` | 새 파일 |
 | `test/.../MergedFeaturesIntegrationTest.java` | 탭 개수 단언 (+2 / -1) |
 | `docs/FREEZING.md`, `docs/freezing-tab.png`, `docs/freezing-template-guard.png` | 문서와 그림 |
 | `README.md`, `docs/README.md` | 문서 목차에 Freezing 추가 |
@@ -604,5 +616,5 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 - Freezing 정보는 저장하지 않는다. `Grid > Store`로 저장하고 다시 읽으면 영역은 없다.
 - 영역은 사각형만 된다.
 - 겹치는 영역은 만들 수 없다.
-- 실제 MIDI 장치로 나는 소리는 확인하지 못했다. 사운드와의 연결은 사운드가 받는 것과 같은 이벤트를 받는 대역으로 확인했다. 데모에서는 실제 `SoundEffects`를 켠 채 실행해 오류 없이 도는 것까지만 확인했고, 소리가 맞게 들리는지는 사람이 들어 봐야 한다.
+- 실제 스피커에서 나는 소리는 확인하지 못했다. 어떤 음이 예약되는지는 실제 `SoundEffects` 객체로 테스트했고(`FreezingSoundIntegrationTest`), 데모에서는 실제 MIDI를 켠 채 오류 없이 도는 것을 확인했다. 소리가 듣기에 맞는지는 사람이 들어 봐야 한다.
 - 캡처·통계·색상 문서에 "Freezing은 아직 병합 전"이라고 적힌 문장들은 고치지 않았다. 각 문서 담당자가 이 병합을 기준으로 갱신하면 된다.
