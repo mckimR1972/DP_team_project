@@ -49,8 +49,11 @@ public final class Life extends JFrame
         JPanel patterns = universe.patternControls();
         tabs.addTab("패턴 캡처", patterns);
         tabs.addTab("통계", statisticsPanel);
+        JPanel freezing = universe.freezingControls();
+        tabs.addTab("Freezing", freezing);
         tabs.addChangeListener(event -> {
             if (tabs.getSelectedComponent() != patterns) universe.finishPatternEditing();
+            if (tabs.getSelectedComponent() != freezing) universe.finishFreezingEditing();
         });
         return tabs;
     }
