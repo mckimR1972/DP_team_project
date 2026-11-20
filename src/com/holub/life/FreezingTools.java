@@ -10,6 +10,7 @@ final class FreezingTools {
     private static final Color FILL = new Color(70, 170, 255, 70);   // translucent sky blue
     private static final Color EDGE = new Color(20, 110, 210);       // blue border + badge
     private static final Color ICE = new Color(190, 235, 255);
+    private static final int BADGE_REACH = 48;                       // pixels the badge may extend past the area
     private static final Stroke DASH = new BasicStroke(2f, BasicStroke.CAP_BUTT,
             BasicStroke.JOIN_MITER, 10f, new float[] { 6f, 4f }, 0f);
 
@@ -149,7 +150,7 @@ final class FreezingTools {
     void reset() {
         cancel();
         manager.reset();
-        message("초기화: Freezing 정보와 세대 수를 비웠습니다.");
+        message("초기화: Freezing 영역을 모두 비웠습니다.");
     }
 
     void blockedEdit() { message("Freezing 영역 안의 셀은 해제 전까지 바꿀 수 없습니다."); }
@@ -175,13 +176,27 @@ final class FreezingTools {
 
     private void refresh() {
         FreezingRegion selected = list.getSelectedValue();
+        // Only the areas that were or are frozen need painting again (the
+        // countdown badge changes every generation). With no region nothing
+        // is requested, so an unchanged generation still costs no repaint.
+        java.util.Set<Rectangle> areas = new java.util.LinkedHashSet<>();
+        for (int i = 0; i < entries.size(); i++) areas.add(entries.get(i).area());
+        for (FreezingRegion r : manager.regions()) areas.add(r.area());
+        for (Rectangle area : areas) repaintArea(area);
         entries.clear();
         for (FreezingRegion r : manager.regions()) entries.addElement(r);
         if (selected != null && entries.contains(selected)) list.setSelectedValue(selected, false);
         release.setEnabled(list.getSelectedValue() != null);
         releaseAll.setEnabled(!entries.isEmpty());
         generation.setText("현재 세대: " + manager.generation());
-        board.repaint();
+    }
+
+    /** The area in pixels, grown to include the badge drawn just outside it. */
+    private void repaintArea(Rectangle area) {
+        int unit = board.getWidth() / manager.size();
+        if (unit <= 0) return;
+        board.repaint(area.x * unit - BADGE_REACH, area.y * unit - BADGE_REACH,
+                area.width * unit + 2 * BADGE_REACH, area.height * unit + 2 * BADGE_REACH);
     }
 
     private void add(JComponent component) {

@@ -1,0 +1,56 @@
+@startuml
+!include theme.puml
+skinparam defaultFontSize 18
+hide empty members
+class PatternTools <<Swing>> {
+  -mode : Mode
+  -stampTimer : Timer
+  ~setPlacementGuard(guard)
+}
+class BoardEditor {
+  +capture(name, area)
+  +place(pattern, origin)
+  +beginStroke() / endStroke()
+  +undo()
+}
+class PatternLibrary {
+  +save(pattern)
+  +patterns()
+}
+class PatternTemplate <<immutable>> {
+  -name : String
+  -cells : boolean[][]
+}
+class PlacePatternCommand <<Command>> {
+  -added : Set<Point>
+  ~execute() / undo()
+  ~include(next)
+}
+class PatternCells <<adapter role>> {
+  ~isAlive(cell)
+  ~setAlive(cell, alive)
+}
+class PatternPath <<utility>> {
+  {static} ~visit(from, to, visitor)
+}
+interface Cell <<existing>> {
+  +isAliveAt(row, column)
+  +userClicked(point, surface)
+  +createMemento()
+}
+class Neighborhood <<existing Composite>>
+class Resident <<existing Leaf>>
+
+PatternTools --> BoardEditor : 편집 위임
+PatternTools --> PatternLibrary : 목록·저장
+PatternTools ..> PatternPath : 이동 보간
+PatternLibrary "1" --> "0..*" PatternTemplate
+BoardEditor ..> PatternTemplate : 생성 / 배치
+BoardEditor "1" --> "0..100" PlacePatternCommand : history
+PlacePatternCommand --> PatternCells : 필요한 셀만 편집
+PatternCells --> Cell : 기존 계약 사용
+BoardEditor ..> Cell : 캡처 Memento 조회
+Neighborhood ..|> Cell
+Resident ..|> Cell
+Neighborhood o-- Cell : 하위 셀
+@enduml

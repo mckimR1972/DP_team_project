@@ -126,6 +126,20 @@ public final class PatternUiTest {
                     check(button(frame, "선택 영역 저장").isEnabled(), "Outside drag release did not clamp to board");
                     mouse(MouseEvent.MOUSE_PRESSED, 100, 100, MouseEvent.BUTTON3);
                     check(!button(frame, "선택 영역 저장").isEnabled(), "Right-click did not cancel capture");
+                    int originalCount = liveCount();
+                    button(frame, "선택한 템플릿 배치").doClick();
+                    mouse(MouseEvent.MOUSE_PRESSED, 244, 244, MouseEvent.BUTTON1);
+                    mouse(MouseEvent.MOUSE_DRAGGED, 308, 244, MouseEvent.NOBUTTON);
+                    mouse(MouseEvent.MOUSE_RELEASED, 308, 244, MouseEvent.BUTTON1);
+                    check(liveCount() > originalCount, "Template drag did not add cells");
+                    render(renderFolder.resolve("life-template-drag.png"));
+                    int duringEdit = liveCount();
+                    Clock.instance().tick();
+                    check(liveCount() == duringEdit, "Tick advanced during template editing");
+                    button(frame, "배치 되돌리기").doClick();
+                    check(liveCount() == originalCount, "Stroke undo did not preserve earlier cells");
+                    render(renderFolder.resolve("life-template-drag-undo.png"));
+
                 } catch (Exception e) { throw new RuntimeException(e); }
             });
             System.out.println("PASS " + checks + " Swing integration checks: place, bounds, reverse drag, save dialog, reload, undo, escape, draw, tick, cancel.");

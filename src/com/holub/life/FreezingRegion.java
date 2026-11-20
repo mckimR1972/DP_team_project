@@ -28,11 +28,10 @@ final class FreezingRegion {
     /** Normal -> Frozen. Saves every cell state (alive and dead) at this moment. */
     void freeze(Cell board, int generations, long currentGeneration) {
         FrozenState frozen = new FrozenState(generations);     // validates first
-        Cell.Memento memento = (Cell.Memento) board.createMemento();
         snapshot = new boolean[area.height][area.width];
         for (int y = 0; y < area.height; y++)
             for (int x = 0; x < area.width; x++)
-                snapshot[y][x] = memento.isAlive(new Point(area.x + x, area.y + y));
+                snapshot[y][x] = board.isAliveAt(area.y + y, area.x + x);   // Composite query (row, column)
         startGeneration = currentGeneration;
         duration = generations;
         changeState(frozen);

@@ -419,20 +419,17 @@ public final class Neighborhood implements Cell
 		rememberThatCellAtEdgeChangedState(row, column);
 	}
 
-	/** [Freezing] Delegate to the subcell that holds the location. If the
-	 *  pending state was overridden, stay active so the block is computed
-	 *  again on the next tick (needed for the cell to resume normal
-	 *  evolution as soon as the Freezing is released).
+	/** [Freezing] Delegate to the subcell that holds the location, like
+	 *  isAliveAt() and colorAt(). No activity flag is touched: a pending
+	 *  state can only differ from the held one when figureNextState() has
+	 *  just found this block unstable, so the block is already active and
+	 *  is computed again on the next tick.
 	 */
 	public boolean holdNextState(Point location, boolean alive)
 	{	int subcellWidth = grid[0][0].widthInCells();
-		boolean overridden =
-			grid[location.y / subcellWidth][location.x / subcellWidth]
+		return grid[location.y / subcellWidth][location.x / subcellWidth]
 				.holdNextState( new Point( location.x % subcellWidth,
 										   location.y % subcellWidth ), alive );
-		if( overridden )
-			amActive = true;
-		return overridden;
 	}
 
 	public boolean isAlive()
@@ -441,6 +438,18 @@ public final class Neighborhood implements Cell
 				if( grid[row][column].isAlive() )
 					return true;
 		return false;
+	}
+
+	public boolean isAliveAt(int row, int column)
+	{	int subcellWidth = grid[0][0].widthInCells();
+		return grid[row / subcellWidth][column / subcellWidth]
+					.isAliveAt( row % subcellWidth, column % subcellWidth );
+	}
+
+	public Color colorAt(int row, int column)
+	{	int subcellWidth = grid[0][0].widthInCells();
+		return grid[row / subcellWidth][column / subcellWidth]
+					.colorAt( row % subcellWidth, column % subcellWidth );
 	}
 
 	public int widthInCells()

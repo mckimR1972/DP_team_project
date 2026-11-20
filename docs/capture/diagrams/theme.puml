@@ -1,0 +1,32 @@
+!pragma layout smetana
+skinparam defaultFontName Malgun Gothic
+skinparam defaultFontSize 16
+skinparam dpi 220
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundcorner 10
+skinparam ArrowColor #385C72
+skinparam ArrowThickness 1.4
+skinparam LineColor #385C72
+skinparam defaultFontColor #18374A
+skinparam classBackgroundColor #F1F7FA
+skinparam classBorderColor #51768B
+skinparam classAttributeIconSize 0
+skinparam packageBackgroundColor #FFFFFF
+skinparam packageBorderColor #AFC4CF
+skinparam usecaseBackgroundColor #EFF7FA
+skinparam usecaseBorderColor #51768B
+skinparam actorBorderColor #385C72
+skinparam stateBackgroundColor #EFF7FA
+skinparam stateBorderColor #51768B
+skinparam noteBackgroundColor #FFF7E6
+skinparam noteBorderColor #CCAE72
+skinparam noteFontColor #584629
+skinparam sequenceParticipantBackgroundColor #EFF7FA
+skinparam sequenceParticipantBorderColor #51768B
+skinparam sequenceLifeLineBorderColor #9AB1BE
+skinparam sequenceArrowColor #385C72
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceGroupBorderColor #AFC4CF
+skinparam sequenceMessageAlign center
+hide footbox

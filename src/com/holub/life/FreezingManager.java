@@ -5,28 +5,39 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.LongSupplier;
 
 /**
- * Keeps the Freezing regions and the generation counter, and runs them at the
- * right points of the generation update. Has no Swing code, so it can be tested
- * on its own.
+ * Keeps the Freezing regions and runs them at the right points of the
+ * generation update. Has no Swing code, so it can be tested on its own.
+ *
+ * <p>The generation number is not counted here. Universe owns the one counter
+ * that statistics and sound also receive in BoardChangeEvent, and this class
+ * only reads it through the supplier, so the three features can never disagree
+ * about which generation it is.
  *
  * <pre>
  * Universe tick:
- *   beginGeneration()                 generation++
  *   figureNextState(...)              existing B3/S23 (unchanged)
  *   beforeTransition(board)           each region -> its state (Frozen: hold snapshot)
  *   transition()                      existing (unchanged)
+ *   generation++                      Universe's counter
  *   afterGeneration()                 each region -> its state (Frozen: countdown, expire)
+ *   BoardChangeEvent(GENERATION)      statistics, sound
  * </pre>
  */
 final class FreezingManager {
     private final Cell board;
+    private final LongSupplier currentGeneration;
     private final List<FreezingRegion> regions = new ArrayList<>();
     private final List<Runnable> listeners = new ArrayList<>();
-    private long generation;
 
-    FreezingManager(Cell board) { this.board = board; }
+    /** @param currentGeneration the board's generation counter (Universe's in the game) */
+    FreezingManager(Cell board, LongSupplier currentGeneration) {
+        this.board = Objects.requireNonNull(board, "board");
+        this.currentGeneration = Objects.requireNonNull(currentGeneration, "currentGeneration");
+    }
 
     /** Install a Freezing on the area. The area is clamped to the board.
      *  @throws IllegalArgumentException for an empty area, a bad duration, or overlap. */
@@ -39,7 +50,7 @@ final class FreezingManager {
             if (r.isFrozen() && r.intersects(area))
                 throw new IllegalArgumentException("이미 Freezing된 영역과 겹칩니다.");
         FreezingRegion region = new FreezingRegion(area);
-        region.freeze(board, generations, generation);     // Normal -> Frozen
+        region.freeze(board, generations, generation());     // Normal -> Frozen
         regions.add(region);
         changed();
         return region;
@@ -58,15 +69,12 @@ final class FreezingManager {
         changed();
     }
 
-    /** Full reset (Grid > Clear / Load): remove every region and reset the generation counter. */
+    /** Full reset (Grid > Clear / Load): remove every region. Universe resets the generation. */
     void reset() {
         for (FreezingRegion r : regions) r.release();
         regions.clear();
-        generation = 0;
         changed();
     }
-
-    void beginGeneration() { generation++; }
 
     /** @return true if any pending next state was overridden. */
     boolean beforeTransition(Cell cells) {
@@ -93,7 +101,7 @@ final class FreezingManager {
     }
 
     List<FreezingRegion> regions() { return Collections.unmodifiableList(regions); }
-    long generation() { return generation; }
+    long generation() { return currentGeneration.getAsLong(); }
     int size() { return board.widthInCells(); }
     void addListener(Runnable listener) { listeners.add(listener); }
     private void changed() { for (Runnable l : listeners) l.run(); }

@@ -20,11 +20,26 @@ import com.holub.life.Universe;
 public final class Resident implements Cell
 {
 	private static final Color BORDER_COLOR = Colors.DARK_YELLOW;
-	private static final Color LIVE_COLOR 	= Color.RED;
+	static final Color LIVE_COLOR			= Color.RED;	// Color 메뉴에서도 쓴다
 	private static final Color DEAD_COLOR   = Colors.LIGHT_YELLOW;
+
+	// 모든 셀이 함께 쓰는 색 규칙. 다른 스레드에서 읽어도 바뀐 값이 보이게 volatile
+	private static volatile CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
+
+	static void setColorPolicy( CellColorPolicy policy )
+	{	if( policy == null )
+			throw new IllegalArgumentException( "null color policy" );
+		colorPolicy = policy;
+	}
+
+	static boolean colorChangesWithAge()
+	{	return colorPolicy.changesWithAge();
+	}
 
 	private boolean amAlive 	= false;
 	private boolean willBeAlive	= false;
+	private int		age			= 0;	// 연속으로 살아남은 세대 수 (태어나면 0)
+	private boolean heldThisGeneration = false;	// [Freezing] 이번 전이에서는 나이도 멈춘다
 
 	private boolean isStable(){return amAlive == willBeAlive; }
 
@@ -77,15 +92,34 @@ public final class Resident implements Cell
 		return this;
 	}
 
+	/** 세대를 넘길 때만 호출한다. 나이도 함께 바뀌므로
+	 *  패턴 배치 같은 편집에는 쓰지 않는다.
+	 */
 	public boolean transition()
 	{	boolean changed = amAlive != willBeAlive;
+		if( !heldThisGeneration )			// [Freezing] 고정된 셀은 나이와 색도 그대로 둔다
+			age = (amAlive && willBeAlive) ? age + 1 : 0;
+		heldThisGeneration = false;
 		amAlive = willBeAlive;
 		return changed;
 	}
 
+	/** [Freezing] figureNextState()가 계산한 다음 상태만 바꾼다. 이웃이
+	 *  이번 세대에 읽는 amAlive는 건드리지 않는다. 이어지는 transition()
+	 *  한 번 동안은 나이도 세지 않으므로, 고정된 셀은 색 규칙
+	 *  (CellColorPolicy)이 무엇이든 설치 순간의 색을 유지한다.
+	 */
+	public boolean holdNextState(Point location, boolean alive)
+	{	assert location.x == 0 && location.y == 0;
+		boolean overridden = willBeAlive != alive;
+		willBeAlive = alive;
+		heldThisGeneration = true;
+		return overridden;
+	}
+
 	public void redraw(Graphics g, Rectangle here, boolean drawAll)
     {   g = g.create();
-		g.setColor(amAlive ? LIVE_COLOR : DEAD_COLOR );
+		g.setColor(amAlive ? colorPolicy.colorOf(age) : DEAD_COLOR );
 		g.fillRect(here.x+1, here.y+1, here.width-1, here.height-1);
 
 		// Doesn't draw a line on the far right and bottom of the
@@ -100,20 +134,19 @@ public final class Resident implements Cell
 
 	public void userClicked(Point here, Rectangle surface)
 	{	amAlive = !amAlive;
-	}
-
-	/** [Freezing] Replace only the computed next state. amAlive (the
-	 *  value neighbors read in this generation) is left alone.
-	 */
-	public boolean holdNextState(Point location, boolean alive)
-	{	assert location.x == 0 && location.y == 0;
-		boolean overridden = willBeAlive != alive;
-		willBeAlive = alive;
-		return overridden;
+		age = 0;
 	}
 
 	public void	   clear()			{amAlive = willBeAlive = false; }
 	public boolean isAlive()		{return amAlive;			    }
+	public boolean isAliveAt(int row, int column)
+	{	assert row==0 && column==0;
+		return amAlive;
+	}
+	public Color colorAt(int row, int column)
+	{	assert row==0 && column==0;
+		return amAlive ? colorPolicy.colorOf(age) : null;
+	}
 	public Cell    create()			{return new Resident();			}
 	public int 	   widthInCells()	{return 1;}
 
@@ -125,7 +158,8 @@ public final class Resident implements Cell
 	{
 		Memento memento = (Memento)blob;
 		if( doLoad )
-		{	if( amAlive = willBeAlive = memento.isAlive(upperLeft) )
+		{	age = 0;							// 나이는 저장되지 않는다
+			if( amAlive = willBeAlive = memento.isAlive(upperLeft) )
 				return true;
 		}
 		else if( amAlive )  					// store only live cells
