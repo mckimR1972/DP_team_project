@@ -34,6 +34,7 @@ import com.holub.life.Resident;
 public class Universe extends JPanel
 {	private 		final Cell  	outermostCell;
 	private final PatternTools patternTools;
+	private final FreezingTools freezingTools;	// [Freezing]
 	private final Set<BoardChangeListener> boardListeners = new LinkedHashSet<>();
 	private long generation;
 	private static	final Universe 	theInstance = new Universe();
@@ -104,6 +105,26 @@ public class Universe extends JPanel
         patternTools.controls().addPropertyChangeListener("TEMPLATE_UNDO",
                 event -> notifyBoardChanged(BoardChangeEvent.Kind.TEMPLATE_UNDO));
 
+		// [Freezing] The manager reads this board's one generation counter, the
+		// same number statistics and sound receive in BoardChangeEvent.
+		// Starting an area selection ends pattern editing and clears its undo
+		// history, so a later undo cannot erase cells inside a frozen area.
+		freezingTools = new FreezingTools( this,
+			new FreezingManager( outermostCell, () -> generation ),
+			() -> {	if (patternTools.isEditing()) patternTools.cancel();
+					patternTools.boardChanged();
+				  } );
+		patternTools.setPlacementGuard( area -> freezingTools.manager().overlapsFrozen(area) );
+
+		// [Freezing] Esc ends whichever editing mode is on.
+		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "cancel-editing");
+		getActionMap().put("cancel-editing", new AbstractAction()
+		{	public void actionPerformed(ActionEvent e)
+			{	if (freezingTools.isEditing()) freezingTools.cancel();
+				else patternTools.cancel();
+			}
+		});
+
 		// 누르면 셀 하나를 토글하고, 끄는 동안 지나가는 셀은 모두
 		// 같은 상태로 만든다. 그래서 한 번 끌면 그리거나 지운다.
 		// 패턴 도구가 캡처·배치 중이거나 왼쪽 버튼이 아니면 그리지 않는다.
@@ -114,9 +135,15 @@ public class Universe extends JPanel
 
 			public void mousePressed(MouseEvent e)
 			{	lastCell = null;
-				if (patternTools.isEditing() || !SwingUtilities.isLeftMouseButton(e)
+				if (patternTools.isEditing() || freezingTools.isEditing()
+                        || !SwingUtilities.isLeftMouseButton(e)
                         || !contains(e.getPoint())) return;
 				lastCell	= cellAt( e.getPoint() );
+				if (freezingTools.manager().isFrozen(lastCell))	// [Freezing] no stroke starts on a frozen cell
+				{	freezingTools.blockedEdit();
+					lastCell = null;
+					return;
+				}
 				paintsAlive = !outermostCell.isAliveAt(lastCell.y, lastCell.x);
 				if (setCell(lastCell, paintsAlive))
                     notifyBoardChanged(BoardChangeEvent.Kind.EDIT);
@@ -124,7 +151,7 @@ public class Universe extends JPanel
 			}
 
 			public void mouseDragged(MouseEvent e)
-			{	if (lastCell == null || patternTools.isEditing()) return;
+			{	if (lastCell == null || patternTools.isEditing() || freezingTools.isEditing()) return;
 				Point cell = cellAt( e.getPoint() );
 
 				// 빠르게 끌면 칸을 건너뛰므로 마지막 두 마우스 위치
@@ -154,6 +181,7 @@ public class Universe extends JPanel
 					patternTools.boardChanged();
 					outermostCell.clear();
                     generation = 0;
+                    freezingTools.reset();				// [Freezing]
                     notifyBoardChanged(BoardChangeEvent.Kind.CLEAR);
 					repaint();
 				}
@@ -190,7 +218,7 @@ public class Universe extends JPanel
 		Clock.instance().addClockListener //{=Universe.clock.subscribe}
 		(	new Clock.Listener()
 			{	public void tick()
-				{	if (patternTools.isEditing()) return;
+				{	if (patternTools.isEditing() || freezingTools.isEditing()) return;
 					patternTools.boardChanged();
 					outermostCell.figureNextState
 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
@@ -198,11 +226,19 @@ public class Universe extends JPanel
 						   );
 					boolean[][] before = liveCells();
 
+					// [Freezing] 규칙 계산(figureNextState)과 전이(transition)는
+					// 그대로 두고, 그 사이에서 각 Freezing 영역이 자기 State에
+					// 물어 다음 상태를 스냅샷으로 되돌린다.
+					FreezingManager freezing = freezingTools.manager();
+					freezing.beforeTransition( outermostCell );
+
 					// 바뀌는 셀이 없어도 매 틱 불러야 멈춘 패턴도 나이를 먹는다
 					boolean changed = outermostCell.transition();
 
 					// 같은 완료 이벤트를 통계와 사운드에 전달한다.
+					// 고정된 셀은 before와 같으므로 출생·사망 목록에 들어가지 않는다.
 					generation++;
+					freezing.afterGeneration();			// [Freezing] 남은 세대 감소, 0이면 Frozen -> Normal
 					notifyBoardChanged(BoardChangeEvent.Kind.GENERATION, before);
 
 					// 색상 또는 생존 상태가 바뀌면 보드와 편집 오버레이를 함께 다시 그린다
@@ -363,6 +399,12 @@ public class Universe extends JPanel
     /** Finish hidden pattern input when the sidebar switches to another tool. */
     void finishPatternEditing() { patternTools.cancel(); }
 
+	JPanel freezingControls() { return freezingTools.controls(); }	// [Freezing]
+	FreezingManager freezing() { return freezingTools.manager(); }	// [Freezing]
+
+    /** [Freezing] Finish a hidden area selection when the sidebar switches to another tool. */
+    void finishFreezingEditing() { freezingTools.cancel(); }
+
 	private int pixelsPerCell()
 	{	return Math.max( 1, getWidth() / outermostCell.widthInCells() );
 	}
@@ -381,6 +423,10 @@ public class Universe extends JPanel
 	private boolean setCell( Point cell, boolean alive )
 	{	if( outermostCell.isAliveAt(cell.y, cell.x) == alive )
 			return false;
+		if( freezingTools.manager().isFrozen(cell) )	// [Freezing] a drag skips frozen cells
+		{	freezingTools.blockedEdit();
+			return false;
+		}
 
 		patternTools.boardChanged();
 		int size  = pixelsPerCell();
@@ -415,6 +461,7 @@ public class Universe extends JPanel
         outermostCell.clear();
         outermostCell.transfer(memento, new Point(0, 0), Cell.LOAD);
         generation = 0;
+        freezingTools.reset();				// [Freezing]
         notifyBoardChanged(BoardChangeEvent.Kind.LOAD);
         repaint();
     }
@@ -455,6 +502,7 @@ public class Universe extends JPanel
 		panelBounds.x = 0;
 		panelBounds.y = 0;
 		outermostCell.redraw(g, panelBounds, true);		//{=Universe.redraw1}
+		if (freezingTools != null) freezingTools.paintOverlay((Graphics2D) g);	// [Freezing]
 		drawPlayhead( g );
 		if (patternTools != null) patternTools.paintOverlay((Graphics2D) g);
 	}

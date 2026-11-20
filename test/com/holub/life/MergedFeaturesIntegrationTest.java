@@ -229,9 +229,10 @@ class MergedFeaturesIntegrationTest {
     @Test
     void switchingToStatisticsFinishesAHeldStrokeAndKeepsItsUndoAvailable() throws Exception {
         LifeTestSupport.onEdt(() -> {
-            assertEquals(2, tabs.getTabCount());
+            assertEquals(3, tabs.getTabCount());
             assertSame(universe.patternControls(), tabs.getComponentAt(0));
             assertSame(panel, tabs.getComponentAt(1));
+            assertSame(universe.freezingControls(), tabs.getComponentAt(2));
             JPanel content = Life.createContent(universe, tabs);
             content.setSize(content.getPreferredSize());
             content.doLayout();
