@@ -84,6 +84,7 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 | 문서 | 내용 |
 | --- | --- |
 | [docs/fix-life-game-changes.md](docs/fix-life-game-changes.md) | 기본 오류 3가지 수정, 회귀 테스트 32개와 수정 전후 결과 |
+| [docs/color-gen.md](docs/color-gen.md) | 세대에 따른 셀 색 순환 기능: 요구사항과 유스케이스, 바뀐 코드, 패턴, 설계 결정과 대안, 테스트 |
 | [docs/feature-color-gen-changes.md](docs/feature-color-gen-changes.md) | 세대에 따른 셀 색 순환 기능의 변경 기록 |
 | [docs/color-gen-redraw-lag.md](docs/color-gen-redraw-lag.md) | 색 순환 중 화면 갱신 지연: 문제 상황, 원인, 해결 방안 |
 | [docs/capture-templates.md](docs/capture-templates.md) | 영역 캡처와 템플릿 배치 기능: 사용법, 구조와 설계 패턴, 검증, 다른 기능과의 연계 |

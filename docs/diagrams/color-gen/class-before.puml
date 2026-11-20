@@ -1,0 +1,60 @@
+@startuml class-before
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam classAttributeIconSize 0
+hide circle
+skinparam ranksep 70
+skinparam nodesep 60
+
+interface Cell <<interface>> {
+  + figureNextState(이웃 8칸 : Cell) : boolean
+  + transition() : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
+  + create() : Cell
+}
+
+class Neighborhood {
+  - gridSize : int
+  + transition() : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+}
+
+class Resident {
+  - {static} LIVE_COLOR : Color = Color.RED
+  - amAlive : boolean
+  - willBeAlive : boolean
+  + transition() : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
+}
+
+class Universe {
+  - {static} theInstance : Universe
+  + {static} instance() : Universe
+  + paint(g : Graphics)
+  - refreshNow()
+}
+
+class Clock {
+  + {static} instance() : Clock
+  + addClockListener(observer : Listener)
+}
+
+Cell <|... Neighborhood
+Cell <|.. Resident
+Neighborhood "1" *-up-> "64" Cell : - grid
+Neighborhood -[hidden]right- Resident
+Universe --> "1" Cell : - outermostCell
+Universe ..> Clock : 틱 리스너 등록
+Universe ..> Resident : 프로토타입 생성
+
+note bottom of Resident
+  살아 있는 셀의 색은 redraw()가
+  상수 LIVE_COLOR로 정한다
+end note
+@enduml
