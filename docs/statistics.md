@@ -1,7 +1,5 @@
 # 통계 기능 설계 및 구현 기록
 
-기준: 2026-11-18 `feature/statistics`의 현재 코드. `8eb1dfe`까지의 커밋과 이후 추가한 색상 통계·패널 변경을 포함한다. 통계 설계, 기존 기능과의 통합, 검증 결과를 이 문서에서 관리한다.
-
 1. [기능 개요와 구현 범위](#overview)
 2. [현재 설계 구조](#structure)
 3. [기본 통계와 공통 이벤트 구현](#events)
@@ -17,7 +15,7 @@
 
 게임판의 작업이 끝났을 때 완료 상태를 받아 현재 세대, 생존 셀 수·비율, 이번 세대 탄생·사망 수, 색상별 생존 셀 수·비율을 오른쪽 통계 탭에 표시한다.
 
-세대 진행뿐 아니라 클릭·드래그, 템플릿 배치·Undo, Clear, Load 성공, 색상 정책 변경에도 갱신한다. 패턴 캡처·템플릿·색상·사운드는 기존 구현과 연결하며, 통계가 셀의 생사·나이·색 결정 규칙이나 Undo 이력을 관리하지 않는다. 프리즈는 현재 브랜치의 연동 범위에 포함하지 않는다.
+세대 진행과 클릭·드래그, 템플릿 배치·Undo, Clear·Load 성공, 색상 정책 변경 후 갱신한다. 프리즈가 적용된 세대에는 고정 처리가 끝난 실제 생존 상태와 색상을 집계한다.
 
 <a id="structure"></a>
 ## 현재 설계 구조
@@ -91,20 +89,24 @@ Clock의 화살표는 Universe 안에서 등록한 익명 `Clock.Listener`를 �
 
 ### 세대 진행 시퀀스
 
-아래는 패턴 편집 중이 아닌 정상 진행 한 번에서 **통계 계산과 화면 갱신에 이르는 경로**다. 보드 진행·이벤트 전달·통계 화면 갱신은 EDT에서 순서대로 실행된다. 다른 Observer의 수신 흐름은 이 다이어그램에서 생략했다.
+아래는 패턴 편집·프리즈 영역 선택이 끝나고, 활성 프리즈 영역이 있는 상태에서 한 세대를 진행하는 경로다. 보드 진행·이벤트 전달·통계 화면 갱신은 EDT에서 순서대로 실행된다. 프리즈 내부의 영역·State 객체 위임과 다른 Observer의 수신 흐름은 생략했다.
 
 ```mermaid
 sequenceDiagram
     participant C as Clock
     participant U as Universe / Clock.Listener
     participant B as outermostCell
+    participant F as FreezingManager
     participant S as Statistics
     participant P as StatisticsPanel
     C->>U: tick()
     U->>B: figureNextState(...)
     U->>U: before = liveCells()
+    U->>F: beforeTransition(outermostCell)
+    F->>B: holdNextState(location, alive)
     U->>B: transition()
     U->>U: generation++
+    U->>F: afterGeneration()
     U->>U: createBoardChangeEvent(GENERATION, before)
     U->>S: onBoardChanged(event)
     S->>S: calculate(event)
@@ -138,12 +140,13 @@ BoardChangeEvent(Kind kind, long generation, int boardSize,
 | 완료 작업 | 이벤트와 세대 번호 | 통계의 탄생·사망 표시 |
 | --- | --- | --- |
 | 새 리스너 등록 | 새 구독자에게만 `INITIAL`, 현재 번호 | `—` |
-| 자동 진행·단일 진행 | `transition()` 완료 후 `GENERATION`, 1 증가 | 실제 탄생·사망 수. 변화가 없으면 `0 / 0` |
+| 자동 진행·단일 진행 | 프리즈 고정 처리와 `transition()` 완료, 세대 증가·프리즈 만료 처리 후 `GENERATION` | 최종 상태의 실제 탄생·사망 수. 고정된 셀은 변화량에 포함되지 않으며, 변화가 없으면 `0 / 0` |
 | 클릭·일반 드래그 | 실제 변경이 있는 마우스 이벤트 처리 후 `EDIT`, 유지 | `—` |
 | 템플릿 배치·Undo | 기존 완료 신호에서 `TEMPLATE`·`TEMPLATE_UNDO`, 유지 | `—` |
-| Clear·Load 성공 | 초기화·복원 완료 후 `CLEAR`·`LOAD`, 0 | `—` |
+| Clear·Load 성공 | 판 초기화·복원 및 프리즈 영역 제거 후 `CLEAR`·`LOAD`, 0 | `—` |
 | Color 메뉴 정책 변경 | `COLOR_POLICY_CHANGED`, 유지 | 같은 세대의 직전 Summary에 있던 표시 유지 |
-| 캡처 선택·무변경 배치·Load 취소/읽기 실패·Store | 발행 없음 | 유지 |
+| 프리즈 설치·수동 해제 자체 | 셀 상태를 바꾸지 않으므로 공통 보드 이벤트 발행 없음 | 유지 |
+| 캡처·프리즈 영역 선택 자체, 무변경·차단된 편집, Load 취소/읽기 실패, Store | 발행 없음 | 유지 |
 
 공개 `notifyBoardChanged(kind)`는 **이미 끝난 편집·복원의 알림**이다. 보드를 변경하거나 세대를 진행시키지 않으며, 이전 상태 없이 `GENERATION`을 호출하면 예외를 발생시킨다. 정상 세대는 tick 안에서 이전 상태를 확보한 뒤 비공개 `notifyBoardChanged(GENERATION, before)`로 발행한다.
 
@@ -167,12 +170,14 @@ Summary의 `hasGenerationDelta=false`일 때 births/deaths의 0은 내부 자리
 
 통계는 진행 후 보드를 읽어 UI까지 갱신하므로, 도중에 클릭·세대 변경이 끼어들지 않도록 보드 변경 → 상태 수집 → 발행 → 화면 갱신을 EDT에서 순차 실행한다. 초기 통계 구현에서 Clock을 Swing Timer로 변경했고, dev 병합 때에는 dev도 이미 Swing Timer를 사용하고 있어 그 구현을 유지했다.
 
+현재 Single Step 메뉴는 자동 타이머를 먼저 멈춘 뒤 `tick()`을 한 번 호출한다. 이 수정은 프리즈 병합 전의 별도 변경 `d6555b8`이며, 실행 중 단일 진행 후 추가 세대가 발생하지 않는 회귀 테스트가 추가됐다.
+
 EDT는 모든 작업 스레드를 자동으로 정렬하는 기능이 아니다. 현재 게임의 UI 입력과 Clock 콜백을 같은 스레드에서 처리하는 방식이다. MIDI 예약 실행기는 별도로 동작하며, 실제 보드 대신 이벤트에서 받은 독립 스냅샷을 읽는다. 오래 걸리는 작업을 EDT에 추가하면 화면이 멈출 수 있으므로 이 실행 경계를 유지해야 한다.
 
 <a id="integration"></a>
 ## 기존 기능과의 통합 및 충돌 해결
 
-두 작업의 기준을 구분한다. 먼저 통계 브랜치 `4021231`에 **당시 dev `a480113`**를 병합하여 `4a49d0a`에서 충돌을 해결했다. 이후 `8eb1dfe`에서 두 구독 경로를 하나로 바꿨다. 아래의 dev는 실시간 원격 상태가 아니라 이 병합 기준을 뜻한다.
+통계 구현 당시에는 `4021231`에 **당시 dev `a480113`**를 병합하여 `4a49d0a`에서 충돌을 해결했고, 이후 `8eb1dfe`에서 사운드와 통계의 구독 경로를 통합했다. 아래 충돌 표는 이 과거 병합을 설명한다. 그 뒤 프리즈 담당자가 추가한 연결은 [프리즈 병합 후 통계와 연결되는 변경](#freezing-integration)에 별도로 정리했다.
 
 ### dev 병합에서 해결한 실제 충돌
 
@@ -188,7 +193,7 @@ EDT는 모든 작업 스레드를 자동으로 정렬하는 기능이 아니다.
 | `NeighborhoodTest.java` | 중첩 셀 조회 테스트가 양쪽에 있고 주석이 달랐다. | dev 테스트를 유지하여 행·열이 뒤바뀌지 않는 조회를 계속 검증했다. |
 | `UniverseStoreTest.java` | 통계 쪽 테스트 초기화와 dev의 드래그·생존 배열·재생선 검사에 필요한 import가 겹쳤다. | 새 검사들을 보존하고 초기화·Clear·Store를 `LifeTestSupport`로 통일했다. UI 조작/그리기는 EDT에서 수행하고 실제 Clock·저장 경로를 사용하도록 정리했다. |
 
-Universe에서 연결한 세부 경로는 다음과 같다.
+통계 브랜치를 병합할 당시 연결한 세부 경로는 다음과 같다. 이후 프리즈 적용으로 달라진 경로는 아래 프리즈 통합 절에서 설명한다.
 
 | 경로 | 통계 연결 후 동작 |
 | --- | --- |
@@ -236,14 +241,36 @@ INITIAL·편집·템플릿·Undo·Clear·Load·색상 정책 변경에서는 재
 
 담당자 문서/테스트에서는 구독 이름과 수신 메서드를 위 표에 맞춘다. 직접 `generationChanged()`를 호출하던 테스트는 완료 상태가 담긴 `onBoardChanged(event)` 입력으로 바꾼다. 현재 생성자는 색 목록까지 요구하지만 사운드가 그 목록을 사용할 필요는 없다.
 
+<a id="freezing-integration"></a>
+### 프리즈 병합 후 통계와 연결되는 변경
+
+프리즈 PR #7의 병합 전 `d215c7a`와 병합 후 `838182c`를 비교했다. 프리즈 담당자는 **Statistics·StatisticsPanel·BoardChangeEvent·BoardChangeListener를 수정하지 않고**, 게임판 변경과 화면 조립 지점을 확장했다. 기존 `BoardChangeListener`와 이벤트 형식으로 프리즈가 반영된 결과를 전달한다.
+
+| 수정 위치 | 실제 변경 | 통계에 미치는 영향 |
+| --- | --- | --- |
+| `Universe`·`FreezingManager` | 관리자를 `new FreezingManager(outermostCell, () -> generation)`으로 생성한다. | 프리즈는 Universe의 세대 번호를 읽고, 통계는 같은 번호를 이벤트로 받는다. 두 기능이 세대를 따로 세지 않는다. |
+| `Universe`의 익명 `Clock.Listener.tick()` | 패턴 편집뿐 아니라 프리즈 영역 선택 중에도 반환한다. 다음 상태 계산 후 `beforeTransition()`으로 고정 영역의 다음 상태를 설치 당시 생존 상태로 덮어쓴다. `transition()`·세대 증가·`afterGeneration()`을 거친 뒤 기존 GENERATION을 발행한다. | 통계는 고정 처리가 완료된 상태를 받는다. 프리즈가 적용된 세대도 세대 번호는 증가하고, 고정된 셀은 탄생·사망 좌표에 들어가지 않는다. |
+| `Cell`·`Neighborhood`·`Resident` | `holdNextState(Point, boolean)`을 추가하고, Resident는 `heldThisGeneration`이 설정된 전이에서 나이 증가를 생략한다. | 고정된 살아 있는 셀도 생존 수에 포함된다. 고정 중에는 나이가 멈추며 해제 뒤 이어서 증가하므로 색상별 집계도 이를 반영한다. |
+| 클릭·드래그·템플릿 연결 | 고정 영역의 직접 편집은 차단하고, 템플릿은 `setPlacementGuard()`로 고정 영역과 겹치는 배치를 막는다. 프리즈 영역 선택을 시작할 때 기존 패턴 편집을 끝내고 Undo 이력을 무효화한다. | 실제로 바뀐 셀만 기존 EDIT·TEMPLATE 알림으로 반영한다. 차단되어 판이 그대로인 조작은 통계를 바꾸지 않는다. |
+| Clear·Load 성공 | `freezingTools.reset()`으로 선택 모드와 설치된 영역을 정리한 뒤 기존 CLEAR·LOAD를 발행한다. | 세대 0과 초기화·복원된 생존 상태를 표시한다. 프리즈가 남아서 다음 세대 계산에 영향을 주지 않는다. |
+| `Life.createSidebar()` | 기존 `패턴 캡처`·`통계` 뒤에 `Freezing` 탭을 추가한다. 해당 탭을 떠나면 `finishFreezingEditing()`으로 영역 선택을 종료한다. | 통계는 기존 두 번째 탭을 유지하며 같은 구독을 계속 사용한다. |
+
+프리즈 설치·수동 해제 자체는 셀의 생사나 나이를 즉시 변경하지 않는다. 따라서 새 이벤트 종류를 추가하지 않고 기존 통계를 유지한다. 이후 세대를 진행하면 완료 상태를 기존 GENERATION으로 전달한다. 마지막 고정 세대까지 상태를 유지한 뒤 영역이 만료되며, 정상 규칙은 그 다음 세대부터 적용된다.
+
+예를 들어 고정된 외톨이 셀 1개와 일반 블링커 3개가 있으면 고정 기간에는 **생존 4개, 탄생 2개·사망 2개**로 집계된다. 해제 다음 세대에는 외톨이 셀도 죽으므로 **생존 3개, 탄생 2개·사망 3개**가 된다.
+
+나이가 멈춘다는 것과 표시 색을 별도로 저장한다는 것은 다르다. 같은 색상 정책에서는 고정된 셀의 색이 유지되지만, 사용자가 Color 메뉴에서 정책을 바꾸면 그 정책이 현재 나이에 대해 반환하는 색으로 통계가 갱신된다.
+
+프리즈 상세 설계와 담당자 검증 기록은 [FREEZING.md](FREEZING.md)에 정리되어 있다. 여기서는 통계와 연결되는 변경만 다룬다.
+
 <a id="colors"></a>
 ## 색상별 통계 확장
 
 ### 기존 색상 결정 방식
 
-Resident는 생존 여부와 `age`를 가지고, 공유 `CellColorPolicy`에 `colorOf(age)`를 요청하여 그린다. 셀마다 최종 Color 필드를 저장하는 구조가 아니다. 새로 태어난 셀의 나이는 0이며, 매 transition에서 계속 살아 있는 셀의 나이가 증가한다.
+Resident는 생존 여부와 `age`를 가지고, 공유 `CellColorPolicy`에 `colorOf(age)`를 요청하여 그린다. 새로 태어난 셀의 나이는 0이며, 계속 살아남은 셀은 transition에서 나이가 증가한다. 현재 통합 코드에서는 프리즈로 고정된 셀만 나이 증가를 건너뛰고, 해제 후에는 멈춘 나이부터 이어서 증가한다.
 
-기본 순환 정책은 10세대 간격으로 **빨강 → 파랑(`#0072B2`) → 초록(`#009E73`)**을 반복한다. 나이 0~9는 빨강, 10~19는 파랑, 20~29는 초록, 30~39는 다시 빨강이다. FixedColorPolicy는 나이와 무관하게 지정 색을 반환한다. 통계는 이 규칙을 복제하거나 나이를 색으로 다시 환산하지 않고 **현재 정책이 반환한 색**을 집계한다.
+기본 순환 정책은 셀의 나이를 기준으로 10세대마다 **빨강 → 파랑(`#0072B2`) → 초록(`#009E73`)**을 반복한다. 나이 0~9는 빨강, 10~19는 파랑, 20~29는 초록, 30~39는 다시 빨강이다. FixedColorPolicy는 나이와 무관하게 지정 색을 반환한다. 통계는 이 규칙을 복제하거나 나이를 색으로 다시 환산하지 않고 **현재 정책이 반환한 색**을 집계한다.
 
 ### 추가·확장한 메서드와 데이터
 
@@ -262,14 +289,14 @@ Resident는 생존 여부와 `age`를 가지고, 공유 `CellColorPolicy`에 `co
 
 색 목록에 좌표는 필요하지 않다. 통계는 색의 분포만 사용하며, 셀의 위치는 기존 생존 배열로 전달된다. 같은 RGB 값으로 만들어진 별도 Color 객체도 같은 색으로 묶는다. 사운드는 색 데이터를 읽지 않고 기존 GENERATION 필터를 사용하므로 이 확장에서 사운드 소스 수정은 없다.
 
-**유지한 부분:** CellColorPolicy·FixedColorPolicy·CyclingColorPolicy, Resident의 transition·redraw 본문은 변경하지 않았다. 이 색상 통계 작업에서 패턴/템플릿 소스와 Life·Clock도 변경하지 않았다. 셀 나이 복원 정책이나 템플릿 Undo 구현을 통계에 추가하지 않았다.
+색상 통계 작업(`4d6a9ac`)에서는 기존 색상 정책을 재사용하고 조회·이벤트 전달·집계·표시를 추가했다. 이후 프리즈 담당자가 Resident의 나이 갱신 조건을 확장했으며, 통계는 같은 `colorAt()` 조회 결과를 계속 사용한다.
 
 <a id="panel"></a>
 ## 통계 패널 구현과 화면 연결
 
 Life가 `new Statistics(panel::showStatistics)`를 만들고 Universe에 등록한다. INITIAL을 즉시 받으므로 게임을 진행하기 전에도 화면에 현재 상태가 나타난다. 탭이 숨겨져 있어도 통계는 갱신하며, `Life.dispose()`에서 통계 리스너를 해제한다.
 
-공용 JTabbedPane은 Life가 소유한다. 현재는 `패턴 캡처`와 `통계`를 같은 탭 컨테이너에 넣는다. 다른 기능은 여기에 `addTab()`으로 연결하며 StatisticsPanel 안에 별도 탭 컨테이너를 만들지 않는다. `createContent()`는 탭 추가 후 전체 선호 폭과 보드 높이 512px를 기준으로 중앙 보드·오른쪽 탭을 배치한다.
+공용 JTabbedPane은 Life가 소유하고, 현재 탭 순서는 **패턴 캡처 → 통계 → Freezing**이다. 탭 전환 시 숨겨지는 패턴 편집이나 프리즈 영역 선택을 종료하며, 설치된 프리즈 영역과 통계 구독은 유지한다. `createContent()`는 세 탭을 추가한 뒤 전체 선호 폭과 보드 높이 512px를 기준으로 중앙 보드·오른쪽 탭을 배치한다.
 
 | 표시 항목 | 현재 규격 |
 | --- | --- |
@@ -303,24 +330,27 @@ Cell의 조회는 기존 **Composite**를 확장한 것이며, 색 결정은 팀
 <a id="tests"></a>
 ## 테스트와 검증 결과
 
-2026-11-18 현재 코드에 대해 실행한 결과는 **JUnit 293개 통과, 실패·오류·건너뜀 0**이다. 별도 Swing 검사도 **17개 통과**했다. 이번 문서 정리는 소스·테스트를 변경하지 않았으며 아래 결과는 직전 전체 검증 기록이다.
+프리즈가 통합된 현재 코드(`92e1332`, 기능 기준 `838182c`)를 2026-11-22에 다시 실행한 결과는 **30개 테스트 클래스, JUnit 384개 통과, 실패·오류·건너뜀 0**이다. 이번 문서 수정에서는 소스와 테스트를 변경하지 않았다. 별도 데스크톱 Swing 검사 17개는 2026-11-18의 기존 검증 기록이며 이번에는 재실행하지 않았다.
 
 ```bash
 ./gradlew test --rerun-tasks --no-daemon --console=plain
+
+# 별도 데스크톱 Swing 검사: 필요한 경우 따로 실행
 ./gradlew patternUiTest --no-daemon --console=plain
 ```
 
-Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. JUnit 실행 결과는 로컬 `build/reports/tests/test/index.html`에서 확인한다. `patternUiTest`의 17개는 293개에 포함하지 않는다. 기존 기본 오류 수정 회귀 검사도 전체 테스트에 포함하여 확인했다.
+Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령의 기본 JUnit 보고서 경로는 `build/reports/tests/test/index.html`이다. 이번 확인에서는 기존 빌드 결과를 덮어쓰지 않도록 Gradle 초기화 스크립트로 빌드·보고서와 프로젝트 캐시를 임시 폴더에 분리하고, 같은 전체 `test` 작업을 오프라인으로 실행했다. `patternUiTest`의 17개는 JUnit 384개에 포함하지 않는다. 기존 기본 오류 수정 회귀 검사도 전체 테스트에 포함했다.
 
 | 검증 범위 | JUnit 수 |
 | --- | ---: |
-| 기본 규칙·저장·Clock·Universe 이벤트 | 63 |
+| 기본 규칙·저장·Clock·Universe 이벤트 | 64 |
 | 기존 색상 정책·나이·색 조회 | 42 |
 | 패턴·템플릿·Undo | 39 |
 | 사운드 계산·공통 이벤트 연동 | 46 |
 | 통계 계산·패널·색상 통계 | 91 |
 | 기존 기능과 통계의 병합 연동 | 12 |
-| 합계 | **293** |
+| 프리즈 모델·기존 기능 및 사운드와의 연동 | 90 |
+| 합계 | **384** |
 
 <details>
 <summary>JUnit 클래스별 실행 수와 확인한 내용</summary>
@@ -332,7 +362,7 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. JUnit 실�
 | ResidentTest | 18 | 이웃 수별 상태 변화와 transition 반환값. |
 | NeighborhoodTest | 12 | 하위 생존 여부와 중첩 좌표 조회. |
 | UniverseStoreTest | 8 | 저장 좌표 중복 방지, 드래그 생성·삭제·경계, 생존 배열의 행/열, 재생선 표시/제거. |
-| ClockIntegrationTest | 6 | 자동/단일 진행, 중지, 간격, 메뉴 열림, EDT 밖 tick의 EDT 전달. |
+| ClockIntegrationTest | 7 | 자동/단일 진행, 실행 중 Single Step 후 정지, 간격, 메뉴 열림, EDT 밖 tick의 EDT 전달. |
 | UniverseEventsTest | 19 | INITIAL·중복 등록/해제·같은 이벤트 전달·실제 클릭·안정/빈 판 세대·Clear·Load 성공/실패/취소·Store 무알림·EDT 계약. |
 | CellColorPolicyTest | 22 | 고정/순환 색상 정책과 입력 검증. |
 | CellAgeColorTest | 9 | 나이 증가/초기화와 Life 규칙 유지. 독립 기준 계산으로 32개 초기 판을 각각 100세대 비교. |
@@ -347,11 +377,14 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. JUnit 실�
 | PatternToolsTest | 12 | 편집 모드·조작·패턴 처리. |
 | BoardChangeEventTest | 23 | 입력 검증, 배열/Point 방어적 복사, 이벤트 종류별 변화 목록 계약. |
 | StatisticsTest | 22 | 초기/세대/편집/복원 입력의 집계, 비율, 비교 가능 여부, 콜백·최근 결과. |
-| StatisticsPanelTest | 14 | 값·두 자리 비율·—/0 구분, 색상 행 순서/제거, 제목·값 폰트·행 간격. |
+| StatisticsPanelTest | 14 | 값·두 자리 비율·—/0 구분, 색상 행 순서/제거, 선호 크기·여백·제목 폰트, EDT·null 입력 계약. |
 | StatisticsPanelIntegrationTest | 14 | 실제 등록·EDT 갱신·공용 탭·숨겨진 탭·Load·큰 값/색 목록 배치. |
 | ColorStatisticsTest | 13 | 색 목록 보호/길이 검증, 같은 색 묶기, 생존 수 기준 비율, 빈 판, Summary 보호, 정책 변경 시 기존 변화량 유지. |
 | ColorStatisticsIntegrationTest | 5 | 실제 보드의 색 경계·혼합 나이·정지 중 정책 교체·블링커/편집/Clear·초기 등록. |
-| MergedFeaturesIntegrationTest | 12 | 실제 드래그·템플릿·Undo·탭 전환·Clear/Load·세대 진행과 통계의 연결. |
+| MergedFeaturesIntegrationTest | 12 | 실제 드래그·템플릿·Undo·탭 전환·Clear/Load·세대 진행과 통계의 연결. 프리즈 병합에서 공용 탭 개수와 세 번째 탭 확인을 보완했다. |
+| FreezingModelTest | 50 | 프리즈 상태 전이·기간·영역·고정 상태·나이 유지와 해제 후 진행. |
+| FreezingIntegrationTest | 37 | 실제 보드에서 세대 번호 공유, 고정 셀의 통계·색상, 편집 차단, 템플릿·탭·Clear/Load 연동. |
+| FreezingSoundIntegrationTest | 3 | 실제 SoundEffects와 프리즈 연결. 고정 중 변화음 생략, 해제 후 변화음, 고정 셀의 재생선 연주. |
 | SoundEffectsIntegrationTest | 17 | 실제 SoundEffects 설치·이벤트 수신과 통계의 공동 동작, MIDI/예약 경계는 대역 사용. |
 | NoteMapperTest | 23 | 음 선택·화음·위치·재생선 매핑. |
 | RepeatTrackerTest | 3 | 반복 패턴 감지. |
@@ -364,8 +397,12 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. JUnit 실�
 
 | 시나리오 | 기대 결과 — 모두 통과 |
 | --- | --- |
-| 안정된 4셀 블록 | 생존 4개를 유지하고 세대·나이가 증가한다. 나이 9→10, 19→20, 29→30에서 패널 색도 정책과 같이 바뀐다. |
+| 프리즈가 없는 안정된 4셀 블록 | 생존 4개를 유지하고 세대·나이가 증가한다. 나이 9→10, 19→20, 29→30에서 패널 색도 정책과 같이 바뀐다. |
 | 서로 10세대 차이로 배치한 블록 3개 | 빨강·파랑·초록 4개씩, 생존 셀 기준 각각 약 33.33%. |
+| 두 블록 중 하나만 10세대 프리즈 | 10세대에 고정 블록은 빨강 4개, 일반 블록은 파랑 4개. 이후 10세대 더 진행하면 파랑 4개·초록 4개. |
+| 프리즈된 외톨이 셀 1개와 일반 블링커 | 고정 중 생존 4개·탄생/사망 2개씩. 해제 다음 세대는 생존 3개·탄생 2개·사망 3개. |
+| 전체 판 프리즈 | 매 세대 번호를 늘리고 GENERATION을 발행하며 탄생·사망은 0. |
+| 프리즈 설치·해제 자체 / 고정 영역 편집 차단 | 보드 상태가 그대로이면 공통 이벤트가 발생하지 않고 기존 통계를 유지한다. |
 | 4×4 판에서 생존 4개, 그중 빨강 2개 | 전체 생존 비율 25%, 빨강 비율 50%. |
 | 블링커 | 자연적인 탄생·사망 2개씩. 색상 검사에서는 새 셀 2개의 빨강과 생존 셀 1개의 파랑을 66.67%·33.33%로 표시한다. |
 | 정지 중 색상 정책 변경 | 세대·나이·생존 상태를 유지하고 색상 집계만 갱신한다. 같은 세대의 탄생/사망 표시를 유지하며 효과음은 새로 예약하지 않는다. |
@@ -378,7 +415,18 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. JUnit 실�
 
 StatisticsTest·ColorStatisticsTest 등 계산 단위 테스트는 **이벤트를 직접 만들어** 전달한다. 이벤트 이름이 TEMPLATE_UNDO라고 해서 실제 Undo 조작까지 수행한 검사는 아니다. 실제 배치/복원 경로는 MergedFeaturesIntegrationTest·패널 통합 검사에서 별도로 확인한다.
 
-MergedFeaturesIntegrationTest의 사운드 수신 확인에는 기록용 리스너를 쓴다. 실제 SoundEffects 설치까지 연결하는 검사는 SoundEffectsIntegrationTest이며, MIDI 장치·채널·예약 실행기·메뉴 등록 UI를 대역으로 제어한다. 7종류의 비세대 이벤트 수신 검사 등 일부 입력은 직접 구성하고, 블링커·색상 메뉴 등의 검사는 실제 Universe 경로를 사용한다.
+MergedFeaturesIntegrationTest와 FreezingIntegrationTest의 사운드 수신 확인에는 기록용 리스너를 쓴다. 실제 SoundEffects 설치까지 연결하는 검사는 SoundEffectsIntegrationTest와 FreezingSoundIntegrationTest이며, MIDI 장치·채널·예약 실행기·메뉴 등록 UI를 대역으로 제어한다. 7종류의 비세대 이벤트 수신 검사 등 일부 입력은 직접 구성하고, 블링커·색상 메뉴·프리즈가 반영된 세대 등의 검사는 실제 Universe 경로를 사용한다.
+
+프리즈 담당자가 추가한 `FreezingIntegrationTest` 중 통계와 직접 연결되는 검사는 다음과 같다. 전체 프리즈 알고리즘 테스트와 구분하여 통계 연동의 근거로 사용한다.
+
+| 테스트 메서드 | 통계에서 확인하는 결과 |
+| --- | --- |
+| `freezingStatisticsAndEventsShareOneGenerationCounter` | 프리즈 시작·진행·만료 시 두 탭과 이벤트가 Universe의 같은 세대 번호를 사용한다. |
+| `frozenCellsNeverAppearInBirthsOrDeathsAndCountAsLiving` | 고정된 생존 셀을 포함해 집계하되 탄생·사망은 최종 상태의 실제 변화만 센다. |
+| `aFullyFrozenBoardStillPublishesGenerationsButNoSoundDeltas` | 판 전체가 고정되어도 통계 세대는 증가하고 변화량 0을 표시할 수 있다. |
+| `frozenCellsKeepTheirColorWhileOthersCycleAndResumeAfterRelease` | 고정·일반 셀의 색상 집계를 구분하고, 해제 후 나이 증가가 재개되는 결과를 반영한다. |
+| `installAndReleaseDoNotPublishBoardEventsBecauseNoCellChanges` | 설치·해제 자체로 불필요한 보드 이벤트가 발생하지 않는다. |
+| `clickingAFrozenCellChangesNothingAndPublishesNothing` | 고정 영역의 편집 시도는 무변경이며, 영역 밖의 실제 편집은 EDIT로 전달된다. |
 
 </details>
 
@@ -396,7 +444,7 @@ MergedFeaturesIntegrationTest의 사운드 수신 확인에는 기록용 리스�
 
 임시 패턴 저장소를 사용하므로 사용자 템플릿은 변경하지 않는다. 생성된 확인 이미지는 `build/life-selection.png`, `build/life-placement.png`, `build/life-template-drag.png`, `build/life-template-drag-undo.png`이며 Git 추적 대상이 아니다.
 
-이 검사는 운영체제 마우스를 직접 조작하는 수동 시연과는 다르다. 실제 MIDI 장치의 음색·음량 청음 및 설정 창 수동 조작은 검증하지 않았다. 현재 브랜치에 없는 프리즈 기능이나 다른 OS의 외형까지 검증한 결과로 해석하지 않는다.
+이 별도 Swing 검사는 캡처·템플릿 조작에 대한 기존 기록이다. 프리즈 연동은 위 JUnit 결과로 확인했으며, 이번 문서 정리에서 데스크톱 수동 시연이나 별도 Swing 검사를 다시 실행하지 않았다. 실제 MIDI 장치의 음색·음량과 다른 OS의 외형은 자동 테스트 결과만으로 판단하지 않는다.
 
 </details>
 
@@ -415,7 +463,10 @@ MergedFeaturesIntegrationTest의 사운드 수신 확인에는 기록용 리스�
 | 2026-11-17 `4021231` | StatisticsPanel과 Life 연결, 통계 탭·공용 탭 배치 기반·화면 검증 추가. |
 | 2026-11-17 `4a49d0a` | 당시 dev `a480113` 병합. 7개 충돌 파일을 해결하고 색상·패턴·사운드·통계를 함께 연결했다. 사운드/통계 구독 경로는 이 시점에 별개였다. |
 | 2026-11-18 `8eb1dfe` | BoardChangeListener로 구독 통일. 현재 배열·탄생/사망 좌표를 공유하고 Statistics의 이전 판 비교를 제거했다. 사운드는 완료 스냅샷을 사용하도록 연결했다. |
-| 2026-11-18 이번 변경 | colorAt·생존 색 목록·정책 변경 이벤트·색상별 통계 추가. 패널의 색 순서·간격·폰트 통일 및 관련 테스트 확장. 전체 JUnit 293개와 별도 Swing 17개 통과. |
+| 2026-11-18 `4d6a9ac` | colorAt·생존 색 목록·정책 변경 이벤트·색상별 통계 추가. 패널의 색 순서·간격·폰트 통일 및 관련 테스트 확장. 전체 JUnit 293개와 별도 Swing 17개 통과. |
 | 2026-11-18 문서 정리 | 사운드 통합 설명을 본 문서에 합치고 별도 문서는 삭제했다. 다이어그램은 통계 범위로 정리하고 현재 계약, 실제 충돌 해결, 색상 확장, 검증 결과를 구분했다. |
+| 2026-11-19 `d6555b8` | 실행 중 Single Step을 선택하면 자동 타이머를 멈추고 한 세대만 진행하도록 수정. Clock 회귀 테스트 1개 추가. |
+| 2026-11-20 `838182c` | 프리즈 PR #7 병합. 담당자가 공통 세대 번호·전이 전 고정 처리·나이 유지·공용 탭을 연결하고 프리즈 JUnit 90개를 추가했다. |
+| `92e1332` | 통계 전용 4개 클래스의 주석을 한글로 정리. 실행 코드는 유지했다. |
 
 </details>
