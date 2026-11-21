@@ -4,6 +4,8 @@
 
 사운드 코드는 `src/com/holub/life/sound` 패키지에 모았다. 기존 코드에서 고친 곳은 `Universe`, `Cell`, `Neighborhood`, `Resident`, `Life` 다섯 파일이다.
 
+처음에는 사운드 전용 리스너(`Universe.GenerationListener`)로 세대 변화를 받았다. 이후 통계 기능([PR #10](https://github.com/mckimR1972/DP_team_project/pull/10))을 합치면서 통계와 사운드가 같은 이벤트(`BoardChangeEvent`)를 받도록 바뀌었다. 이 문서는 바뀐 뒤의 `dev`(`838182c`) 코드를 기준으로 설명하고, 처음 구조는 바뀐 과정을 설명할 때만 함께 적었다. 유스케이스 명세와 요구사항은 [sound-effects-spec.md](sound-effects-spec.md)에 있다.
+
 ## 1. 기능 요약
 
 셀이 새로 생기면 화음이, 사라지면 타악기 소리가 난다. 그와 별도로 초록색 재생선이 판을 왼쪽에서 오른쪽으로 계속 훑으면서 지나가는 자리의 산 셀을 연주하고, 그 밑에서 저음 패드가 현재 코드를 깔아 준다. 재생선과 패드는 세대 진행과 상관없이 돌기 때문에 게임을 멈춰 둬도 지금 판이 어떤 소리인지 들을 수 있다.
@@ -14,7 +16,7 @@
 
 ### 1.1 유스케이스
 
-확장한 유스케이스는 이름 끝에 `E`를 붙였다.
+확장한 유스케이스는 이름 끝에 `E`를 붙였다. 기존 유스케이스 이름은 팀 전체 유스케이스 그림과 같게 맞췄고, 유스케이스별 상세 흐름은 [sound-effects-spec.md](sound-effects-spec.md) 2장에 있다.
 
 ```mermaid
 flowchart LR
@@ -23,9 +25,10 @@ flowchart LR
     subgraph 기존 기능
         edit([Edit Cells])
         run([Run / Halt Game])
-        speed([Change Speed])
+        step([Step One Generation])
         clear([Clear Board])
-        file([Load / Store Board])
+        file([Store / Load Board])
+        adv(["Advance Generation<br/>확장점: 세대 확정 후"])
     end
 
     subgraph 확장 기능
@@ -37,19 +40,21 @@ flowchart LR
 
     user --- edit
     user --- run
-    user --- speed
+    user --- step
     user --- clear
     user --- file
     user --- sweep
     user --- toggle
     user --- config
 
-    gen -. "«extend»" .-> run
+    run -. "«include»" .-> adv
+    step -. "«include»" .-> adv
+    gen -. "«extend»<br/>조건: 소리가 켜져 있음" .-> adv
 ```
 
 | 유스케이스 | 내용 |
 |---|---|
-| Hear Generation Sound E | 게임이 진행되는 동안 세대마다 생긴 셀은 화음, 사라진 셀은 타악기로 들린다. Run Game을 확장한다. |
+| Hear Generation Sound E | 세대마다 생긴 셀은 화음, 사라진 셀은 타악기로 들린다. 세대를 확정한 뒤(Advance Generation의 확장점) 소리가 켜져 있으면 동작한다. |
 | Hear Board Sweep E | 재생선이 판을 반복해서 훑으며 산 셀을 연주한다. 게임이 멈춰 있어도 동작한다. |
 | Toggle Sound E | `Sound` 메뉴에서 소리 전체를 켜고 끈다. 끄면 재생선도 사라진다. |
 | Configure Sound E | 설정 창에서 기능별 on/off와 악기를 바꾼다. |
@@ -97,12 +102,22 @@ if( outermostCell.transition() )
 }
 ```
 
-`publishChanges()`는 64×64 판을 한 번 돌면서 `before`에는 없고 지금은 있는 칸을 `births`, 반대인 칸을 `deaths`에 넣은 뒤 구독자에게 보낸다. 좌표는 `java.awt.Point`로 넘기고 `x`가 열, `y`가 행이다.
+`publishChanges()`는 64×64 판을 한 번 돌면서 `before`에는 없고 지금은 있는 칸을 `births`, 반대인 칸을 `deaths`에 넣은 뒤 `Universe.GenerationListener` 구독자에게 보냈다. 구독자 관리는 Holub 코드에 있던 `com.holub.tools.Publisher`를 그대로 썼다. 좌표는 `java.awt.Point`로 넘기고 `x`가 열, `y`가 행이다.
 
-이 외에 `Universe`에 추가한 메서드는 다음과 같다.
+통계 기능도 같은 세대 정보가 필요해지면서 이 부분은 [PR #10](https://github.com/mckimR1972/DP_team_project/pull/10)에서 공통 이벤트로 바뀌었다. 지금 `dev`의 틱 처리는 다음과 같다(Freezing 처리는 생략).
 
-- `addGenerationListener(GenerationListener)`: 세대 변화를 받을 리스너를 등록한다. 구독자 목록 관리는 Holub 코드에 있던 `com.holub.tools.Publisher`를 그대로 썼다.
-- `liveCells()`: 판 전체를 `[행][열]` 순서의 `boolean[][]`로 복사해서 돌려준다. 재생선이 판을 읽을 때 쓴다.
+```java
+boolean[][] before = liveCells();
+boolean changed = outermostCell.transition();
+generation++;
+notifyBoardChanged( BoardChangeEvent.Kind.GENERATION, before );  // 통계와 사운드에 같은 이벤트
+```
+
+`notifyBoardChanged()`는 전이 후 판을 한 번 읽어 `BoardChangeEvent`를 만든다. 이벤트에는 작업 종류(`kind()`), 세대 번호, 판의 복사본(`copyAliveCells()`), 생긴 셀(`copyBirths()`)과 사라진 셀(`copyDeaths()`), 통계용 색 목록이 들어 있다. 세대 진행뿐 아니라 셀 편집, Clear, Load, 템플릿 배치·되돌리기, 색 규칙 변경 때도 이벤트를 보내고, 생긴 셀과 사라진 셀 목록은 세대 진행(`GENERATION`)일 때만 채운다. 리스너는 `addBoardChangeListener()`로 등록하고, 등록하는 순간 현재 판을 담은 `INITIAL` 이벤트를 한 번 받는다. `GenerationListener`와 `publishChanges()`는 이때 없어졌다.
+
+사운드 작업에서 `Universe`에 추가한 메서드 중 지금도 쓰는 것은 다음과 같다.
+
+- `liveCells()`: 판 전체를 `[행][열]` 순서의 `boolean[][]`로 복사해서 돌려준다. 지금은 이벤트를 만들 때 쓴다.
 - `widthInCells()`: 판 한 변의 셀 수.
 - `setPlayhead(int column)`: 해당 열 왼쪽에 폭 3픽셀짜리 초록 세로선을 그린다. `-1`이면 지운다. 판 전체가 아니라 이전 선과 새 선 자리만 `repaint()`한다.
 
@@ -138,13 +153,13 @@ public boolean isAliveAt(int row, int column)
 SoundEffects.install( Universe.instance() );
 ```
 
-게임 쪽에서 사운드 패키지를 아는 곳은 여기뿐이다. 이 줄과 import를 지우면 원래 게임과 같다.
+게임 쪽에서 사운드 패키지를 아는 곳은 여기뿐이다. 이 줄과 import를 지우면 소리만 빠지고 나머지 게임은 그대로다. `install()`은 신시사이저를 열고, `Universe`에 리스너로 등록해 `INITIAL` 이벤트로 현재 판을 받은 다음, 재생선 실행을 예약하고 `Sound` 메뉴를 단다.
 
 ### 2.4 새로 만든 클래스
 
 | 클래스 | 하는 일 | MIDI·Swing 의존 |
 |---|---|---|
-| `SoundEffects` | `GenerationListener` 구현. 재생 예약, MIDI 채널 제어, 재생선 진행, `Sound` 메뉴 등록 | 둘 다 사용 |
+| `SoundEffects` | `BoardChangeListener` 구현. 재생 예약, MIDI 채널 제어, 재생선 진행, `Sound` 메뉴 등록 | 둘 다 사용 |
 | `NoteMapper` | 셀 좌표를 음(높이, 좌우, 세기)으로 바꾼다. 화음 선택, 재생선 음, 패드 음, 흔들림 계산 | 없음 |
 | `RepeatTracker` | 최근 8세대의 변화를 기억해 두고, 같은 변화가 다시 오면 볼륨(gain)을 1/12씩 줄인다 | 없음 |
 | `SoundSettings` | 기능별 on/off와 선택한 악기를 들고 있다 | 없음 |
@@ -180,30 +195,39 @@ classDiagram
 
     class Universe {
         -outermostCell Cell
-        -generationPublisher Publisher
-        +addGenerationListener(GenerationListener)
+        -boardListeners Set~BoardChangeListener~
+        -generation long
+        +addBoardChangeListener(listener)
+        +removeBoardChangeListener(listener)
         +liveCells() boolean[][]
         +widthInCells() int
         +setPlayhead(column)
-        -publishChanges(before)
+        -notifyBoardChanged(kind, before)
     }
-    class GenerationListener {
+    class BoardChangeListener {
         <<interface>>
-        +generationChanged(births, deaths)
+        +onBoardChanged(event)
     }
-    class Publisher {
-        +subscribe(Object)
-        +publish(Distributor)
+    class BoardChangeEvent {
+        +kind() Kind
+        +generation() long
+        +copyAliveCells() boolean[][]
+        +copyBirths() List~Point~
+        +copyDeaths() List~Point~
     }
+    class Statistics
     Universe --> Cell : outermostCell
-    Universe --> Publisher
-    Publisher o-- "*" GenerationListener : subscribers
+    Universe o-- "*" BoardChangeListener : boardListeners
+    Universe ..> BoardChangeEvent : 만들어 보냄
+    BoardChangeListener <|.. Statistics
 
     class SoundEffects {
+        -latestCells boolean[][]
         -enabled boolean
         -chord int
         +install(Universe)$
-        +generationChanged(births, deaths)
+        +onBoardChanged(event)
+        -generationChanged(births, deaths)
         -playStep()
         -play(channel, note, delayMs, lengthMs)
     }
@@ -235,8 +259,9 @@ classDiagram
         +noteOff(pitch)
     }
 
-    GenerationListener <|.. SoundEffects
-    SoundEffects --> Universe : 판 읽기, 재생선 이동
+    BoardChangeListener <|.. SoundEffects
+    SoundEffects ..> BoardChangeEvent : 판 복사본, 변화 목록
+    SoundEffects --> Universe : 재생선 표시
     SoundEffects --> NoteMapper
     SoundEffects --> RepeatTracker
     SoundEffects --> SoundSettings
@@ -247,13 +272,12 @@ classDiagram
 
 ### 3.2 세대 사운드가 나는 과정
 
-클럭 틱은 Swing 이벤트 스레드에서 처리된다. `SoundEffects`는 이 스레드에서 알림을 받지만 소리를 직접 내지 않고, "언제 무엇을 할지"만 스케줄러에 넣은 뒤 바로 돌아온다.
+클럭 틱은 Swing 이벤트 스레드에서 처리된다. `SoundEffects`는 이 스레드에서 이벤트를 받지만 소리를 직접 내지 않고, "언제 무엇을 할지"만 스케줄러에 넣은 뒤 바로 돌아온다. 같은 이벤트를 `Statistics`도 받는데 그림에서는 생략했다.
 
 ```mermaid
 sequenceDiagram
     participant Clock
     participant U as Universe
-    participant P as Publisher
     participant S as SoundEffects
     participant R as RepeatTracker
     participant N as NoteMapper
@@ -263,16 +287,20 @@ sequenceDiagram
     Clock->>U: tick()
     U->>U: before = liveCells()
     U->>U: outermostCell.transition()
-    U->>U: refreshNow()
-    U->>P: publish(births, deaths)
-    P->>S: generationChanged(births, deaths)
+    U->>U: generation++
+    U->>U: event = BoardChangeEvent(GENERATION, before와 비교한 births, deaths)
+    U->>S: onBoardChanged(event)
+    S->>S: latestCells = event.copyAliveCells()
+    Note over S: births와 deaths가 모두 비어 있으면 여기서 끝
+    S->>S: generationChanged(births, deaths)
     S->>R: gainFor(births, deaths)
     R-->>S: gain (1.0 ~ 0.0)
     S->>N: notesFor(births, width, chord)
     N-->>S: 최대 5음
     S->>Q: schedule(noteOn 명령, 스트럼 간격)
     S->>Q: schedule(noteOff 명령, +220ms)
-    S-->>Clock: 바로 반환
+    S-->>U: 바로 반환
+    U->>U: refreshNow()
     Note over Q,M: 예약한 시간이 되면
     Q->>M: noteOn(pitch, velocity)
     Q->>M: noteOff(pitch)
@@ -281,6 +309,8 @@ sequenceDiagram
 ### 3.3 재생선
 
 재생선은 클럭과 상관없이 스케줄러가 150ms마다 `playStep()`을 실행해서 움직인다. 한 스텝에 4열씩, 16스텝이면 64열을 다 돈다.
+
+판은 `Universe`에 직접 묻지 않고, 마지막으로 받은 이벤트의 복사본(`latestCells`)을 읽는다. 이벤트는 세대 진행뿐 아니라 편집, Clear, Load, 템플릿 때도 오기 때문에 게임이 멈춰 있어도 바뀐 판이 다음 스텝에 반영된다. `latestCells`는 `volatile` 참조이고, 이벤트가 올 때마다 새 배열로 통째로 바뀌며 한번 넣은 배열은 고치지 않는다. 그래서 스케줄러 스레드는 한 스텝 동안 처음 읽은 배열 하나를 안전하게 쓸 수 있다.
 
 ```mermaid
 sequenceDiagram
@@ -292,7 +322,7 @@ sequenceDiagram
 
     loop 16스텝 = 한 바퀴 (약 2.4초)
         Q->>S: playStep()
-        S->>U: liveCells()
+        S->>S: cells = latestCells
         S->>U: setPlayhead(firstColumn)
         S->>N: sweepNotesFor(4열 구간, chord, 강세 여부)
         S->>Q: schedule(noteOn / noteOff 명령)
@@ -329,17 +359,19 @@ stateDiagram-v2
 
 | 역할 | 클래스 |
 |---|---|
-| Subject | `Universe` (구독자 관리는 `Publisher`) |
-| Observer | `Universe.GenerationListener` |
-| ConcreteObserver | `SoundEffects` |
+| Subject | `Universe` (`addBoardChangeListener()`, `removeBoardChangeListener()`) |
+| Observer | `BoardChangeListener` |
+| ConcreteObserver | `SoundEffects`, `Statistics` |
 
-`Universe`가 세대 변화를 발행하고 `SoundEffects`가 받는다. `Universe`는 `GenerationListener` 인터페이스만 알고 누가 듣고 있는지는 모른다. 그래서 사운드를 빼도 게임은 그대로 돌고, 다른 기능이 같은 정보가 필요하면 `addGenerationListener()`로 등록만 하면 된다. `Universe`를 다시 고칠 필요가 없다.
+`Universe`가 판의 변화를 발행하고 `SoundEffects`가 받는다. `Universe`는 `BoardChangeListener` 인터페이스만 알고 누가 듣고 있는지는 모른다. 그래서 사운드를 빼도 게임은 그대로 돌고, 다른 기능이 같은 정보가 필요하면 리스너로 등록만 하면 된다.
 
-구독 관리는 새로 만들지 않고 Holub 코드의 `Publisher`를 썼다. `Clock`이 이미 같은 방식으로 리스너를 관리하고 있어서, 같은 구조를 따르는 게 코드를 읽는 사람에게도 자연스럽다고 봤다.
+처음(#3)에는 사운드 전용 `GenerationListener`를 두고 구독 관리는 Holub 코드의 `Publisher`를 썼다. `Clock`이 이미 같은 방식으로 리스너를 관리하고 있어서 같은 구조를 따랐다. 통계 기능이 같은 정보를 필요로 하자 두 기능이 같은 이벤트를 받도록 `BoardChangeListener`로 합쳐졌다(#10). 소리를 만드는 코드가 처음부터 `Universe`와 떨어져 있었기 때문에, 이때 사운드 쪽에서 고친 곳은 `SoundEffects`의 수신부 30줄 정도였고 `NoteMapper`, `RepeatTracker`, `SoundSettings`는 그대로였다.
 
-알림에는 생긴 셀과 사라진 셀 목록을 같이 실어 보낸다(push 방식). 알림만 보내고 리스너가 판을 다시 읽게 하면(pull 방식) 리스너마다 이전 판을 따로 들고 있다가 비교해야 한다. 이전 판은 원래 `Universe`만 갖고 있으니 비교도 `Universe`에서 한 번만 하는 게 낫다. 반대로 재생선은 게임이 멈춰 있어도 판을 읽어야 해서 세대 알림을 기다릴 수 없다. 그래서 재생선은 필요할 때 `liveCells()`로 직접 읽어 온다. 두 방식을 용도에 따라 나눠 쓴 셈이다.
+이벤트에는 생긴 셀과 사라진 셀 목록, 판의 복사본을 같이 실어 보낸다(push 방식). 알림만 보내고 리스너가 판을 다시 읽게 하면(pull 방식) 리스너마다 이전 판을 따로 들고 있다가 비교해야 한다. 이전 판은 원래 `Universe`만 갖고 있으니 비교도 `Universe`에서 한 번만 하는 게 낫다.
 
-남은 결합도 있다. Subject는 Observer를 모르지만 `SoundEffects`는 `Universe`를 직접 참조하고, `setPlayhead()`로 화면에도 관여한다. 또 리스너는 Swing 이벤트 스레드에서 불리기 때문에 오래 걸리면 화면과 입력이 같이 멈춘다. 이 조건 때문에 아래 Command 구조가 필요했다.
+재생선은 처음에는 pull 방식이었다. 게임이 멈춰 있어도 판을 읽어야 해서 스케줄러 스레드가 150ms마다 `universe.liveCells()`를 직접 불렀다. 그런데 이러면 이벤트 스레드가 셀을 바꾸는 동안 다른 스레드가 같은 `Cell` 트리를 읽게 된다. 공통 이벤트로 바뀌면서 편집, Clear, Load 때도 이벤트가 오게 되었으므로, 재생선도 마지막 이벤트의 복사본을 읽는 push 방식으로 바뀌었다. 판을 읽는 스레드와 바꾸는 스레드가 겹치지 않게 된 것이 이 변경의 이점이다.
+
+남은 결합도 있다. Subject는 Observer를 모르지만 `SoundEffects`는 재생선을 그리려고 `Universe.setPlayhead()`를 직접 부른다. 이벤트에는 통계만 쓰는 색 목록과 `COLOR_POLICY_CHANGED` 종류도 들어 있어서, 통계 쪽 요구로 이벤트가 바뀌면 사운드도 영향을 받을 수 있다. 또 리스너는 Swing 이벤트 스레드에서 불리기 때문에 오래 걸리면 화면과 입력이 같이 멈춘다. 이 조건 때문에 아래 Command 구조가 필요했다.
 
 ### 4.2 Command
 
@@ -367,7 +399,7 @@ private void play( MidiChannel channel, NoteMapper.Note note,
 }
 ```
 
-큐 하나를 스레드 하나가 순서대로 처리하는 모양이라 수업에서 본 Active Object와 구조가 비슷하다. 이 구조 덕분에 동기화도 단순해졌다. `MidiChannel`, 재생선 위치(`step`), 지금 누르고 있는 패드 음(`padNotes`)은 스케줄러 스레드에서만 만지기 때문에 잠금이 필요 없다. 설정 창에서 악기를 바꿀 때도 이벤트 스레드가 채널을 직접 건드리지 않고 `noteScheduler.execute(this::applyInstruments)`로 명령을 넣는다. 두 스레드가 같이 쓰는 객체는 `SoundSettings` 하나뿐이라 여기만 `synchronized`로 막았고, 메뉴에서 바꾸는 `enabled`와 코드 위치 `chord`는 `volatile`로 두었다.
+큐 하나를 스레드 하나가 순서대로 처리하는 모양이라 수업에서 본 Active Object와 구조가 비슷하다. 이 구조 덕분에 동기화도 단순해졌다. `MidiChannel`, 재생선 위치(`step`), 지금 누르고 있는 패드 음(`padNotes`)은 스케줄러 스레드에서만 만지기 때문에 잠금이 필요 없다. 설정 창에서 악기를 바꿀 때도 이벤트 스레드가 채널을 직접 건드리지 않고 `noteScheduler.execute(this::applyInstruments)`로 명령을 넣는다. 두 스레드가 같이 쓰는 객체는 `SoundSettings` 하나뿐이라 여기만 `synchronized`로 막았고, 메뉴에서 바꾸는 `enabled`, 코드 위치 `chord`, 이벤트로 받은 판 `latestCells`는 `volatile`로 두었다.
 
 Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리를 되돌릴 일이 없으니 undo나 이력은 필요 없었고, 명령마다 클래스를 만들면 파일만 늘어난다고 판단했다.
 
@@ -391,7 +423,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 ### 4.5 설계 원칙
 
-`Universe`는 사운드가 아니라 `GenerationListener`라는 인터페이스에 의존한다. 새로운 리스너가 생겨도 `Universe`를 고치지 않고 등록만 하면 되므로 변경에는 닫혀 있고 확장에는 열려 있다.
+`Universe`는 사운드가 아니라 `BoardChangeListener`라는 인터페이스에 의존한다. 새로운 리스너가 생겨도 `Universe`를 고치지 않고 등록만 하면 되므로 변경에는 닫혀 있고 확장에는 열려 있다. 실제로 통계 기능은 같은 인터페이스로 등록해서 붙었다.
 
 `SoundEffects` 하나에 다 넣지 않고 바뀌는 이유별로 클래스를 나눴다. 음 고르는 규칙이 바뀌면 `NoteMapper`, 반복 판단 기준이 바뀌면 `RepeatTracker`, 설정 항목이 바뀌면 `SoundSettings`만 고치면 된다. 이렇게 나눈 덕에 `NoteMapper`, `RepeatTracker`, `SoundSettings`는 MIDI 장치와 화면 없이 테스트할 수 있다(6장).
 
@@ -406,7 +438,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | `Resident`가 상태가 바뀔 때 알림 | 바뀐 셀을 정확히 안다 | `Resident`는 자기 좌표를 모른다. 좌표를 넣으려면 셀 생성 구조를 다 바꿔야 하고, 셀마다 호출이 생긴다 |
 | `Universe`가 비교한 결과를 발행 | 비교 코드가 한 곳에 있고, 리스너 추가가 쉽다 | 틱마다 판 전체를 한 번 더 읽는다 |
 
-마지막 방법을 골랐다. 판을 더 읽는 비용은 64×64 배열 두 번 정도라 화면을 다시 그리는 것보다 훨씬 작았다.
+마지막 방법을 골랐다. 판을 더 읽는 비용은 64×64 배열 두 번 정도라 화면을 다시 그리는 것보다 훨씬 작았다. 이 결정은 이후 통계와 함께 쓰는 공통 이벤트(#10)로 그대로 넓혀졌다. 비교는 여전히 `Universe`에서 한 번만 하고, 리스너는 결과만 받는다.
 
 ### 5.2 판 상태를 어떻게 읽을까
 
@@ -449,18 +481,20 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 ./gradlew test
 ```
 
-현재 `dev` 기준으로 전체 145개 테스트가 모두 통과한다. 이 중 사운드와 관련된 테스트는 다음과 같다.
+현재 `dev`(`838182c`) 기준으로 전체 384개 테스트가 모두 통과한다. 이 중 사운드와 관련된 테스트는 다음과 같다.
 
 | 테스트 클래스 | 개수 | 비고 |
 |---|---|---|
-| `sound.NoteMapperTest` | 23 | 새로 작성 |
-| `sound.RepeatTrackerTest` | 3 | 새로 작성 |
-| `sound.SoundSettingsTest` | 3 | 새로 작성 |
+| `sound.NoteMapperTest` | 23 | 사운드 작업(#3)에서 작성 |
+| `sound.RepeatTrackerTest` | 3 | 사운드 작업(#3)에서 작성 |
+| `sound.SoundSettingsTest` | 3 | 사운드 작업(#3)에서 작성 |
 | `NeighborhoodTest` | 12 | 기존 11개 + `isAliveAt` 1개 |
 | `UniverseStoreTest` | 8 | 기존 3개 + 사운드용 2개 (나머지 3개는 드래그 그리기) |
 | `ResidentTest` | 18 | 기존 그대로 |
+| `SoundEffectsIntegrationTest` | 17 | 통계 기능을 합칠 때(#10) 추가. 실제 `Universe`, `Statistics`와 연결한 `SoundEffects` |
+| `FreezingSoundIntegrationTest` | 3 | Freezing 기능을 합칠 때(#7) 추가. 고정된 셀과 소리 |
 
-사운드 작업으로 추가한 테스트는 32개다. 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. PR #3의 커밋은 하나씩 따로 빌드하고 테스트를 돌려서, 중간 커밋에서도 실패가 없게 했다.
+사운드 작업(#3)에서 추가한 테스트는 32개다. 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. PR #3의 커밋은 하나씩 따로 빌드하고 테스트를 돌려서, 중간 커밋에서도 실패가 없게 했다. 이후 다른 기능을 합치면서 `SoundEffects`를 실제로 실행하는 통합 테스트 20개가 더해졌다.
 
 ![전체 테스트 결과](sound-effects/test-all.png)
 
@@ -470,11 +504,15 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 ![SoundSettingsTest 결과](sound-effects/test-soundsettings.png)
 
+![SoundEffectsIntegrationTest 결과](sound-effects/test-soundeffects-integration.png)
+
+![FreezingSoundIntegrationTest 결과](sound-effects/test-freezing-sound.png)
+
 ### 6.2 화면과 MIDI 없이 테스트하기
 
 `NoteMapper`, `RepeatTracker`, `SoundSettings`는 MIDI 장치도 Swing도 쓰지 않는다. 음을 고르는 규칙이 이 객체들 안에 있기 때문에 소리를 실제로 듣지 않고도 "음계를 벗어나지 않는다", "진동자는 결국 조용해진다" 같은 걸 숫자로 확인할 수 있다.
 
-랜덤이 들어가는 부분(작은 흔들림)은 `NoteMapper(Random)` 생성자로 시드를 넣어서 매번 같은 결과가 나오게 했다. `Universe` 쪽 테스트는 기존 `UniverseStoreTest`처럼 `MenuSite`와 `Clock`을 Mockito로 바꿔서 창을 띄우지 않고 실행한다.
+랜덤이 들어가는 부분(작은 흔들림)은 `NoteMapper(Random)` 생성자로 시드를 넣어서 매번 같은 결과가 나오게 했다. `Universe` 쪽 테스트는 공용 준비 코드(`LifeTestSupport`)가 `MenuSite`를 Mockito로 바꿔 창을 띄우지 않고 실행한다. 통합 테스트는 여기에 더해 신시사이저와 스케줄러를 가짜로 바꾸고, 예약된 명령과 예약 시간을 목록에 모아 두었다가 직접 실행해서 확인한다.
 
 ### 6.3 테스트 케이스와 목적
 
@@ -487,7 +525,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | 코드 진행 | `sameCellChangesPitchAcrossTheProgression` | 같은 셀도 코드가 바뀌면 음이 달라진다 |
 | | `progressionWrapsAround` | G 다음은 다시 C |
 | | `padFollowsTheProgression` | 패드도 같은 진행을 따른다 |
-| 소리가 너무 커지지 않는다 | `fullBoardStaysWithinVoiceLimitAndValidMidiRange` | 판 전체가 한꺼번에 생겨도 5음 이하, 세기 1~127, 중복 음 없음 |
+| 소리가 너무 커지지 않는다 | `fullBoardStaysWithinVoiceLimitAndValidMidiRange` | 판 전체가 한꺼번에 생겨도 정확히 5음, 세기 1~127, 중복 음 없음 |
 | | `padGrowsWithLiveCellsUpToACapAndStopsOnAnEmptyBoard` | 패드는 산 셀이 많을수록 커지다가 상한에서 멈추고, 빈 판이면 0 |
 | | `moreDeathsHitHarderUpToACap` | 타악기도 같은 방식으로 상한이 있다 |
 | 없어야 할 때는 소리가 없다 | `noBirthsMakeNoNotes`, `sweepOfAnEmptyBlockIsSilent` | 생긴 셀이 없거나 재생선 구간이 비어 있으면 음 없음 |
@@ -501,9 +539,19 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | 반복 페이드와 마무리 | `RepeatTrackerTest` 3개 | 새로운 변화는 볼륨 1.0 유지, 두 상태를 오가는 진동자는 결국 0, 조용해진 뒤 새 변화가 오면 바로 1.0 |
 | | `scalingLowersLoudnessOnly` | 볼륨을 줄여도 음 높이와 좌우는 그대로 |
 | | `endingChordIsAboveThePadOfTheSameChord` | 마무리 화음은 같은 코드 패드보다 두 옥타브 위 |
-| 설정 | `SoundSettingsTest` 3개 | 처음엔 모두 켜짐 + 첫 번째 악기, 하나를 꺼도 나머지는 그대로, 악기를 바꾸면 리스너가 딱 한 번 불림 |
+| 설정 | `SoundSettingsTest` 3개 | 처음엔 모두 켜짐 + 첫 번째 악기, 스트럼을 꺼도 재생선은 그대로, 악기를 바꾸면 리스너가 딱 한 번 불림 |
 | 게임 쪽 변경 | `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 2단계로 중첩된 판에서 클릭한 (3, 2)만 살아 있고, 행과 열을 바꾼 (2, 3)은 `false` |
 | | `UniverseStoreTest.liveCellsSnapshotIsIndexedByRowThenColumn` | 스냅샷이 `[행][열]` 순서다 |
+| 실제 세대와 연결 (통합) | `realBlinkerUpdatesStatisticsAndSchedulesBirthAndDeathSoundsOnce` | 블링커를 그리는 동안은 예약이 없고, 한 틱 뒤 생성 화음과 타악기 한 번이 예약된다 |
+| | `stableAndEmptyGenerationsNeverScheduleGenerationSounds` | 블록만 있는 판과 빈 판은 틱을 진행해도 조용하다 |
+| | `nonGenerationEventUpdatesSweepWithoutGenerationSounds` (작업 종류 7개) | 편집, Clear, Load, 템플릿, 색 변경 등은 세대 소리 없이 재생선 판만 바꾼다 |
+| 예약 시간 (통합) | `birthStrumNoteLengthsAndPercussionDelayRemainUnchanged` | 스트럼 25ms, 음 길이 220ms, 타악기 60ms로 예약된다 |
+| | `extinctionPlaysOneEndingAndLaterEmptyTicksStaySilent` | 전멸한 틱에 마무리 화음 3음이 한 번만 예약되고 그 뒤 빈 판은 조용하다 |
+| 켜고 끄기와 스레드 (통합) | `disabledSoundStillReceivesEditsForTheNextSweep` | Off 동안 편집한 판을 On 뒤 재생선이 연주한다 |
+| | `initialSnapshotIsReadyBeforeTheFirstScheduledSweep` | 재생선 첫 스텝 전에 `INITIAL` 이벤트로 판을 받아 둔다 |
+| | `sweepUsesAnIndependentSnapshotOnItsWorkerThread` | 재생선이 다른 스레드에서 이벤트의 복사본만 읽는다 |
+| MIDI 없는 환경 (통합) | `missingMidiDeviceDoesNotPreventStatisticsFromAdvancing` | 신시사이저를 열 수 없어도 `install()`이 예외 없이 끝나고 게임은 계속 진행된다 |
+| Freezing과 함께 (통합) | `FreezingSoundIntegrationTest` 3개 | 고정된 블링커는 조용하다가 풀린 첫 세대에 들리고, 재생선은 고정된 산 셀도 연주한다 |
 
 ### 6.4 테스트 코드 예시
 
@@ -563,7 +611,9 @@ void isAliveAtFindsResidentThroughNestedNeighborhoods() {
 
 ### 6.6 테스트가 없는 부분
 
-`SoundEffects`와 `Universe.publishChanges()`에는 아직 JUnit 테스트가 없다. `SoundEffects`는 생성자에서 실제 `Synthesizer`를 받고 시간에 맞춰 스케줄러가 돌기 때문에, 테스트하려면 `MidiChannel`을 가짜로 바꾸고 시간을 제어할 방법이 필요하다. `publishChanges()`는 blinker를 한 세대 진행시켜 births/deaths 좌표를 확인하는 테스트로 보완할 수 있다.
+사운드 작업(#3) 때는 `SoundEffects`와 세대 변화 발행에 JUnit 테스트가 없었다. `SoundEffects`는 실제 `Synthesizer`와 시간에 맞춰 도는 스케줄러를 쓰기 때문에 테스트하려면 둘 다 가짜로 바꿀 방법이 필요했다. 이 부분은 통계 기능을 합칠 때 `SoundEffectsIntegrationTest`가 신시사이저와 스케줄러를 Mockito로 바꿔 채웠고, 이벤트 발행은 `UniverseEventsTest`가 확인한다.
+
+지금 남은 것은 실제 장치에서 나는 소리다. 음색, 음량, 악기를 바꿨을 때 실제로 다르게 들리는지는 자동 테스트로 확인할 수 없어서 6.5처럼 직접 확인해야 한다.
 
 ## 7. GitHub 작업 기록
 
@@ -588,6 +638,13 @@ void isAliveAtFindsResidentThroughNestedNeighborhoods() {
 | `11e48e0` | 11-15 | 재생선이 판을 훑으며 연주 |
 | `c9a9aca` | 11-16 | 반복되는 세대는 페이드, 전멸하면 마무리 화음 |
 | `d786bc6` | 11-16 | 기능별 사운드 설정 창 |
+
+이후 사운드 코드에 영향을 준 변경은 다른 기능 PR에서 있었다.
+
+- [#10 통계 기능](https://github.com/mckimR1972/DP_team_project/pull/10): 사운드 구독을 `BoardChangeListener`로 바꾸고 재생선이 이벤트의 판 복사본을 읽게 했다. `SoundEffectsIntegrationTest` 추가.
+- [#7 Freezing](https://github.com/mckimR1972/DP_team_project/pull/7): 사운드 코드는 바꾸지 않았고 `FreezingSoundIntegrationTest`를 추가했다.
+
+문서는 [#15](https://github.com/mckimR1972/DP_team_project/pull/15)에서 처음 올렸고, [#19](https://github.com/mckimR1972/DP_team_project/pull/19)에서 기능 명세를 더하면서 위 변경에 맞게 고쳤다.
 
 ## 8. 실행 방법
 
