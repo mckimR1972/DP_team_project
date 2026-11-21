@@ -1,6 +1,6 @@
 # 캡처·템플릿 기능 명세
 
-기준: dev `a480113` / 2026-11-18. 이 명세의 확장은 원래 Life Game의 일반 그리기·세대 진행·전체 보드 저장/불러오기를 유지하는 범위다.
+기준: dev `838182c` / 2026-11-22. 이 명세의 확장은 원래 Life Game의 일반 그리기·세대 진행·전체 보드 저장/불러오기를 유지하는 범위다.
 
 ## 1. 해결하려는 문제와 범위
 
@@ -79,4 +79,4 @@
 | 불변 템플릿·저장 | [PatternTemplate.java](../../src/com/holub/life/PatternTemplate.java), [PatternLibrary.java](../../src/com/holub/life/PatternLibrary.java) |
 | 추가 좌표 Undo·셀 편집·보간 | [PlacePatternCommand.java](../../src/com/holub/life/PlacePatternCommand.java), [PatternCells.java](../../src/com/holub/life/PatternCells.java), [PatternPath.java](../../src/com/holub/life/PatternPath.java) |
 
-문서 기준 커밋의 [소스 폴더](https://github.com/mckimR1972/DP_team_project/tree/a480113331b9c6541f03a920c4b37be07b6f1b16/src/com/holub/life)에서 같은 이름을 확인할 수 있다.
+문서 기준 커밋의 [소스 폴더](https://github.com/mckimR1972/DP_team_project/tree/838182c62e13322b46b2ffbaf60cc8fd3c5fd9ab/src/com/holub/life)에서 같은 이름을 확인할 수 있다.

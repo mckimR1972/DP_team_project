@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.StatisticsPanelTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-11-21T14:59:03.455Z" hostname="OSANCOMPUTER" time="0.513">
+  <properties/>
+  <testcase name="unavailableDeltaReplacesPreviouslyDisplayedCounts()" classname="com.holub.life.StatisticsPanelTest" time="0.267"/>
+  <testcase name="replacingColorsRemovesOldRowsAndEmptyBoardShowsAnExplanation()" classname="com.holub.life.StatisticsPanelTest" time="0.014"/>
+  <testcase name="keepsRedBlueGreenOrderAsColorsAppearAndCountsChange()" classname="com.holub.life.StatisticsPanelTest" time="0.016"/>
+  <testcase name="nullSummaryDoesNotChangeTheDisplay()" classname="com.holub.life.StatisticsPanelTest" time="0.014"/>
+  <testcase name="consecutiveSummariesReplaceAllDisplayedValues()" classname="com.holub.life.StatisticsPanelTest" time="0.01"/>
+  <testcase name="measuredZeroDeltaIsDisplayedAsZero()" classname="com.holub.life.StatisticsPanelTest" time="0.01"/>
+  <testcase name="showsPlaceholdersBeforeFirstSummary()" classname="com.holub.life.StatisticsPanelTest" time="0.008"/>
+  <testcase name="rejectsUpdatesOutsideEdt()" classname="com.holub.life.StatisticsPanelTest" time="0.009"/>
+  <testcase name="followsTheSharedToolPanelSizeAndHeadingContract()" classname="com.holub.life.StatisticsPanelTest" time="0.009"/>
+  <testcase name="displaysSummaryWithoutTruncatingLongGeneration()" classname="com.holub.life.StatisticsPanelTest" time="0.009"/>
+  <testcase name="[1] &quot;0&quot;, &quot;0.00%&quot;" classname="com.holub.life.StatisticsPanelTest" time="0.027"/>
+  <testcase name="[2] &quot;100&quot;, &quot;100.00%&quot;" classname="com.holub.life.StatisticsPanelTest" time="0.006"/>
+  <testcase name="[3] &quot;12.3456&quot;, &quot;12.35%&quot;" classname="com.holub.life.StatisticsPanelTest" time="0.008"/>
+  <testcase name="[4] &quot;0.0244140625&quot;, &quot;0.02%&quot;" classname="com.holub.life.StatisticsPanelTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

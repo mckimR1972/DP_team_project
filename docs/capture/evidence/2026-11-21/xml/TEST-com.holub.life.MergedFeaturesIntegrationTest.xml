@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.MergedFeaturesIntegrationTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-21T14:58:35.277Z" hostname="OSANCOMPUTER" time="1.755">
+  <properties/>
+  <testcase name="clearEndsHeldStampingAndLeavesStatisticsEmpty()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.286"/>
+  <testcase name="singleTickAdvancesOnceAndBothObserversReportTheSameBlinkerChanges()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.026"/>
+  <testcase name="extinctionReachesSoundOnceWhileEmptyGenerationsStillReachStatistics()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.018"/>
+  <testcase name="ordinaryDraggingPublishesOncePerChangedMouseEventAndSupportsErasing()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.021"/>
+  <testcase name="stableCellsAgeAndChangeColorWhileStatisticsAdvancesWithoutSoundEvents()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.069"/>
+  <testcase name="unchangedOrOutsideTemplatePlacementsDoNotDuplicateNotificationsOrHistory()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.037"/>
+  <testcase name="switchingTabsOutsideEditingDoesNotStopAutomaticGenerations()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.04"/>
+  <testcase name="templateUndoRestoresStatisticsAndNextGenerationUsesTheRestoredBoard()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.037"/>
+  <testcase name="switchingToStatisticsFinishesAHeldStrokeAndKeepsItsUndoAvailable()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.03"/>
+  <testcase name="templateStrokePublishesOnlyAtCompletionAndBlocksGenerationProgress()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.018"/>
+  <testcase name="captureSelectionDoesNotChangeStatisticsOrAdvanceGenerations()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.019"/>
+  <testcase name="loadEndsPatternEditingAndNotifiesBothObserversOnTheNextActualGeneration()" classname="com.holub.life.MergedFeaturesIntegrationTest" time="0.06"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
