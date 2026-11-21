@@ -57,7 +57,7 @@ def render_diagram(item, meta, jar):
     WIDTH, HEIGHT = A4 if item.get('orientation') == 'portrait' else landscape(A4)
     source = DIAGRAMS / (item['slug'] + '.puml')
     for extension in ('svg', 'png'):
-        target = DIAGRAMS / 'svg' if extension == 'svg' else BUILD
+        target = DIAGRAMS / extension
         target.mkdir(parents=True, exist_ok=True)
         command = ['java', '-Djava.awt.headless=true', '-jar', str(jar),
                    '-charset', 'UTF-8', '-failfast2', '-t' + extension,
@@ -65,7 +65,7 @@ def render_diagram(item, meta, jar):
         result = subprocess.run(command, capture_output=True, text=True, encoding='utf-8', errors='replace')
         if result.returncode:
             raise RuntimeError(result.stderr + result.stdout)
-    png = BUILD / (item['slug'] + '.png')
+    png = DIAGRAMS / 'png' / (item['slug'] + '.png')
     pdf_dir = DIAGRAMS / 'pdf'
     pdf_dir.mkdir(exist_ok=True)
     destination = pdf_dir / (item['slug'] + '.pdf')
@@ -127,10 +127,11 @@ def build_atlas(meta):
     for item in meta['diagrams']:
         files.extend([DIAGRAMS / (item['slug'] + '.puml'),
                       DIAGRAMS / 'svg' / (item['slug'] + '.svg'),
+                      DIAGRAMS / 'png' / (item['slug'] + '.png'),
                       DIAGRAMS / 'pdf' / (item['slug'] + '.pdf')])
     hashes = {}
     for path in files:
-        data = path.read_bytes() if path.suffix == '.pdf' else path.read_text(encoding='utf-8').replace('\r\n', '\n').encode('utf-8')
+        data = path.read_bytes() if path.suffix in ('.pdf', '.png') else path.read_text(encoding='utf-8').replace('\r\n', '\n').encode('utf-8')
         hashes[path.relative_to(ROOT).as_posix()] = hashlib.sha256(data).hexdigest()
     artifacts = {'source_commit': meta['source_commit'], 'date': meta['date'],
                  'text_hash_policy': 'UTF-8 with LF newlines', 'pdf_pages': len(writer.pages), 'sha256': hashes}

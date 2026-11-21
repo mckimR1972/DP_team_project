@@ -7,26 +7,29 @@ participant PlacePatternCommand as Cmd
 participant "PatternCells / Cell" as Cells
 User -> UI : 왼쪽 버튼 누름
 UI -> Editor : beginStroke()
-loop 최초 찍기 / 80ms 반복 / 이동 구간의 보간 기준점
-  UI -> Editor : place(pattern, origin)
-  Editor -> Editor : fits / placement guard
-  alt 허용된 배치
-    Editor -> Cmd : 새 Command.execute()
-    Cmd -> Cells : 죽어 있던 대상만 setAlive(true)
-    Cmd -> Cmd : 실제 추가 좌표를 기록
-    Cmd --> Editor : 변경 여부
-    Editor -> Editor : 최초 성공은 history에 추가\n후속 성공은 stroke.include(command)
-  else 범위 초과 / guard 거부
-    Editor --> UI : 거부 (변경·이력 없음)
-  end
+loop 최초 찍기 / 80ms 반복 / 이동 보간
+ UI -> Editor : place(pattern, origin)
+ Editor -> Editor : fits / placement guard
+ alt 허용
+  Editor -> Cmd : execute()
+  Cmd -> Cells : 죽어 있던 대상만 setAlive(true)
+  Cmd --> Editor : 변경 여부
+  Editor -> Editor : 변경이 있을 때만\n첫 성공은 history 추가 / 후속은 include
+ else 범위 초과 / guard 거부
+  Editor --> UI : 예외 / false (보드·이력 불변)
+ end
 end
 User -> UI : 버튼 해제
 UI -> Editor : endStroke()
-Editor -> UI : onEdit(TEMPLATE) [변경이 있었을 때]
-UI -> UI : PropertyChange / 외부 구독자에 전달
+Editor -> UI : onEdit(TEMPLATE) [변경 시 한 번]
 User -> UI : Undo 버튼 / Ctrl+Z
 UI -> Editor : undo()
-Editor -> Cmd : 마지막 작업.undo()
-Cmd -> Cells : 기록한 추가 좌표만 setAlive(false)
+Editor -> Cmd : 마지막 Command.undo() [이력 있음]
+Cmd -> Cells : 추가 좌표만 setAlive(false)
 Editor -> UI : onEdit(TEMPLATE_UNDO)
+note over UI, Editor
+Undo 전 활성 작업을 먼저 확정한다.
+무변경 배치는 이력·알림이 없고 빈 Undo는 반환한다.
+완료 콜백은 PropertyChange로 Universe에 전달한다.
+end note
 @enduml

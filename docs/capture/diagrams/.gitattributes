@@ -2,3 +2,4 @@
 *.puml text eol=lf
 *.svg text eol=lf
 *.json text eol=lf
+*.png binary

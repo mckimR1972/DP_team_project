@@ -12,13 +12,14 @@
 1. [사용법과 저장 범위](#usage)
 2. [기능 명세와 유스케이스](#spec)
 3. [설계와 GoF 패턴](#design)
-4. [타 기능 통합](#integration)
-5. [검증 방법과 실행 결과](#verification)
-6. [전체 테스트 케이스](#test-cases)
-7. [UML과 도식](#diagrams)
-8. [요구사항 추적표](#traceability)
-9. [개발 이력](#history)
-10. [문서와 그림 관리](#artifacts)
+4. [연산 계약](#contracts)
+5. [타 기능 통합](#integration)
+6. [검증 방법과 실행 결과](#verification)
+7. [전체 테스트 케이스](#test-cases)
+8. [UML과 도식](#diagrams)
+9. [요구사항 추적표](#traceability)
+10. [개발 이력](#history)
+11. [문서와 그림 관리](#artifacts)
 
 <a id="usage"></a>
 
@@ -175,6 +176,21 @@
 
 이름이 `PatternTemplate`이라고 Template Method 패턴인 것은 아니다. `Mode` enum도 GoF State 패턴의 구현으로 세지 않는다. 색상 `CellColorPolicy`의 Strategy, 기존 Universe/Clock의 Singleton 등은 팀·기존 코드의 역할이며 캡처가 새로 도입한 공적으로 계산하지 않는다.
 
+<a id="gof-alternatives"></a>
+
+### 다른 GoF 패턴의 고려사항
+
+다음은 현재 코드에 대한 대안 비교다. 전체 Memento에서 변경 좌표 Command로 바뀐 과정은 구현 이력으로 확인되며, 나머지 후보를 별도로 구현하거나 실험했다는 뜻은 아니다.
+
+| 판단 대상 | 적용 가능성 | 현재 선택과 이유 | 다시 검토할 조건 |
+|---|---|---|---|
+| Command와 Memento | 전체 상태 스냅샷으로 배치 전 상태를 복원할 수 있다 | 추가 셀 좌표를 기록하는 Command 채택. 기존 셀의 나이·색까지 복원해 바꾸는 문제를 피한다. 기존 Memento는 캡처 조회에 재사용 | 색·나이·동결을 포함한 범용 게임 상태 Undo가 필요할 때 |
+| State | DRAW/CAPTURE/PLACE마다 입력 처리를 별도 객체로 나눌 수 있다 | 현재 세 모드는 enum과 분기로 충분하다. 상태도는 행동을 설명하며 GoF State를 새로 구현한 것은 아니다 | 도구 모드와 상태별 행동이 늘어 전이 규칙을 분리할 때 |
+| Strategy | 배치 제약이나 편집 방식을 교체하는 인터페이스를 둘 수 있다 | 프리징 제약은 Predicate 주입으로 분리했다. 여러 전략 클래스 계층은 두지 않았다. 색상 Strategy는 팀의 다른 기능 | 회전·덮어쓰기·영역별 배치 정책이 여러 개 생길 때 |
+| Adapter | 기존 Cell의 좌표·토글 API를 캡처의 멱등 편집에 맞출 수 있다 | PatternCells가 어댑터 역할을 담당한다. 별도 Target 인터페이스를 가진 전형적 GoF 구조로 세지 않는다 | 팀 공용 셀 편집 API를 정비할 때 |
+| Template Method | 저장·배치 단계의 골격을 상속으로 고정할 수 있다 | 서로 다른 하위 알고리즘이 없어서 적용하지 않는다. PatternTemplate은 불변 데이터이며 Template Method가 아니다 | 실제 변형 알고리즘 간 공통 처리 순서가 생길 때 |
+| Observer와 직접 호출 | 완료 뒤 통계·사운드를 직접 갱신할 수 있다 | Consumer → PropertyChange → BoardChangeEvent 구독으로 연결. 캡처가 통계·사운드 구현에 직접 의존하지 않는다 | 구독 순서·오류 처리 정책을 공통 이벤트 계층에서 확장할 때 |
+
 ### 4. 설계 결정과 대안
 
 #### ADR-01 생존 모양만 캡처한다 (R-01, R-03)
@@ -240,6 +256,74 @@
 ### 5. 설명·검증의 한계
 
 위의 판단은 현재 범위에 맞춘 설계 선택이며 모든 대안보다 항상 우수하다는 결론이 아니다. 대용량 성능·OS별 실제 마우스 입력·프로세스 강제 종료 중 저장은 별도 실험이 필요하다. 현재 모델·Swing·통합 회귀 검사와 실제 OS 수동 조작의 검증 범위를 구별한다.
+
+<a id="contracts"></a>
+
+## Operation Contract
+
+연산 계약은 호출 전후의 관찰 가능한 상태를 규정한다. 보드 생존 집합을 B, 새로 추가한 좌표를 A, Undo 이력을 H, 템플릿 목록을 L로 쓴다. 배열은 `[row][column]`, Point는 `(column,row)`다. 모델 호출 자체는 Clock을 제어하지 않으며 편집 진입·종료는 PatternTools와 Universe가 조립한다.
+
+### OC-01 생존 모양 캡처
+
+| 항목 | 계약 |
+|---|---|
+| 연산 / 관련 UC | `BoardEditor.capture(name, area)` / E-01 |
+| 입력·사전조건 | 보드가 존재한다. area는 보드 안의 양수 크기 사각형이고 생존 셀을 포함한다. 이름은 앞뒤 공백 제거 후 1~80자이며 제어문자가 없다 |
+| 성공 사후조건 | 독립적인 PatternTemplate 객체가 생성된다. 선택 크기·여백·상대 좌표가 유지된다. B, H, L과 파일은 그대로이며 완료 이벤트가 없다 |
+| 실패·예외 | 잘못된 영역·이름·빈 캡처는 IllegalArgumentException. 저장·보드 변경 없음. 이름 대화상자 취소는 이 연산을 호출하지 않음 |
+| 근거 | T-01,T-02,T-04,T-05; D-03 |
+
+### OC-02 템플릿 저장
+
+| 항목 | 계약 |
+|---|---|
+| 연산 / 관련 UC | `PatternLibrary.save(pattern)` / E-01 |
+| 입력·사전조건 | 유효한 비어 있지 않은 PatternTemplate. 목록에 대소문자 무시 기준 같은 이름이 없음. 정상 저장에는 폴더 쓰기 권한이 필요 |
+| 성공 사후조건 | UTF-8 `.lifepattern` 파일을 임시 파일에서 목적 경로로 이동한 뒤 L에 항목 하나가 추가된다. B와 H는 불변. UI는 성공 후 새 항목을 선택하고 PLACE로 진입 |
+| 실패·예외 | 빈 모양·중복 이름은 IllegalArgumentException, 파일 오류는 IOException. UI는 오류를 안내하며 새 항목을 추가하지 않음. 원자 이동 미지원 시 일반 이동으로 대체하므로 전원 장애 안전성 전체를 보장하지 않음 |
+| 근거 | T-06,T-07,T-25; D-03 |
+
+### OC-03 한 위치에 배치
+
+| 항목 | 계약 |
+|---|---|
+| 연산 / 관련 UC | `BoardEditor.place(pattern, origin)` / E-02,E-03 |
+| 입력·사전조건 | 유효한 템플릿과 기준점. 정상 배치에는 템플릿 사각형 전체가 보드 안이고 guard가 false여야 함 |
+| 성공 사후조건 | A는 템플릿 생존 칸 중 기존에 죽어 있던 대상이다. B는 B∪A가 되고 A의 셀은 나이 0. 기존 생존 셀·투명 빈칸 밑 셀·색·나이는 보존. A가 있으면 true 반환 |
+| 이력·이벤트 | 작업 묶음 밖에서는 새 Command 한 건과 TEMPLATE 한 번. 묶음 안에서는 첫 성공을 한 건으로 저장하고 후속 A를 합친다. 알림은 작업 종료까지 미룬다. H는 최대 100건 |
+| 실패·무변경 | 범위 밖은 IllegalArgumentException. guard true 또는 A가 비었으면 false. B,H와 완료 알림에 변화 없음. UI는 fits/canPlace로 먼저 검사하고 안내 |
+| 근거 | T-03,T-04,T-10~T-12,T-15,T-23,IT-01,IT-02; D-04 |
+
+### OC-04 연속 작업 시작과 확정
+
+| 항목 | 계약 |
+|---|---|
+| 연산 / 관련 UC | `BoardEditor.beginStroke()` / `BoardEditor.endStroke()` / E-03 |
+| 사전조건 | 편집이 같은 EDT 흐름에서 직렬 실행된다. UI가 PLACE에서 왼쪽 버튼 누름을 받으면 작업 시작 |
+| 시작 사후조건 | 이전 작업이 있다면 먼저 끝내고 grouping=true. 시작 자체는 B나 새 H 항목을 만들지 않음 |
+| 종료 사후조건 | grouping=false, 현재 stroke 참조 초기화. 실제 추가가 있었으면 TEMPLATE 한 번과 true, 아니면 이벤트 없이 false. B와 이미 기록된 H는 유지 |
+| 중단 | 해제·포커스 상실·컴포넌트 제거·편집 모드 전환에서도 UI가 같은 종료 경로를 호출. 두 번째 종료는 중복 알림 없음 |
+| 근거 | T-12,T-14,T-18~T-23,IT-03,IT-04; D-04,D-05 |
+
+### OC-05 마지막 배치 Undo
+
+| 항목 | 계약 |
+|---|---|
+| 연산 / 관련 UC | `BoardEditor.undo()` / E-04 |
+| 사전조건 | H가 외부 편집 이전의 유효한 이력이다. 일반 편집·세대 진행·Clear/Load·프리징 영역 선택 시작은 기존 H를 무효화한다 |
+| 성공 사후조건 | 활성 작업을 먼저 확정하고 H의 마지막 Command를 제거한다. 그 명령의 A만 죽여 B를 B−A로 만든다. 이전 셀의 나이·색은 유지. TEMPLATE_UNDO 한 번 |
+| 빈 이력·진행 중 작업 | 확정 후 H가 비면 무변경. 진행 중 변경 작업을 Undo하면 TEMPLATE 후 TEMPLATE_UNDO가 순서대로 발생할 수 있음. 일반 UI의 stopStamping이 먼저 확정하므로 중복 알림 없음 |
+| 근거 | T-03,T-10~T-12,T-19,T-24,IT-02,IT-05; D-04 |
+
+### OC-06 편집 종료
+
+| 항목 | 계약 |
+|---|---|
+| 연산 / 관련 UC | `PatternTools.cancel()` / E-05 |
+| 입력·사전조건 | Esc·오른쪽 클릭·편집 끝내기 또는 숨겨진 도구의 탭 전환. DRAW에서도 호출 가능 |
+| 편집 중 사후조건 | 현재 작업 확정, Timer와 전역 해제 리스너 제거, 선택·기준점·미리보기 초기화, DRAW 전환. 적용된 B와 H는 유지하고 시계는 정지 상태. 자동 재개하지 않음 |
+| DRAW에서 호출 | 즉시 반환. 시계·보드·이력에 부작용 없음. 일반 모드의 Esc가 실행 중 시뮬레이션을 멈추지 않음 |
+| 근거 | T-20~T-22,T-25,IT-03; D-05 |
 
 <a id="integration"></a>
 
@@ -470,35 +554,63 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 
 ## UML과 도식
 
-각 그림의 코드·요구사항 연결은 아래 추적표에서 확인한다. [7쪽 도식 합본 PDF](diagrams/capture-diagrams.pdf)는 같은 개별 PDF를 묶은 자료다.
+공유용과 상세 문서는 아래의 같은 PNG를 사용한다. SVG는 확대·편집용, PDF는 인쇄용이다. 연산 계약은 [OC-01~OC-06](#contracts)에 표로 명시한다.
 
-| 도식 | 편집 원본 | 확대용 SVG | 개별 PDF |
-|---|---|---|---|
-| D-01 캡처·템플릿 유스케이스 | [PlantUML](diagrams/01-use-cases.puml) | [SVG](diagrams/svg/01-use-cases.svg) | [PDF](diagrams/pdf/01-use-cases.pdf) |
-| D-02 캡처 객체의 책임과 협력 | [PlantUML](diagrams/02-classes.puml) | [SVG](diagrams/svg/02-classes.svg) | [PDF](diagrams/pdf/02-classes.pdf) |
-| D-03 영역 캡처와 파일 저장의 흐름 | [PlantUML](diagrams/03-capture-save.puml) | [SVG](diagrams/svg/03-capture-save.svg) | [PDF](diagrams/pdf/03-capture-save.pdf) |
-| D-04 연속 배치와 작업 단위 Undo | [PlantUML](diagrams/04-stroke-undo.puml) | [SVG](diagrams/svg/04-stroke-undo.svg) | [PDF](diagrams/pdf/04-stroke-undo.pdf) |
-| D-05 편집 모드와 누른 작업의 상태 | [PlantUML](diagrams/05-edit-states.puml) | [SVG](diagrams/svg/05-edit-states.svg) | [PDF](diagrams/pdf/05-edit-states.pdf) |
-| D-06 타 기능과의 설계 접점 | [PlantUML](diagrams/06-integration.puml) | [SVG](diagrams/svg/06-integration.svg) | [PDF](diagrams/pdf/06-integration.pdf) |
+### D-01 기존 기능과 추가 기능의 통합 유스케이스
+
+![D-01 기존 기능과 추가 기능의 통합 유스케이스](diagrams/png/01-use-cases.png)
+
+기존 시스템과 추가 시스템을 구역으로 구별한다. 캡처 E-01~E-05와 다른 팀 기능을 같은 경계 안에 배치한다. 현재 통합 코드의 팀 공유 초안이다. 전체 제출 시 다른 담당자가 기능명·범위를 함께 확인한다. E-03은 E-02의 선택적 확장이다.
+
+[원본](diagrams/01-use-cases.puml) · [확대 SVG](diagrams/svg/01-use-cases.svg) · [개별 PDF](diagrams/pdf/01-use-cases.pdf)
+
+### D-02 캡처 객체의 책임과 협력
+
+![D-02 캡처 객체의 책임과 협력](diagrams/png/02-classes.png)
+
+입력·저장·편집 이력을 분리하고 기존 Cell Composite를 공개 계약으로 재사용한다. 현재 배치 Undo는 변경 좌표 Command다. 캡처 조회에만 기존 Memento를 사용한다. 일부 메서드는 가독성을 위해 생략했다.
+
+[원본](diagrams/02-classes.puml) · [확대 SVG](diagrams/svg/02-classes.svg) · [개별 PDF](diagrams/pdf/02-classes.pdf)
+
+### D-03 영역 캡처와 파일 저장의 흐름
+
+![D-03 영역 캡처와 파일 저장의 흐름](diagrams/png/03-capture-save.png)
+
+캡처는 원본을 읽고 상대 생존 모양을 만든다. 파일 저장이 성공해야 목록과 배치 모드를 갱신한다. 중복 이름은 실제 파일 쓰기 전에 거부한다. 원자 이동 미지원 시 일반 이동으로 대체하며 전원 장애 안전성 전체를 보장하지는 않는다.
+
+[원본](diagrams/03-capture-save.puml) · [확대 SVG](diagrams/svg/03-capture-save.svg) · [개별 PDF](diagrams/pdf/03-capture-save.pdf)
+
+### D-04 연속 배치와 작업 단위 Undo
+
+![D-04 연속 배치와 작업 단위 Undo](diagrams/png/04-stroke-undo.png)
+
+많은 찍기를 하나의 작업에 합치고 변경 완료를 한 번 알린다. Undo는 그 작업이 추가한 좌표만 되돌린다. UI가 범위·guard를 먼저 검사하고 모델에서도 재검사한다. 무변경 찍기·빈 작업·빈 Undo는 이력과 알림을 만들지 않는다.
+
+[원본](diagrams/04-stroke-undo.puml) · [확대 SVG](diagrams/svg/04-stroke-undo.svg) · [개별 PDF](diagrams/pdf/04-stroke-undo.pdf)
+
+### D-05 편집 모드와 누른 작업의 상태
+
+![D-05 편집 모드와 누른 작업의 상태](diagrams/png/05-edit-states.png)
+
+편집 종료는 셀 복원이 아니다. 반복 입력을 끝내고 DRAW로 돌아가며, 복원은 Undo가 담당한다. 실제 Mode enum은 DRAW/CAPTURE/PLACE의 3개다. 내부 두 상태는 stamping 값의 설명이며 State 패턴 클래스가 아니다.
+
+[원본](diagrams/05-edit-states.puml) · [확대 SVG](diagrams/svg/05-edit-states.svg) · [개별 PDF](diagrams/pdf/05-edit-states.pdf)
+
+### D-06 타 기능과의 설계 접점
+
+![D-06 타 기능과의 설계 접점](diagrams/png/06-integration.png)
+
+캡처는 모델 guard와 완료 알림으로 연결한다. 프리징·통계 구현을 직접 소유하거나 세대 이벤트를 만들어내지 않는다. 실제 통합본의 조립을 실선으로 표시한다. guard true는 차단이며 완료 이벤트는 세대 진행과 구분된다.
+
+[원본](diagrams/06-integration.puml) · [확대 SVG](diagrams/svg/06-integration.svg) · [개별 PDF](diagrams/pdf/06-integration.pdf)
+
+[도식 합본 PDF](diagrams/capture-diagrams.pdf)는 표지와 같은 개별 PDF 6쪽을 묶은 7쪽 자료다.
 
 <a id="traceability"></a>
 
 ## 요구사항 추적표
 
-### 1. 도식 목차
-
-| ID / 합본 쪽 | 도식 | 편집 원본 | 개별 PDF | 주요 연결 |
-|---|---|---|---|---|
-| D-01 / 2 | 유스케이스 | [PlantUML](diagrams/01-use-cases.puml) | [PDF](diagrams/pdf/01-use-cases.pdf) | E-01~E-05, R-01~R-09 |
-| D-02 / 3 | 클래스 책임·협력 | [PlantUML](diagrams/02-classes.puml) | [PDF](diagrams/pdf/02-classes.pdf) | ADR-01~ADR-08 |
-| D-03 / 4 | 캡처·저장 시퀀스 | [PlantUML](diagrams/03-capture-save.puml) | [PDF](diagrams/pdf/03-capture-save.pdf) | E-01, R-01,R-02, T-01,T-02,T-05~T-07 |
-| D-04 / 5 | 연속 배치·Undo 시퀀스 | [PlantUML](diagrams/04-stroke-undo.puml) | [PDF](diagrams/pdf/04-stroke-undo.pdf) | E-02~E-04, ADR-03~ADR-05,ADR-07 |
-| D-05 / 6 | 편집·입력 작업 상태 | [PlantUML](diagrams/05-edit-states.puml) | [PDF](diagrams/pdf/05-edit-states.pdf) | E-05, ADR-06, T-18~T-22 |
-| D-06 / 7 | 타 기능 설계 접점 | [PlantUML](diagrams/06-integration.puml) | [PDF](diagrams/pdf/06-integration.pdf) | IF-01~IF-06, IT-01~IT-06 |
-
-SVG는 [diagrams/svg](diagrams/svg)에 같은 이름으로 저장한다. 원본·테마·개별 PDF·SVG의 내용 해시는 [artifacts.json](diagrams/artifacts.json)에 있다. 생성 방법은 [도식 안내](#artifacts)에 있다.
-
-### 2. 요구사항에서 근거 찾기
+### 요구사항에서 근거 찾기
 
 | 요구 | 설계 결정 | 구현의 주요 진입점 | 대표 검사 | 도식 |
 |---|---|---|---|---|
@@ -563,6 +675,6 @@ python docs/capture/tools/verify_documents.py
 
 Smetana 내장 레이아웃을 사용하므로 별도 Graphviz 설치가 필요 없다. 내용은 로컬에서 렌더링하며 원본을 외부 서버에 보내지 않는다. [PlantUML의 Smetana 설명](https://plantuml.com/smetana02)
 
-각 PDF는 A4이며 도식 비율에 맞춰 가로·세로를 선택한다. 한글 폰트가 포함된 제목·설명과 고해상도 도식으로 구성한다. 원본 수정 → 해당 PDF/SVG 재생성 → 페이지 검토 → manifest 연결 확인 → 커밋 순서를 따른다. 합본은 개별 PDF를 묶으므로 개별 파일과 내용이 다르지 않다.
+각 PDF는 A4이며 도식 비율에 맞춰 가로·세로를 선택한다. 한글 폰트가 포함된 제목·설명과 고해상도 도식으로 구성한다. 원본 수정 → 해당 PNG/PDF/SVG 재생성 → 페이지 검토 → manifest 연결 확인 → 커밋 순서를 따른다. 합본은 개별 PDF를 묶으므로 개별 파일과 내용이 다르지 않다.
 
 본문 변경은 이 상세 문서를 기준으로 반영한다. 공유 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다. 실제 확인한 범위를 넘어 회의·대안 구현·성능 실험을 수행한 것으로 쓰지 않는다. 그림을 바꾸면 원본, SVG, PDF와 합본을 함께 갱신한다.

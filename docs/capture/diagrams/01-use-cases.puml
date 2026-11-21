@@ -1,21 +1,65 @@
 @startuml
 !include theme.puml
-left to right direction
-actor "게임 사용자" as Player
+top to bottom direction
+skinparam nodesep 25
+skinparam ranksep 40
+actor "게임 사용자" as User
 rectangle "Life Game" {
-  usecase "일반 셀 그리기\n(기존 기능)" as Draw #F3F4F6
-  usecase "세대 진행 / 전체 보드 저장\n(기존 기능)" as Run #F3F4F6
-  usecase "E-01\n영역 캡처를 템플릿으로 저장" as Save
-  usecase "E-02\n선택한 템플릿 배치" as Place
-  usecase "E-03\n누른 채 연속 배치" as Drag
-  usecase "E-04\n마지막 배치 작업 되돌리기" as Undo
-  usecase "E-05\n편집 종료" as End
-  Drag ..> Place : <<extend>>\n버튼 유지·이동 시
+ rectangle "기존 시스템 기능" as Legacy #F3F4F6 {
+  usecase "B-01 셀 클릭 편집" as Draw
+  usecase "B-02 연속 진행·속도 선택·정지" as Run
+  usecase "B-03 한 세대 진행" as Tick
+  usecase "B-04 전체 보드 비우기" as Clear
+  usecase "B-05 전체 보드 저장" as Store
+  usecase "B-06 전체 보드 불러오기" as Load
+  usecase "B-07 게임 종료" as Exit
+ }
+ rectangle "추가 시스템 기능" as Added #EFF7FA {
+  rectangle "캡처 담당" as CaptureGroup {
+   usecase "E-01 영역 캡처·템플릿 저장" as Capture
+   usecase "E-02 선택한 템플릿 배치" as Place
+   usecase "E-03 누른 채 연속 배치" as Stroke
+   usecase "E-04 마지막 배치 Undo" as Undo
+   usecase "E-05 캡처 편집 종료" as End
+   Stroke ..> Place : <<extend>>\n버튼 유지·이동
+  }
+  rectangle "다른 담당 기능" as OtherGroup #F2F6ED {
+   usecase "일반 셀 드래그 그리기·지우기" as Brush
+   usecase "세대별 색상·색 모드 선택" as Color
+   usecase "사운드 재생·설정" as Sound
+   usecase "생존·탄생·사망·색상 통계 조회" as Stats
+   usecase "프리징 영역·기간 설정·해제" as Freeze
+  }
+ }
 }
-Player -- Draw
-Player -- Run
-Player -- Save
-Player -- Place
-Player -- Undo
-Player -- End
+Draw -[hidden]down-> Run
+Run -[hidden]down-> Tick
+Tick -[hidden]down-> Clear
+Clear -[hidden]down-> Store
+Store -[hidden]down-> Load
+Load -[hidden]down-> Exit
+Capture -[hidden]down-> Place
+Place -[hidden]down-> Stroke
+Stroke -[hidden]down-> Undo
+Undo -[hidden]down-> End
+Brush -[hidden]down-> Color
+Color -[hidden]down-> Sound
+Sound -[hidden]down-> Stats
+Stats -[hidden]down-> Freeze
+User -- Draw
+User -- Run
+User -- Tick
+User -- Clear
+User -- Store
+User -- Load
+User -- Exit
+User -- Capture
+User -- Place
+User -- Undo
+User -- End
+User -- Brush
+User -- Color
+User -- Sound
+User -- Stats
+User -- Freeze
 @enduml

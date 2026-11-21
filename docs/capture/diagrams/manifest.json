@@ -1,14 +1,14 @@
 {
-  "version": "1.1",
+  "version": "2.0",
   "date": "2026-11-22",
   "source_commit": "838182c62e13322b46b2ffbaf60cc8fd3c5fd9ab",
   "diagrams": [
     {
       "id": "D-01",
       "slug": "01-use-cases",
-      "title": "캡처·템플릿 유스케이스",
-      "summary": "기존 그리기·세대 진행을 유지하면서 영역 저장, 배치, 연속 배치, Undo, 편집 종료를 확장한다.",
-      "note": "E-03은 버튼을 유지할 때 E-02를 확장한다. Undo와 편집 종료는 별도 사용자 목표다.",
+      "title": "기존 기능과 추가 기능의 통합 유스케이스",
+      "summary": "기존 시스템과 추가 시스템을 구역으로 구별한다. 캡처 E-01~E-05와 다른 팀 기능을 같은 경계 안에 배치한다.",
+      "note": "현재 통합 코드의 팀 공유 초안이다. 전체 제출 시 다른 담당자가 기능명·범위를 함께 확인한다. E-03은 E-02의 선택적 확장이다.",
       "requirements": "R-01~R-09 / E-01~E-05",
       "tests": "T-01~T-25",
       "code": "PatternTools, BoardEditor, PatternLibrary, Universe",
@@ -35,7 +35,7 @@
       "requirements": "R-01, R-02 / E-01 / ADR-01, ADR-08",
       "tests": "T-01, T-02, T-05~T-07, T-25",
       "code": "PatternTools.saveSelection, BoardEditor.capture, PatternLibrary.save",
-      "document": "README.md#spec"
+      "document": "README.md#contracts"
     },
     {
       "id": "D-04",
@@ -46,7 +46,7 @@
       "requirements": "R-03~R-06, R-09 / ADR-03~ADR-05, ADR-07",
       "tests": "T-03, T-10~T-19, T-23, T-24",
       "code": "PatternTools.stampAt, BoardEditor, PlacePatternCommand",
-      "document": "README.md#design",
+      "document": "README.md#contracts",
       "orientation": "portrait"
     },
     {
