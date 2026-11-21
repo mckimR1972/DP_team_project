@@ -323,7 +323,7 @@ Strategy가 아니라 State를 고른 이유: 고정은 사용자가 골라 끼�
   patternTools.setPlacementGuard( area -> freezingTools.manager().overlapsFrozen(area) );
   ```
 
-  검사 단위는 템플릿의 **사각형 전체**다. 빈 여백만 영역과 겹쳐도 그 배치를 통째로 거부한다([capture/integration.md](capture/integration.md) IF-04와 같은 의미). 가드는 `BoardEditor.place()` 안에서 검사하므로, 클릭뿐 아니라 누른 채 끌어서 반복 배치할 때의 타이머와 보간도 우회하지 못한다. 드래그가 영역을 가로지르면 겹치지 않는 자리에만 찍힌다. 미리보기도 같은 가드로 빨간색이 된다.
+  검사 단위는 템플릿의 **사각형 전체**다. 빈 여백만 영역과 겹쳐도 그 배치를 통째로 거부한다([캡처 통합 규칙](capture/README.md#integration) IF-04와 같은 의미). 가드는 `BoardEditor.place()` 안에서 검사하므로, 클릭뿐 아니라 누른 채 끌어서 반복 배치할 때의 타이머와 보간도 우회하지 못한다. 드래그가 영역을 가로지르면 겹치지 않는 자리에만 찍힌다. 미리보기도 같은 가드로 빨간색이 된다.
 - **되돌리기 이력.** 템플릿을 놓은 뒤 그 자리를 고정하고 `배치 되돌리기`를 누르면, 되돌리기가 고정된 셀을 지울 수 있다. 그래서 **영역 선택을 시작할 때** 진행 중인 패턴 편집을 끝내고 되돌리기 이력을 비운다(`patternTools.boardChanged()`).
 - **캡처는 그대로 된다.** 영역 캡처는 읽기만 하므로 고정된 영역도 캡처할 수 있다.
 - **서로를 모른다.** `PatternTools`는 `Predicate`만 알고 `FreezingTools`는 `Runnable`만 안다. 두 도구를 아는 것은 `Universe`뿐이다.
@@ -528,7 +528,7 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 
 ### 9.3 캡처 문서가 남겨 둔 통합 검사
 
-[capture/test-plan.md](capture/test-plan.md)에는 이 PR이 병합된 뒤 실제 `FreezingManager`로 확인하기로 한 항목이 있다. `FreezingIntegrationTest`에 넣었다.
+[capture/test-plan.md](capture/README.md#verification)에는 이 PR이 병합된 뒤 실제 `FreezingManager`로 확인하기로 한 항목이 있다. `FreezingIntegrationTest`에 넣었다.
 
 | ID | 내용 | 테스트 |
 | --- | --- | --- |

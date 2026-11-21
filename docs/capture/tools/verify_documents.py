@@ -28,7 +28,7 @@ def main():
     require(diff.returncode == 0, 'Code/test baseline differs; refresh evidence and documentation')
 
     documents = list(ROOT.rglob('*.md')) + [REPO / 'docs/README.md', REPO / 'README.md',
-                                          REPO / 'docs/capture-templates.md', REPO / 'docs/capture-drag-design.md']
+                                          ROOT / 'README.md']
     checked_links = 0
     for path in documents:
         text = path.read_text(encoding='utf-8')

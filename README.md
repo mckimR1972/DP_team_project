@@ -86,8 +86,7 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 | [docs/fix-life-game-changes.md](docs/fix-life-game-changes.md) | 기본 오류 3가지 수정, 회귀 테스트 32개와 수정 전후 결과 |
 | [docs/feature-color-gen-changes.md](docs/feature-color-gen-changes.md) | 세대에 따른 셀 색 순환 기능의 변경 기록 |
 | [docs/color-gen-redraw-lag.md](docs/color-gen-redraw-lag.md) | 색 순환 중 화면 갱신 지연: 문제 상황, 원인, 해결 방안 |
-| [docs/capture-templates.md](docs/capture-templates.md) | 영역 캡처와 템플릿 배치 기능: 사용법, 구조와 설계 패턴, 검증, 다른 기능과의 연계 |
-| [docs/capture/README.md](docs/capture/README.md) | 캡처 기능 명세·설계 결정·타 기능 접점·테스트 케이스·개별/합본 도식 PDF와 추적표 |
+| [docs/capture/README.md](docs/capture/README.md) | 캡처 기능·유스케이스·설계·통합·테스트·도식을 모은 상세 문서 |
 | [docs/fix-single-step-halt.md](docs/fix-single-step-halt.md) | 실행 중 Tick(Single Step)이 멈추지 않는 문제: 원인, 수정, 다른 방법, 수정 전후 테스트 |
 | [docs/FREEZING.md](docs/FREEZING.md) | Freezing(영역 고정) 기능: 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 검증 |
 

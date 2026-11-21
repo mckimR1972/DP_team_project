@@ -111,7 +111,7 @@ def build_atlas(meta):
         y -= 49
     c.setFillColor(HexColor('#17364A'))
     wrapped(c, 'D-06은 프리징·통계까지 병합된 기준 코드의 실제 조립과 완료 알림을 나타낸다.', 32, 82, WIDTH - 64, 10, 15)
-    wrapped(c, '각 그림의 원본·개별 PDF·코드·테스트 연결은 diagrams/manifest.json과 traceability.md에서 관리한다.', 32, 60, WIDTH - 64, 9, 13)
+    wrapped(c, '각 그림의 원본·개별 PDF·코드·테스트 연결은 diagrams/manifest.json과 README.md의 추적표에서 관리한다.', 32, 60, WIDTH - 64, 9, 13)
     c.showPage()
     c.save()
     writer = PdfWriter()
