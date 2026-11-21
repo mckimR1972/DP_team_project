@@ -131,7 +131,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 
 [확대 SVG](capture/diagrams/svg/01-use-cases.svg) · [편집 원본](capture/diagrams/01-use-cases.puml) · [PDF](capture/diagrams/pdf/01-use-cases.pdf)
 
-팀 최종 제출에는 이 통합 그림 한 벌을 공통으로 사용하도록 기능명·범위를 함께 확인한다. 현재 그림은 통합 코드에 근거한 공유 초안이며 팀의 최종 합의 완료를 뜻하지 않는다. 다른 기능의 세부 명세는 [색상](feature-color-gen-changes.md), [일반 드래그](fix-life-game-changes.md), [사운드](sound-effects.md), [통계](statistics.md), [프리징](FREEZING.md)에서 확인한다.
+팀 최종 제출에는 이 통합 그림 한 벌을 공통으로 사용하도록 기능명·범위를 함께 확인한다. 현재 그림은 통합 코드에 근거한 공유 초안이며 팀의 최종 합의 완료를 뜻하지 않는다. 다른 기능의 세부 명세는 [색상](feature-color-gen-changes.md), [일반 드래그 구현](../src/com/holub/life/Universe.java), [사운드](sound-effects.md), [통계](statistics.md), [프리징](FREEZING.md)에서 확인한다.
 
 
 

@@ -10,6 +10,7 @@
 | 화면 갱신 지연 | [color-gen-redraw-lag.md](color-gen-redraw-lag.md) | 원인 분석과 대안 비교 |
 | 기본 오류 | [fix-life-game-changes.md](fix-life-game-changes.md) | 기존 코드 오류 수정과 회귀 검사 |
 | 사운드 이펙트 | [sound-effects.md](sound-effects.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
+| 통계 | [statistics.md](statistics.md) | 생존·탄생·사망·색상 통계와 이벤트 연계 |
 | 단일 진행 오류 | [fix-single-step-halt.md](fix-single-step-halt.md) | 실행 중 Tick이 멈추지 않던 원본 오류의 원인, 수정, 테스트 |
 | Freezing (영역 고정) | [FREEZING.md](FREEZING.md) | 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 테스트 |
 

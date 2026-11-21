@@ -25,7 +25,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:57:59.603Z",
       "xml_file": "xml/TEST-com.holub.life.BoardChangeEventTest.xml",
-      "xml_sha256": "cbea90801fec11dcc270ce6d628ab749df5484857f279ab1ed3dc7bf65654d6d",
+      "xml_sha256": "7617b931dda7b0498fdd46edd195171df31bb2aef86952978d9116bd4a086c44",
       "cases": [
         "[1] INITIAL",
         "[2] EDIT",
@@ -60,7 +60,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:01.366Z",
       "xml_file": "xml/TEST-com.holub.life.CellAgeColorTest.xml",
-      "xml_sha256": "17c7b8483d0c8e9dbd0a09b27f54669d4ad862b1acb9a5f01c1d181b3ea118cb",
+      "xml_sha256": "c6821cff29a0bf901323caddeba2ddf4fe5753b6bc4aab1f84b1e3d32c61a5b1",
       "cases": [
         "captureCopiesOnlyLivingCellsRegardlessOfColorAndAge()",
         "survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver()",
@@ -81,7 +81,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:03.818Z",
       "xml_file": "xml/TEST-com.holub.life.CellColorPolicyTest.xml",
-      "xml_sha256": "894f6563bbf371d79de38c240fc71028bd504e36a02fc1c9555feae514fb94af",
+      "xml_sha256": "59f286e6cf959b7ea098083849d0b7e62ba6418f048efb038d4c7c336b7099f1",
       "cases": [
         "\"fixed color is null\"",
         "\"period is 0\"",
@@ -115,7 +115,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:05.217Z",
       "xml_file": "xml/TEST-com.holub.life.CellColorQueryTest.xml",
-      "xml_sha256": "b6d59c630e6d5c70d3703d00312f57bd96e625162cd1d8fb1b9864d7c115a8e0",
+      "xml_sha256": "9a09b65d1b06c5515fc5064d8f16af97a775d8880fb336cc8570fbe8ad9617f3",
       "cases": [
         "nestedQueryUsesRowAndColumnAcrossNeighborhoodBoundaries()",
         "deadResidentAndDummyHaveNoLivingColor()",
@@ -130,7 +130,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:06.420Z",
       "xml_file": "xml/TEST-com.holub.life.ClockIntegrationTest.xml",
-      "xml_sha256": "441871f63affbb2ea8914039d157c39ffd596bfd3a6b1af9cb5e2955a1e78e8a",
+      "xml_sha256": "0a15ec58d78dddf7a18b274ac57064903c2392becf7a58d287b4df519662b9c8",
       "cases": [
         "tickOutsideEdtIsDeliveredOnceOnEdt()",
         "automaticTimerPublishesOrderedGenerationsOnEdtAndStops()",
@@ -149,7 +149,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:09.588Z",
       "xml_file": "xml/TEST-com.holub.life.ColorStatisticsIntegrationTest.xml",
-      "xml_sha256": "9cc2389b70f6b47a62ff68c0f2e1a73912e716c2354e0f96bc25c9fbc5ea2aaf",
+      "xml_sha256": "3892ac679714582776a69a586206e19f7ead20b1b8c6c233dba89e0c2eb9cf8c",
       "cases": [
         "subscribingToAnExistingBlueBoardReceivesColorsInInitialEvent()",
         "stablePopulationStillUpdatesColorsAtEachTenGenerationBoundary()",
@@ -166,7 +166,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:12.267Z",
       "xml_file": "xml/TEST-com.holub.life.ColorStatisticsTest.xml",
-      "xml_sha256": "b402ade64ca7907c3534d8934ea5e12a2fdbd456cced5263046f992b2e12e855",
+      "xml_sha256": "1fa16bb07811fce0f3c326cd22bad1a201ffbf497f7e37533ea8549ea1f8af69",
       "cases": [
         "rejectsMissingColorListOrMissingColorEntry()",
         "eventCopiesTheSourceColorListAndExposesOnlyAnImmutableList()",
@@ -191,7 +191,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:13.619Z",
       "xml_file": "xml/TEST-com.holub.life.DefaultCellColorTest.xml",
-      "xml_sha256": "86efee48aa2b4f03d2b56abfaee59bb0c2862d3a3418cd707e3d373891fdfc70",
+      "xml_sha256": "b21309b469d0ebe3473d16193418016a9abb74460223f1f5e25d902fc2e87d6f",
       "cases": [
         "liveCellsStayRedWhenNoColorPolicyIsChosen()"
       ]
@@ -204,7 +204,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:16.011Z",
       "xml_file": "xml/TEST-com.holub.life.FreezingIntegrationTest.xml",
-      "xml_sha256": "65ac1c67c3b9b277f76732d9d80190f971b125c888836855833edfe7f8eecce4",
+      "xml_sha256": "b7e2ae9c10eaa22fe0df999b8aefd5d160f5d8071def076880ad7bf065158fd7",
       "cases": [
         "openingTheFreezingTabEndsTemplatePlacementSoTheBrushWorksAgain()",
         "theSidebarHasPatternStatisticsAndFreezingTabsAtBoardHeight()",
@@ -253,7 +253,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:22.251Z",
       "xml_file": "xml/TEST-com.holub.life.FreezingModelTest.xml",
-      "xml_sha256": "b79daaf5e07ad4ede6b417c60c41dfb32d98b2496cc80f507c48a92eaac32231",
+      "xml_sha256": "bb2cfd9f2e1d8af266ab9daa6d29ca2516d69d4b9de60f758f1b3f9846dcc332",
       "cases": [
         "c_cellsOutsideFollowB3S23()",
         "regionsWithDifferentDurationsExpireIndependently()",
@@ -315,7 +315,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:29.711Z",
       "xml_file": "xml/TEST-com.holub.life.FreezingSoundIntegrationTest.xml",
-      "xml_sha256": "18dd57ee45d58040c1879218e7b4dedc9b96ba42d892ef0538126c5c87bb45d7",
+      "xml_sha256": "9016ce5957a7bc384f7f03492cf8b0062b86e2fa4fcbfe4939bd3be68fbb71d5",
       "cases": [
         "aFrozenBlinkerIsSilentAndIsHeardAgainOnItsFirstFreeGeneration()",
         "onlyTheFreeCellIsHeardDyingAndTheFrozenCellIsHeardWhenItIsReleased()",
@@ -330,7 +330,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:35.277Z",
       "xml_file": "xml/TEST-com.holub.life.MergedFeaturesIntegrationTest.xml",
-      "xml_sha256": "0c1315c104cdae8b9b7c6ebd55706f9dcce8e2a2ca37f737875da83d653ac265",
+      "xml_sha256": "0ea6d546526061ff256236231d75f7d72210fdd473c20e52de24f2acc8632519",
       "cases": [
         "clearEndsHeldStampingAndLeavesStatisticsEmpty()",
         "singleTickAdvancesOnceAndBothObserversReportTheSameBlinkerChanges()",
@@ -354,7 +354,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:38.454Z",
       "xml_file": "xml/TEST-com.holub.life.NeighborhoodTest.xml",
-      "xml_sha256": "d7efc36f022f0a8cee894d2d9600ab54c304dc620b8e4af31c56b4b24662f741",
+      "xml_sha256": "b73f694d01488b104a66c5059b584ac5ec329d0a2d1f6788b50f937171685bd0",
       "cases": [
         "isAliveReturnsFalseForEmptyNeighborhood()",
         "isAliveReturnsFalseForEmptyNestedNeighborhood()",
@@ -378,7 +378,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:40.288Z",
       "xml_file": "xml/TEST-com.holub.life.PatternCellsTest.xml",
-      "xml_sha256": "1633ac773cdee809ae067238a58c96e8baa77821a57fbb6c46788e1a690a768f",
+      "xml_sha256": "1a429df712c7de62098a157a20d14f00ed8c70a0074666a7d6bb7c93b25dc7c6",
       "cases": [
         "editsUseColumnRowCoordinatesAndAreIdempotent()",
         "invalidCoordinatesCannotEditBoard()"
@@ -392,7 +392,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:41.829Z",
       "xml_file": "xml/TEST-com.holub.life.PatternCompletionTest.xml",
-      "xml_sha256": "e73986f96ef99ce778369b0fab2d8a987a0de890b90673a50361bf36f4975cd4",
+      "xml_sha256": "2f90dad764b9e5dcf57edf45b5bce19dea7c1e0600fdef9b104a805341547176",
       "cases": [
         "modelRejectsGuardedRectanglesIncludingTransparentMargins()",
         "observersSeeCompletedStateAndNoEventsForNoOps()"
@@ -406,7 +406,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:43.177Z",
       "xml_file": "xml/TEST-com.holub.life.PatternFeatureTest.xml",
-      "xml_sha256": "a99852d0419fc6c03745f5a3f6c59e35e05cf043b11ef99b960571764dd42987",
+      "xml_sha256": "227ff879ffaa5b31f7545be7a89e92ba5b7f069cb070b4b6c6bdf87444cc71ce",
       "cases": [
         "templateValidation()",
         "corruptFilesAndSaveFailure()",
@@ -428,7 +428,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:44.646Z",
       "xml_file": "xml/TEST-com.holub.life.PatternHistoryTest.xml",
-      "xml_sha256": "6fec665c44d87ae81589f244d1ee24ee37a445b7da131d512ae3e97b27cbe39d",
+      "xml_sha256": "8d7f40afb893501968c717a4ec18e55bde38901ce952dbc10589224381eaf019",
       "cases": [
         "historyKeepsOnlyTheLastHundredChangedPlacements()",
         "aStrokeIsOneCommandEvenWithRepeatedAndOverlappingStamps()",
@@ -444,7 +444,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:45.888Z",
       "xml_file": "xml/TEST-com.holub.life.PatternPathTest.xml",
-      "xml_sha256": "abb2426ca9eb9ebd0e0c04589fb83937fbc833ddc836f0fc126fc9f5734a3b94",
+      "xml_sha256": "2cc8ce59926419da9f7e3cbc72274ca4192f2e032ab24ebaf3f63cd626d204a3",
       "cases": [
         "[1] \"1\", \"1\", \"9\", \"1\"",
         "[2] \"9\", \"1\", \"1\", \"1\"",
@@ -465,7 +465,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:47.255Z",
       "xml_file": "xml/TEST-com.holub.life.PatternToolsTest.xml",
-      "xml_sha256": "e9a051146f9eb7563044681c745fb493dabb3249f36d36a7f98aadd90d9630d1",
+      "xml_sha256": "80a4ffcdb7b9df87b9aeb835c96fafae36d3df03e8d00231cb3eecc8042d459c",
       "cases": [
         "focusLossStopsHeldGesture()",
         "dotAndLargerTemplatesStampWithoutErasing()",
@@ -489,7 +489,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:53.275Z",
       "xml_file": "xml/TEST-com.holub.life.ResidentTest.xml",
-      "xml_sha256": "28d2dcb49da67a09a8a4a853d22ef4022c382e5c35e78a2048f0e99da9070e89",
+      "xml_sha256": "654d94ccd5840d1ab0cfc854bb9ef42bd664655f07abdf014273fc1aefdfc1a3",
       "cases": [
         "alive=\"false\", neighbors=\"3\": changed",
         "alive=\"true\", neighbors=\"0\": changed",
@@ -519,7 +519,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:59:15.454Z",
       "xml_file": "xml/TEST-com.holub.life.sound.NoteMapperTest.xml",
-      "xml_sha256": "52bcbf47a55ace199948402156a320fc8ed8178c92d8032b48568a94d80da19e",
+      "xml_sha256": "75383f347f9946ed11ffad382bb5a6e8c42577ac140b2f00d1f98241f837350d",
       "cases": [
         "sameCellChangesPitchAcrossTheProgression()",
         "sweepOfAnEmptyBlockIsSilent()",
@@ -554,7 +554,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:59:16.790Z",
       "xml_file": "xml/TEST-com.holub.life.sound.RepeatTrackerTest.xml",
-      "xml_sha256": "b8e5cbea14b5e5a147bfa6816ea90dc59a23274109fa273741efaa3dee3580d3",
+      "xml_sha256": "db1d85bd89bcc51fdd5224aebe6f6a004fb0766601969fe6f2bf218ef9d937f0",
       "cases": [
         "newGenerationsStayAtFullVolume()",
         "somethingNewRestoresTheVolume()",
@@ -569,7 +569,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:59:17.936Z",
       "xml_file": "xml/TEST-com.holub.life.sound.SoundSettingsTest.xml",
-      "xml_sha256": "d46fb58e0ed6f7dc684ed82c737104c981ba12566e8ba9d039f35f62d66855a0",
+      "xml_sha256": "79d74e3316722360b86e5c1c8e38abbb30700ef1588e1b83bd13ea0f8f3a18ab",
       "cases": [
         "turningOneFeatureOffLeavesTheOthersOn()",
         "everyFeatureStartsOnWithItsFirstInstrument()",
@@ -584,7 +584,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:58:57.336Z",
       "xml_file": "xml/TEST-com.holub.life.SoundEffectsIntegrationTest.xml",
-      "xml_sha256": "49350ee71797d12aaad78da51affb32402d44660a93bf3510b946c999aa71d9a",
+      "xml_sha256": "bd84318c96d10f911efc4be17acf676a0ce31fdd33da41fec40bdd1ce7998f2d",
       "cases": [
         "largeBirthEventKeepsTheBurstLayer()",
         "initialSnapshotIsReadyBeforeTheFirstScheduledSweep()",
@@ -613,7 +613,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:59:00.520Z",
       "xml_file": "xml/TEST-com.holub.life.StatisticsPanelIntegrationTest.xml",
-      "xml_sha256": "4cf298026939357cfbf89364073516c6d7d5e500771d608dbdf734f32d511563",
+      "xml_sha256": "01374ed387f4d29ce22245cf06326500579ab1fd22b115c51a578dde2ff78697",
       "cases": [
         "largeDisplayedCountsAndExplanationFitTheSharedPanelWidth()",
         "hiddenStatisticsKeepsUpdatingAndTabChangesDoNotResetTheBaseline()",
@@ -639,7 +639,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:59:03.455Z",
       "xml_file": "xml/TEST-com.holub.life.StatisticsPanelTest.xml",
-      "xml_sha256": "dfb26f1f63ddaed501115ea2150bdfa73d4a688388c6eb963dfb6ad5cf7cc06a",
+      "xml_sha256": "cc185c193816fb3ef5863a995134cb57cdf5b145537dea286edec2ab549f9dc4",
       "cases": [
         "unavailableDeltaReplacesPreviouslyDisplayedCounts()",
         "replacingColorsRemovesOldRowsAndEmptyBoardShowsAnExplanation()",
@@ -665,7 +665,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:59:06.325Z",
       "xml_file": "xml/TEST-com.holub.life.StatisticsTest.xml",
-      "xml_sha256": "07caef6e650eebb0dd4b145202873763eae0b8a0430372a6494004798798776e",
+      "xml_sha256": "cf1bb107f0108a0562ddb39b36661c48719622bcbb291720318b47a2d835bdd6",
       "cases": [
         "unchangedGenerationReportsMeasuredZeroRatherThanUnavailable()",
         "initialSnapshotReportsPopulationAndSuppliedGeneration()",
@@ -699,7 +699,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:59:07.654Z",
       "xml_file": "xml/TEST-com.holub.life.UniverseColorTest.xml",
-      "xml_sha256": "44a1a5561ca74f3cc28f35206cdff76e378c18ba844911912092587d25172107",
+      "xml_sha256": "34babbc2d69ac292ae80e93fdb6c72c1b835e01a5dd63b9c7921521b365df3e1",
       "cases": [
         "ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor()",
         "cyclingTickRequestsRepaintEvenWhenNothingChanges()",
@@ -718,7 +718,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:59:10.524Z",
       "xml_file": "xml/TEST-com.holub.life.UniverseEventsTest.xml",
-      "xml_sha256": "6f8bf3b0784d348b80aec00c118463cf38b9cc249f8bf9a4bcc3cbadb7d902d5",
+      "xml_sha256": "7cf860ec4f9ce9df87684e9064d001717b66089bd6aa93023cfc0c0a9c19b99f",
       "cases": [
         "generationCannotBePublishedWithoutAnActualTransition()",
         "duplicateRegistrationDoesNotRepeatInitialOrBroadcast()",
@@ -749,7 +749,7 @@
       "skipped": 0,
       "timestamp": "2026-11-21T14:59:13.060Z",
       "xml_file": "xml/TEST-com.holub.life.UniverseStoreTest.xml",
-      "xml_sha256": "f1e86dd45d0b090c2d27127a489db3b44d2c34d11a3469f068043fdfef29ea2c",
+      "xml_sha256": "0f50cc6c1987004bf7383af0a865ddc3ffd6fc60109006d21e8d54d51dddd575",
       "cases": [
         "liveCellsSnapshotIsIndexedByRowThenColumn()",
         "draggingDrawsACellForEveryPositionPassed()",
@@ -784,7 +784,7 @@
     "checks": 17,
     "status": "passed",
     "log_file": "verification.log",
-    "log_sha256": "45b6dcce328e5e339ee7c7ac5d068c3ad5ed6a47c9a71508a6e58d2fc5c030f7",
-    "log_normalization": "Trailing whitespace removed; original test output otherwise retained"
+    "log_sha256": "026e8cc43ee6b3a437bd2d900220d44bd9f4eabaa7d0cd8f6d11aa4a10a88fde",
+    "log_normalization": "LF line endings and trailing whitespace removed; original test output otherwise retained"
   }
 }

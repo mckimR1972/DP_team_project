@@ -651,7 +651,7 @@ PR #13 당시 충돌 파일·시험 병합 head·세부 커밋은 [당시 설계
 
 ## 문서와 그림 관리
 
-원본은 PlantUML `.puml`이다. 각 그림은 같은 이름의 **개별 한 페이지 PDF**로 만들고 내용 단위로 함께 커밋한다. SVG도 함께 보관해 발표 자료에서 확대·편집할 수 있다. 도식 ID와 요구/검사 연결은 `diagrams/manifest.json`이 관리한다.
+원본은 PlantUML `.puml`이다. 각 그림은 같은 이름의 **개별 한 페이지 PDF**로 만들고 내용 단위로 함께 커밋한다. Markdown 본문에 표시할 PNG와 SVG도 함께 보관해 발표 자료에서 확대·편집할 수 있다. 도식 ID와 요구/검사 연결은 `diagrams/manifest.json`이 관리한다.
 
 기준 dev의 실제 통합 구조를 각 그림의 범례에 따라 표시한다. `Mode`의 파생 상태와 실제 Java enum 값을 혼동하지 않는다.
 
@@ -669,7 +669,6 @@ e9bc9e6b2eb715e8c0c929f3dcb5fc1923be13f37599b09c293c66d354e88686
 python docs/capture/tools/build_diagrams.py --jar C:\tools\plantuml-1.2026.10.jar --id D-01
 python docs/capture/tools/build_diagrams.py --jar C:\tools\plantuml-1.2026.10.jar --all
 python docs/capture/tools/build_diagrams.py --atlas
-python docs/capture/tools/verify_documents.py
 ```
 
 다른 OS에서는 PDF 제목용 `--font`뿐 아니라 `theme.puml`의 `defaultFontName`도 설치된 한글 폰트로 맞춘다. 최종 검증에는 `pypdfium2`도 필요하다. 검증 도구는 파일 해시·로컬 링크·기준 소스·PDF 페이지 수를 확인하고, 합본의 각 그림 페이지가 개별 PDF와 같은 이미지로 렌더링되는지 비교한다.
@@ -678,4 +677,28 @@ Smetana 내장 레이아웃을 사용하므로 별도 Graphviz 설치가 필요 
 
 각 PDF는 A4이며 도식 비율에 맞춰 가로·세로를 선택한다. 한글 폰트가 포함된 제목·설명과 고해상도 도식으로 구성한다. 원본 수정 → 해당 PNG/PDF/SVG 재생성 → 페이지 검토 → manifest 연결 확인 → 커밋 순서를 따른다. 합본은 개별 PDF를 묶으므로 개별 파일과 내용이 다르지 않다.
 
-본문 변경은 이 상세 문서를 기준으로 반영한다. 공유 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다. 실제 확인한 범위를 넘어 회의·대안 구현·성능 실험을 수행한 것으로 쓰지 않는다. 그림을 바꾸면 원본, SVG, PDF와 합본을 함께 갱신한다.
+본문 변경은 이 상세 문서를 기준으로 반영한다. 공유 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다. 실제 확인한 범위를 넘어 회의·대안 구현·성능 실험을 수행한 것으로 쓰지 않는다. 그림을 바꾸면 원본, PNG, SVG, PDF와 합본을 함께 갱신한다.
+
+
+### Markdown·링크·증거 다시 검증하기
+
+이 단계는 기록된 JUnit 결과의 원본 XML·실행 로그와 현재 소스의 일치를 확인한다. JUnit 자체를 새로 실행하는 명령은 [검증 방법](#verification)에 있다.
+
+Node.js와 `marked` 17.0.5, `playwright` 1.62.1을 준비한다. 다음 예시는 의존성을 Git에서 제외되는 `build` 폴더에 설치한다. Chrome 또는 Edge를 사용하며, 다른 브라우저 실행 파일은 `CAPTURE_BROWSER`로 지정한다. Python에는 `pypdf`, `pypdfium2`가 필요하다.
+
+```powershell
+npm install --no-save --prefix build/capture-docs/deps marked@17.0.5 playwright@1.62.1
+$env:NODE_PATH = (Resolve-Path 'build/capture-docs/deps/node_modules').Path
+node docs/capture/tools/verify_markdown.cjs
+python docs/capture/tools/verify_documents.py
+```
+
+검사 범위는 다음과 같다.
+
+- 저장소 README와 `docs` 안 모든 Markdown의 로컬 파일·그림·문서 앵커 링크. 외부 웹사이트의 가용성은 검사하지 않는다.
+- 공유용·상세 문서의 6개 operation contract 일치, 같은 그림 6개씩 인용, 구현 심볼 및 대표 JUnit 8개와 원본 실행 결과의 대응.
+- 두 Markdown을 GFM으로 변환한 브라우저 화면에서 그림 로딩·목차·가로 잘림 확인. GitHub 서버에서 렌더링한 화면과 동일하다고 가정하지 않는다.
+- 원본 JUnit XML 30개와 JSON의 384회 결과, 별도 Swing 17 checks 로그·스크린샷 해시, 기준 코드 유지 여부.
+- 도식 산출물 해시, 개별 PDF 6개와 7쪽 합본의 해당 페이지 렌더링 일치.
+
+미리보기는 `build/capture-docs/preview/shared.html`과 `detailed.html`, 화면 기록은 같은 폴더에 생성한다. PDF 검토 이미지는 `build/capture-docs/pdf-review`, 전체 검사 결과는 `build/capture-docs/verification.json`에 생성한다. Git에는 문서·그림·원본 테스트 근거·검증 도구를 남기고, 재생성 가능한 미리보기는 넣지 않는다. 검증 성공 후에도 PDF 전 페이지와 Markdown 그림의 한글·겹침·가독성은 눈으로 확인한다.
