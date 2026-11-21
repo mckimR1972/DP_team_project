@@ -202,7 +202,7 @@ EDT는 모든 작업 스레드를 자동으로 정렬하는 기능이 아니다.
 <a id="integration"></a>
 ## 기존 기능과의 통합 및 충돌 해결
 
-통계 구현 당시에는 `4021231`에 **당시 dev `a480113`**를 병합하여 `4a49d0a`에서 충돌을 해결했고, 이후 `8eb1dfe`에서 사운드와 통계의 구독 경로를 통합했다. 아래 충돌 표는 이 과거 병합을 설명한다. 그 뒤 프리즈 담당자가 추가한 연결은 [프리즈 병합 후 통계와 연결되는 변경](#freezing-integration)에 별도로 정리했다.
+통계 구현 당시에는 `4021231`에 **당시 dev `a480113`**를 병합하여 `4a49d0a`에서 충돌을 해결했고, 이후 `8eb1dfe`에서 사운드와 통계의 구독 경로를 통합했다. 아래 충돌 표는 이 과거 병합을 설명한다.
 
 ### dev 병합에서 해결한 실제 충돌
 
@@ -241,52 +241,14 @@ EDT는 모든 작업 스레드를 자동으로 정렬하는 기능이 아니다.
 | 탄생·사망 계산 | 사운드 발행부와 Statistics가 각각 상태를 비교했다. | `Universe.createBoardChangeEvent(kind, before)`가 진행 전후를 한 번 비교한다. Statistics는 전달받은 목록의 크기를 집계한다. |
 | Statistics의 이전 상태 | 이전 BitSet·판 크기·세대 번호를 저장하고 연속 세대인지 확인했다. | 이전 판 비교 필드를 제거했다. 완성된 이벤트 자체에 변화량이 있으므로 첫 GENERATION 수신도 집계할 수 있다. |
 | 이벤트 내용 | 통계용 현재 상태만 전달했다. | 완료 배열과 탄생·사망 좌표를 같은 이벤트에 담는다. 이후 색상 확장에서 생존 색 목록을 추가했다. |
+| SoundEffects의 구독·수신 | GenerationListener로 등록하고 generationChanged()로 수신. | BoardChangeListener로 등록하고 onBoardChanged(event)에서 종류와 변화 목록을 확인한 뒤 기존 음 생성 처리를 호출. |
+| 재생선의 상태 조회 | 실제 게임판을 liveCells()로 직접 조회. | INITIAL 수신 후 재생선을 예약하고, 모든 완료 이벤트의 복사 배열을 latestCells에 보관해 재생선과 전멸 판단에 사용. |
 
 현재 세대 진행 진입점은 여전히 **Universe 생성자에서 등록한 익명 tick 본문**이다. 공통 이벤트 전환을 위해 advanceOneGeneration을 다시 도입하지 않았다.
 
-### 사운드 담당자에게 해당하는 변경
+[SoundEffects](../src/com/holub/life/sound/SoundEffects.java)의 연결은 공통 이벤트 계약에 맞췄다. 모든 이벤트로 재생선용 상태를 갱신하고, GENERATION이며 탄생·사망이 있을 때만 기존 음 생성 처리를 호출한다. 사운드가 Off인 동안에도 최신 상태를 받으며, 기존 음 선택·반복 감쇠·재생 예약 로직은 유지했다. 이벤트 수신 시 복사 배열의 참조를 volatile 필드에 저장하고 사운드 스레드는 그 배열을 읽는다. 저장 후 배열 원소는 수정하지 않는다.
 
-사운드 기능 자체는 팀원의 기존 구현이다. 통계와의 공통 이벤트 전환 과정에서 사운드 패키지의 [SoundEffects.java](../src/com/holub/life/sound/SoundEffects.java)만 연결을 수정했다. 다음 표가 실제 변경 지점이며, 음 생성 알고리즘 전체를 다시 구현한 것이 아니다.
-
-| 위치 | 변경 전 → 변경 후 |
-| --- | --- |
-| 클래스 선언·import | `implements Universe.GenerationListener` → `implements BoardChangeListener`, 공통 이벤트 import 추가. |
-| `install()`의 등록 | `addGenerationListener(effects)` → `addBoardChangeListener(effects)`. 등록 즉시 INITIAL을 받는다. |
-| 재생선 예약 위치 | 생성자에서 예약 → install에서 **등록 후** 예약. 지연 0·주기 150ms는 유지하며 첫 실행 전에 상태를 확보한다. |
-| 필드·새 수신 메서드 | `volatile boolean[][] latestCells`와 `onBoardChanged(event)` 추가. 모든 이벤트에서 배열을 갱신한 뒤 GENERATION이고 변화 목록이 있을 때만 기존 처리를 호출한다. |
-| `generationChanged()` | 외부 수신용 public → 내부 처리용 private. `mapper.notesFor()`의 판 크기 입력만 `universe.widthInCells()`에서 `latestCells.length`로 바꿨다. |
-| `playStep()` | `universe.liveCells()` 직접 조회 → `latestCells`를 지역 변수에 한 번 읽고 사용. null이면 종료한다. |
-| `boardDiedOut()` | 실제 보드 재조회 → `countLive(latestCells)`로 완료 스냅샷에서 전멸 여부를 확인한다. |
-
-INITIAL·편집·템플릿·Undo·Clear·Load·색상 정책 변경에서는 재생선용 상태만 갱신한다. 변화 없는 세대도 효과음을 생략한다. Off 중에도 상태는 갱신하므로 다시 On으로 바꾸면 최신 배치를 연주한다. 전멸 화음은 실제 사망이 생긴 세대에 기존 조건대로 처리하고, 뒤따르는 빈 세대마다 반복하지 않는다.
-
-`latestCells`는 이벤트가 돌려준 복사본이며 저장 후 원소를 수정하지 않는다. 다음 이벤트에서 참조 전체를 교체하고 재생선은 한 스텝 동안 같은 참조를 사용한다. `volatile`은 이 참조 전달에 쓰이며 배열 원소를 임의로 수정해도 안전하게 만드는 장치는 아니다.
-
-`NoteMapper`·`RepeatTracker`·`SoundSettings`·`SoundSettingsDialog`, 음 선택·반복 감쇠·타악기·스트럼·음 종료 로직은 유지했다. Life의 `SoundEffects.install(universe)` 호출도 같다. 사운드의 Universe 참조는 재생선 표시와 설정 창 소유자 조회에 계속 사용한다.
-
-담당자 문서/테스트에서는 구독 이름과 수신 메서드를 위 표에 맞춘다. 직접 `generationChanged()`를 호출하던 테스트는 완료 상태가 담긴 `onBoardChanged(event)` 입력으로 바꾼다. 현재 생성자는 색 목록까지 요구하지만 사운드가 그 목록을 사용할 필요는 없다.
-
-<a id="freezing-integration"></a>
-### 프리즈 병합 후 통계와 연결되는 변경
-
-프리즈 PR #7의 병합 전 `d215c7a`와 병합 후 `838182c`를 비교했다. 프리즈 담당자는 **Statistics·StatisticsPanel·BoardChangeEvent·BoardChangeListener를 수정하지 않고**, 게임판 변경과 화면 조립 지점을 확장했다. 기존 `BoardChangeListener`와 이벤트 형식으로 프리즈가 반영된 결과를 전달한다.
-
-| 수정 위치 | 실제 변경 | 통계에 미치는 영향 |
-| --- | --- | --- |
-| `Universe`·`FreezingManager` | 관리자를 `new FreezingManager(outermostCell, () -> generation)`으로 생성한다. | 프리즈는 Universe의 세대 번호를 읽고, 통계는 같은 번호를 이벤트로 받는다. 두 기능이 세대를 따로 세지 않는다. |
-| `Universe`의 익명 `Clock.Listener.tick()` | 패턴 편집뿐 아니라 프리즈 영역 선택 중에도 반환한다. 다음 상태 계산 후 `beforeTransition()`으로 고정 영역의 다음 상태를 설치 당시 생존 상태로 덮어쓴다. `transition()`·세대 증가·`afterGeneration()`을 거친 뒤 기존 GENERATION을 발행한다. | 통계는 고정 처리가 완료된 상태를 받는다. 프리즈가 적용된 세대도 세대 번호는 증가하고, 고정된 셀은 탄생·사망 좌표에 들어가지 않는다. |
-| `Cell`·`Neighborhood`·`Resident` | `holdNextState(Point, boolean)`을 추가하고, Resident는 `heldThisGeneration`이 설정된 전이에서 나이 증가를 생략한다. | 고정된 살아 있는 셀도 생존 수에 포함된다. 고정 중에는 나이가 멈추며 해제 뒤 이어서 증가하므로 색상별 집계도 이를 반영한다. |
-| 클릭·드래그·템플릿 연결 | 고정 영역의 직접 편집은 차단하고, 템플릿은 `setPlacementGuard()`로 고정 영역과 겹치는 배치를 막는다. 프리즈 영역 선택을 시작할 때 기존 패턴 편집을 끝내고 Undo 이력을 무효화한다. | 실제로 바뀐 셀만 기존 EDIT·TEMPLATE 알림으로 반영한다. 차단되어 판이 그대로인 조작은 통계를 바꾸지 않는다. |
-| Clear·Load 성공 | `freezingTools.reset()`으로 선택 모드와 설치된 영역을 정리한 뒤 기존 CLEAR·LOAD를 발행한다. | 세대 0과 초기화·복원된 생존 상태를 표시한다. 프리즈가 남아서 다음 세대 계산에 영향을 주지 않는다. |
-| `Life.createSidebar()` | 기존 `패턴 캡처`·`통계` 뒤에 `Freezing` 탭을 추가한다. 해당 탭을 떠나면 `finishFreezingEditing()`으로 영역 선택을 종료한다. | 통계는 기존 두 번째 탭을 유지하며 같은 구독을 계속 사용한다. |
-
-프리즈 설치·수동 해제 자체는 셀의 생사나 나이를 즉시 변경하지 않는다. 따라서 새 이벤트 종류를 추가하지 않고 기존 통계를 유지한다. 이후 세대를 진행하면 완료 상태를 기존 GENERATION으로 전달한다. 마지막 고정 세대까지 상태를 유지한 뒤 영역이 만료되며, 정상 규칙은 그 다음 세대부터 적용된다.
-
-예를 들어 고정된 외톨이 셀 1개와 일반 블링커 3개가 있으면 고정 기간에는 **생존 4개, 탄생 2개·사망 2개**로 집계된다. 해제 다음 세대에는 외톨이 셀도 죽으므로 **생존 3개, 탄생 2개·사망 3개**가 된다.
-
-나이가 멈춘다는 것과 표시 색을 별도로 저장한다는 것은 다르다. 같은 색상 정책에서는 고정된 셀의 색이 유지되지만, 사용자가 Color 메뉴에서 정책을 바꾸면 그 정책이 현재 나이에 대해 반환하는 색으로 통계가 갱신된다.
-
-프리즈 상세 설계와 담당자 검증 기록은 [FREEZING.md](FREEZING.md)에 정리되어 있다. 여기서는 통계와 연결되는 변경만 다룬다.
+프리즈 병합에서는 Statistics·StatisticsPanel·BoardChangeEvent·BoardChangeListener를 수정하지 않았다. Universe가 고정 처리를 끝낸 상태를 기존 GENERATION으로 전달하므로, 고정된 생존 셀도 생존 수에 포함되고 탄생·사망은 실제 변화만 집계한다. 프리즈 자체의 구현과 검증은 [FREEZING.md](FREEZING.md)를 참고한다.
 
 <a id="colors"></a>
 ## 색상별 통계 확장
@@ -433,6 +395,108 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령
 | 프리즈 모델·기존 기능 및 사운드와의 연동 | 90 |
 | 합계 | **384** |
 
+### 통계 핵심 테스트의 대표 사례
+
+통계와 밀접한 6개 클래스에서 **핵심 동작·경계값·예외를 보여주는 메서드 4개씩, 총 24개**를 골랐다. 6개 클래스의 전체 실행 수는 매개변수별 실행을 포함해 **91개**다. 아래 표는 현재 테스트 코드에서 선정한 대표 사례의 목적·실제 입력·기대 결과를 설명한다.
+
+<details>
+<summary>StatisticsTest — 대표 4개 메서드 · 클래스 전체 22회 실행</summary>
+
+원본: [StatisticsTest](../test/com/holub/life/StatisticsTest.java)
+
+이벤트를 직접 만들어 Statistics에 전달하는 계산 단위 테스트다. 실제 Clock·Universe·템플릿·Undo는 실행하지 않는다. 아래 셀 번호 n은 한 변의 길이가 size일 때 행=n/size(정수 나눗셈), 열=n%size인 0부터 시작하는 번호다.
+
+| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
+| --- | --- | --- | --- |
+| `initialSnapshotReportsPopulationAndSuppliedGeneration` | 초기 이벤트에 담긴 세대와 생존 수·비율을 집계한다. | INITIAL, 세대 12, 4×4 판의 셀 0·5·10·15 생존. | 세대 12, 생존 4, 비율 25%. 변화량은 미제공 상태이며 내부 탄생·사망 값은 0. |
+| `emptyBoardHasZeroPopulationAndPercentage` | 빈 판의 집계와 변화량 상태를 확인한다. | INITIAL, 세대 0, 빈 4×4 판. | 생존 0, 비율 0%, 변화량 미제공. |
+| `firstGenerationAlreadyContainsItsOwnDelta` | 이전 이벤트 없이도 전달된 변화 좌표를 집계한다. | 첫 입력으로 GENERATION 9. 3×3 판의 셀 1·4 생존. 탄생 목록에는 셀 번호 1, 사망 목록에는 셀 번호 0을 각각 1개 전달. | 생존 2, 유효한 변화량 탄생 1·사망 1. |
+| `nonGenerationUpdatesPopulationAndClearsDisplayedDelta` | 비세대 이벤트 후에는 이전 변화량을 지우고 이후 세대의 새 변화량을 사용한다. | 6회: INITIAL·EDIT·TEMPLATE·TEMPLATE_UNDO·CLEAR·LOAD. 먼저 탄생 2·사망 1인 세대 이벤트를 보내고, 각 종류로 세대 0·생존 2를 전달한 뒤 다음 세대 이벤트를 보낸다. | 중간 결과는 세대 0·생존 2·변화량 미제공. 다음 GENERATION의 탄생 1·사망 1을 정상 집계한다. |
+
+</details>
+
+<details>
+<summary>BoardChangeEventTest — 대표 4개 메서드 · 클래스 전체 23회 실행</summary>
+
+원본: [BoardChangeEventTest](../test/com/holub/life/BoardChangeEventTest.java)
+
+이벤트 객체의 좌표 계약과 방어적 복사, 잘못된 변화 목록의 거부를 확인한다. 배열은 [행][열], Point는 (x=열, y=행)이다. 예외 검사는 지정한 예외가 발생해야 통과한다.
+
+| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
+| --- | --- | --- | --- |
+| `retainsMetadataAndRowColumnCoordinates` | 세대 정보와 배열·Point 좌표의 방향을 보존한다. | GENERATION 42, 3×3 판의 [1][2] 생존, 탄생 Point(2,1), 사망 Point(0,2). | 종류·세대 42·판 크기 3과 생존 배열·두 좌표 목록이 입력과 같다. |
+| `returnedRowsListsAndPointsAreIndependentForEveryObserver` | 한 수신자가 조회한 복사본을 바꾸어도 다음 조회에 영향을 주지 않는다. | 조회한 배열의 값·행을 바꾸고, 반환 목록의 Point를 이동하거나 목록을 비운다. | 다시 조회한 배열과 탄생·사망 좌표는 원래 값이다. |
+| `rejectsCoordinatesOutsideEitherAxis` | 좌표가 판 밖이면 거부한다. | 2회: 3×3 판에서 사망 Point의 x 또는 y를 각각 -1·3으로 설정. | 두 축의 범위 초과 입력 모두 IllegalArgumentException. |
+| `rejectsDuplicateOrInconsistentChanges` | 중복 좌표와 완료 상태에 모순되는 변화 좌표를 거부한다. | 탄생 좌표 중복, 사망 좌표 중복, 완료 후 죽은 셀을 탄생으로 지정, 살아 있는 셀을 사망으로 지정. | 네 경우 모두 IllegalArgumentException. |
+
+</details>
+
+<details>
+<summary>ColorStatisticsTest — 대표 4개 메서드 · 클래스 전체 13회 실행</summary>
+
+원본: [ColorStatisticsTest](../test/com/holub/life/ColorStatisticsTest.java)
+
+색 목록을 가진 이벤트를 직접 구성하여 집계와 입력 검증을 확인한다. 실제 셀 나이·색상 정책·화면은 실행하지 않는다. 단위 테스트의 Color.BLUE·Color.GREEN 같은 임의 색과 실제 순환 정책의 파랑·초록 값은 구분한다.
+
+| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
+| --- | --- | --- | --- |
+| `calculatesEachColorAgainstLivingCellsInsteadOfBoardArea` | 전체 생존 비율과 색상별 비율의 분모를 구분한다. | 4×4 판에 빨강 2·파랑 1·초록 1의 생존 셀. | 생존 4·전체 비율 25%. 색 비율은 50%·25%·25%, 색별 개수 합 4·비율 합 100%. |
+| `emptyBoardRemovesPreviousColorsWithoutDividingByZero` | 빈 판으로 바뀌면 이전 색을 지우고 안전하게 집계한다. | 파랑 1개 INITIAL 이후 빈 색 목록의 CLEAR. | 생존 수·전체 비율 0, 색상별 결과는 빈 목록. |
+| `rejectsColorCountDifferentFromTheLivingCellCount` | 생존 수와 색 목록 길이가 일치해야 한다. | 2회: 생존 1개인데 색을 0개 또는 2개 전달. | 각각 IllegalArgumentException. |
+| `policyChangePreservesTheLastGenerationDeltaWhileReplacingColors` | 같은 세대의 정책 변경은 기존 변화량을 보존한다. | GENERATION 10에 파랑 2개·탄생 1·사망 1을 전달한 뒤, 같은 세대의 COLOR_POLICY_CHANGED로 빨강 2개 전달. | 세대 10·유효한 탄생 1·사망 1 유지, 색은 빨강 2개·100%로 변경. |
+
+</details>
+
+<details>
+<summary>StatisticsPanelTest — 대표 4개 메서드 · 클래스 전체 14회 실행</summary>
+
+원본: [StatisticsPanelTest](../test/com/holub/life/StatisticsPanelTest.java)
+
+직접 구성한 Summary를 실제 Swing 패널에 전달하고 JLabel의 문자열·순서·색을 읽는다. 패널 생성과 갱신은 EDT에서 실행하며, Universe와 통계 계산은 연결하지 않는다. 비율 서식 검사의 Summary는 문자열 표시를 위한 입력이므로 생존 수로부터 해당 비율을 다시 계산하지 않는다.
+
+| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
+| --- | --- | --- | --- |
+| `formatsPercentageToTwoDecimalPlaces` | 생존 비율을 소수 둘째 자리로 일관되게 표시한다. | 4회: 비율 0, 100, 12.3456, 0.0244140625를 Summary에 넣어 전달. | 각각 0.00%, 100.00%, 12.35%, 0.02%로 표시. |
+| `unavailableDeltaReplacesPreviouslyDisplayedCounts` | 편집 등으로 변화량이 무효화되면 이전 탄생·사망 수를 지운다. | 탄생 2·사망 2·hasGenerationDelta=true인 결과 이후, 생존 4·hasGenerationDelta=false인 결과 전달. | 탄생·사망은 모두 —로 교체되고 생존 수는 4로 갱신. |
+| `measuredZeroDeltaIsDisplayedAsZero` | 측정된 변화량 0과 변화량 미제공 표시를 구분한다. | 생존 4, 탄생·사망 0, hasGenerationDelta=true인 Summary. | 탄생·사망 모두 숫자 0으로 표시. |
+| `keepsRedBlueGreenOrderAsColorsAppearAndCountsChange` | 색의 등장 순서·개수가 바뀌어도 빨강→파랑→초록 순서를 유지한다. | 빨강 4 → 목록 순서가 파랑 1·빨강 3 → 목록 순서가 초록 2·파랑 1·빨강 1인 결과를 차례로 전달. | 빨강이 첫 행이고 파랑·초록은 그 아래에 표시. 마지막 빨강 1개·25.00%, 초록 2개·50.00%. 파랑 견본 색과 전체 생존 셀 기준 안내도 일치. |
+
+</details>
+
+<details>
+<summary>StatisticsPanelIntegrationTest — 대표 4개 메서드 · 클래스 전체 14회 실행</summary>
+
+원본: [StatisticsPanelIntegrationTest](../test/com/holub/life/StatisticsPanelIntegrationTest.java)
+
+실제 Universe·Clock·Statistics·StatisticsPanel을 연결한다. 기본 판은 64×64이며, LifeTestSupport가 EDT에서 실제 마우스 이벤트와 등록된 메뉴 ActionListener를 호출한다. MenuSite의 메뉴 등록은 테스트용으로 대체하고 화면 값은 Swing 컴포넌트에서 읽는다. Load 검사에서는 파일 선택만 대체하며 임시 파일의 읽기·복원은 실제 경로를 사용한다.
+
+| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
+| --- | --- | --- | --- |
+| `startupConnectionDisplaysInitialStateSynchronously` | 게임을 진행하기 전 등록 시점의 INITIAL이 화면까지 즉시 반영된다. | 빈 게임판에 Life.connectStatistics()로 통계와 패널 연결. | 연결 반환 직후 세대 0, 생존 0, 비율 0.00%, 탄생·사망 —. |
+| `singleStepDisplaysActualBlinkerBirthsAndDeaths` | 실제 단일 세대 진행의 변화량이 패널까지 전달된다. | 정지 상태에서 (행,열)=(7,7),(7,8),(7,9)에 블링커를 놓고 Go → Tick (Single Step) 실행. | 세대 1, 생존 3, 비율 0.07%, 탄생 2·사망 2. 실행 중 Single Step의 정지 동작은 별도 Clock 테스트 범위다. |
+| `loadDisplaysRestoredBoardAndNextGenerationDelta` | 복원 직후의 통계와 복원된 판을 기준으로 한 다음 세대 변화량을 확인한다. | 임시 파일에 Point(7,7),(8,7),(9,7)을 저장. 기존 블록을 한 세대 진행한 뒤 Grid → Load로 복원하고 tick 1회. | Load 직후 세대 0·생존 3·0.07%·변화량 —, 빨강 3개·100.00%. 다음 tick 후 세대 1·생존 3·탄생 2·사망 2. |
+| `automaticTimerReachesTheDisplayOnEdt` | 자동 Timer의 세대 진행도 통계 화면까지 연결된다. | 안정된 4셀 블록과 패널을 연결해 15ms 설정으로 자동 실행. 세대 레이블이 3이 되면 정지하고 EDT 밖에서 최대 5초 대기. | 대기 시간 안에 도달하며 최종 세대 3·생존 4·0.10%·탄생 0·사망 0. 15ms 간격의 정확도를 측정하는 검사는 아니다. |
+
+</details>
+
+<details>
+<summary>ColorStatisticsIntegrationTest — 대표 4개 메서드 · 클래스 전체 5회 실행</summary>
+
+원본: [ColorStatisticsIntegrationTest](../test/com/holub/life/ColorStatisticsIntegrationTest.java)
+
+실제 보드·Clock·색상 정책·이벤트·Statistics·패널을 연결하며 보드 이벤트를 직접 만들지 않는다. 기본 순환 정책의 파랑은 #0072B2, 초록은 #009E73이다. 프리즈를 설치하지 않은 보드에서 나이 증가와 색상 집계를 확인한다.
+
+| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
+| --- | --- | --- | --- |
+| `stablePopulationStillUpdatesColorsAtEachTenGenerationBoundary` | 생존 수가 일정해도 나이 경계에서 색상 집계가 바뀐다. | Color → Cycle by Generation 선택 후 안정된 2×2 블록을 놓고 0~30세대의 결과 확인. | 이벤트에는 해당 색 4개, Summary에는 그 색 4개·100%가 담긴다. 0~9세대 빨강, 10~19 파랑, 20~29 초록, 30세대 빨강. 마지막 패널은 빨강 4개·100.00%. |
+| `cellsWithDifferentAgesProduceThreeIndependentCounts` | 서로 다른 나이의 셀을 동시에 색별 집계한다. | 0세대에 블록 1개, 10세대에 두 번째 블록, 20세대에 세 번째 블록 배치. 블록들은 서로 떨어져 있다. | 세대 20·생존 12. 나이 20의 초록, 나이 10의 파랑, 나이 0의 빨강이 각 4개·100/3%. 패널은 각 4개·33.33%. |
+| `switchingPolicyWhilePausedPublishesOnceWithoutAdvancingOrLosingDelta` | 정지 중 정책 변경이 색상만 갱신하고 같은 세대의 변화량을 유지한다. | 고정 빨강 정책에서 안정 블록을 10세대 진행한 뒤 순환 → 단색 → 순환 메뉴 선택. | 첫 변경은 COLOR_POLICY_CHANGED 1회이며 이벤트 변화 목록은 비어 있다. 세대 10 유지, 파랑 4→빨강 4→파랑 4로 집계. 기존 탄생 0 표시 유지, 단색 전환 시 파랑 행 제거. |
+| `newbornsAndSurvivorsAreCountedAfterTransitionAndClickRemovesOldColor` | 전이 후 새 셀과 생존 셀의 색을 구분하고 편집·Clear도 반영한다. | 검사용 1세대 주기 빨강/파랑 정책으로 블링커를 한 세대 진행. 이어 파란 중앙 셀을 클릭해 삭제하고 Grid → Clear 실행. | 진행 후 탄생·사망 각 2, 빨강 2개·66.67%, 파랑 1개·33.33%. 클릭 후 빨강 2개·100%와 탄생 —, 파랑 행 제거. Clear 후 색 목록이 비고 빈 판 안내 표시. |
+
+</details>
+
+### 전체 검증 범위와 연동 확인
+
 <details>
 <summary>JUnit 클래스별 실행 수와 확인한 내용</summary>
 
@@ -459,7 +523,7 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령
 | BoardChangeEventTest | 23 | 입력 검증, 배열/Point 방어적 복사, 이벤트 종류별 변화 목록 계약. |
 | StatisticsTest | 22 | 초기/세대/편집/복원 입력의 집계, 비율, 비교 가능 여부, 콜백·최근 결과. |
 | StatisticsPanelTest | 14 | 값·두 자리 비율·—/0 구분, 색상 행 순서/제거, 선호 크기·여백·제목 폰트, EDT·null 입력 계약. |
-| StatisticsPanelIntegrationTest | 14 | 실제 등록·EDT 갱신·공용 탭·숨겨진 탭·Load·큰 값/색 목록 배치. |
+| StatisticsPanelIntegrationTest | 14 | 실제 등록·EDT 갱신·Load·큰 값/색 목록 배치. 공용 탭·숨겨진 탭 검사의 캡처/프리즈 탭은 배치용 JPanel 대역. |
 | ColorStatisticsTest | 13 | 색 목록 보호/길이 검증, 같은 색 묶기, 생존 수 기준 비율, 빈 판, Summary 보호, 정책 변경 시 기존 변화량 유지. |
 | ColorStatisticsIntegrationTest | 5 | 실제 보드의 색 경계·혼합 나이·정지 중 정책 교체·블링커/편집/Clear·초기 등록. |
 | MergedFeaturesIntegrationTest | 12 | 실제 드래그·템플릿·Undo·탭 전환·Clear/Load·세대 진행과 통계의 연결. 프리즈 병합에서 공용 탭 개수와 세 번째 탭 확인을 보완했다. |
@@ -474,40 +538,25 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령
 </details>
 
 <details>
-<summary>핵심 기대 결과와 실제 연동 범위</summary>
+<summary>다른 기능과의 연동 사례 및 검증 범위</summary>
 
 | 시나리오 | 기대 결과 — 모두 통과 |
 | --- | --- |
-| 프리즈가 없는 안정된 4셀 블록 | 생존 4개를 유지하고 세대·나이가 증가한다. 나이 9→10, 19→20, 29→30에서 패널 색도 정책과 같이 바뀐다. |
-| 서로 10세대 차이로 배치한 블록 3개 | 빨강·파랑·초록 4개씩, 생존 셀 기준 각각 약 33.33%. |
 | 두 블록 중 하나만 10세대 프리즈 | 10세대에 고정 블록은 빨강 4개, 일반 블록은 파랑 4개. 이후 10세대 더 진행하면 파랑 4개·초록 4개. |
 | 프리즈된 외톨이 셀 1개와 일반 블링커 | 고정 중 생존 4개·탄생/사망 2개씩. 해제 다음 세대는 생존 3개·탄생 2개·사망 3개. |
 | 전체 판 프리즈 | 매 세대 번호를 늘리고 GENERATION을 발행하며 탄생·사망은 0. |
 | 프리즈 설치·해제 자체 / 고정 영역 편집 차단 | 보드 상태가 그대로이면 공통 이벤트가 발생하지 않고 기존 통계를 유지한다. |
-| 4×4 판에서 생존 4개, 그중 빨강 2개 | 전체 생존 비율 25%, 빨강 비율 50%. |
-| 블링커 | 자연적인 탄생·사망 2개씩. 색상 검사에서는 새 셀 2개의 빨강과 생존 셀 1개의 파랑을 66.67%·33.33%로 표시한다. |
-| 정지 중 색상 정책 변경 | 세대·나이·생존 상태를 유지하고 색상 집계만 갱신한다. 같은 세대의 탄생/사망 표시를 유지하며 효과음은 새로 예약하지 않는다. |
 | 템플릿 드래그·Undo·그다음 세대 | 드래그 완료 시 한 번 알림, Undo 후 복원된 상태 집계, 이후 정상 세대 변화 집계. 실제 PatternTools 경로를 사용한다. |
-| Load 실패·취소 / 성공 | 실패·취소는 판/통계 유지. 성공은 복원 완료 상태와 세대 0을 표시한다. |
+| Load 실패·취소 | 판과 통계를 유지한다. 성공 시 복원·다음 세대 진행은 위 StatisticsPanelIntegrationTest의 대표 사례에서 설명한다. |
 | 사운드 등록 직후 재생선 | INITIAL 수신 후 예약하므로 첫 스텝부터 현재 판을 사용한다. |
 | 사운드 Off 중 편집 후 On | Off 중에도 최신 배열을 받아 이후 재생선이 새 배치를 사용한다. |
 | 사운드 안정 판·전멸 | 무변화 세대의 효과음 생략. 실제 전멸의 마무리 화음은 유지하고 뒤따르는 빈 세대에는 반복하지 않는다. |
-| 사운드 예약 규칙 | 스트럼 기본 25ms와 지터, 생성음 220ms, 타악기 60ms, 마무리 화음의 0/90/180ms 시작 및 900ms 길이, 대량 탄생 레이어를 유지한다. |
 
 StatisticsTest·ColorStatisticsTest 등 계산 단위 테스트는 **이벤트를 직접 만들어** 전달한다. 이벤트 이름이 TEMPLATE_UNDO라고 해서 실제 Undo 조작까지 수행한 검사는 아니다. 실제 배치/복원 경로는 MergedFeaturesIntegrationTest·패널 통합 검사에서 별도로 확인한다.
 
 MergedFeaturesIntegrationTest와 FreezingIntegrationTest의 사운드 수신 확인에는 기록용 리스너를 쓴다. 실제 SoundEffects 설치까지 연결하는 검사는 SoundEffectsIntegrationTest와 FreezingSoundIntegrationTest이며, MIDI 장치·채널·예약 실행기·메뉴 등록 UI를 대역으로 제어한다. 7종류의 비세대 이벤트 수신 검사 등 일부 입력은 직접 구성하고, 블링커·색상 메뉴·프리즈가 반영된 세대 등의 검사는 실제 Universe 경로를 사용한다.
 
-프리즈 담당자가 추가한 `FreezingIntegrationTest` 중 통계와 직접 연결되는 검사는 다음과 같다. 전체 프리즈 알고리즘 테스트와 구분하여 통계 연동의 근거로 사용한다.
-
-| 테스트 메서드 | 통계에서 확인하는 결과 |
-| --- | --- |
-| `freezingStatisticsAndEventsShareOneGenerationCounter` | 프리즈 시작·진행·만료 시 두 탭과 이벤트가 Universe의 같은 세대 번호를 사용한다. |
-| `frozenCellsNeverAppearInBirthsOrDeathsAndCountAsLiving` | 고정된 생존 셀을 포함해 집계하되 탄생·사망은 최종 상태의 실제 변화만 센다. |
-| `aFullyFrozenBoardStillPublishesGenerationsButNoSoundDeltas` | 판 전체가 고정되어도 통계 세대는 증가하고 변화량 0을 표시할 수 있다. |
-| `frozenCellsKeepTheirColorWhileOthersCycleAndResumeAfterRelease` | 고정·일반 셀의 색상 집계를 구분하고, 해제 후 나이 증가가 재개되는 결과를 반영한다. |
-| `installAndReleaseDoNotPublishBoardEventsBecauseNoCellChanges` | 설치·해제 자체로 불필요한 보드 이벤트가 발생하지 않는다. |
-| `clickingAFrozenCellChangesNothingAndPublishesNothing` | 고정 영역의 편집 시도는 무변경이며, 영역 밖의 실제 편집은 EDIT로 전달된다. |
+프리즈 연동 테스트의 상세 목적과 구현은 담당 문서 [FREEZING.md](FREEZING.md)를 참고한다. 여기서는 위 표의 통계 연동 결과와 전체 실행 수를 기록한다.
 
 </details>
 
