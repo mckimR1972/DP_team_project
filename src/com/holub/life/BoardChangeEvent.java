@@ -9,9 +9,10 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Immutable completed-board data shared by all board observers.
- * Arrays use [row][column]; Points use x = column, y = row.
- * Only GENERATION carries the births/deaths of one actual transition.
+ * 구독자들이 공유하는 게임판 상태와 변경 정보. 생성 후 외부에서 내용을 바꿀 수 없다.
+ *
+ * <p>생존 배열은 [행][열], Point 좌표는 x=열, y=행 순서로 사용한다.
+ * GENERATION 이벤트에만 한 세대 진행으로 발생한 탄생·사망 좌표를 담는다.
  */
 public final class BoardChangeEvent {
     public enum Kind {
@@ -67,14 +68,19 @@ public final class BoardChangeEvent {
     public long generation() { return generation; }
     public int boardSize() { return boardSize; }
 
-    /** Returns independent rows; observers cannot alter the shared event. */
+    /** 각 행까지 복사한 생존 상태를 반환하여 구독자가 이벤트 원본을 변경하지 못하게 한다. */
     public boolean[][] copyAliveCells() { return copyBoard(aliveCells); }
 
-    /** Both the list and each mutable Point are copied. */
+    /** 탄생 좌표를 반환한다. 목록과 각 Point를 복사하여 원본을 보호한다. */
     public List<Point> copyBirths() { return copyPoints(births); }
+
+    /** 사망 좌표를 반환한다. 목록과 각 Point를 복사하여 원본을 보호한다. */
     public List<Point> copyDeaths() { return copyPoints(deaths); }
 
-    /** Unmodifiable colors of living cells only; no coordinate or age meaning. */
+    /**
+     * 살아 있는 셀의 색상 목록을 수정 불가능한 형태로 반환한다.
+     * 색상별 집계에 사용하는 목록이며, 좌표나 나이 정보는 포함하지 않는다.
+     */
     public List<Color> aliveColors() { return aliveColors; }
 
     private List<Point> copyAndValidatePoints(List<Point> source, boolean aliveAfter) {

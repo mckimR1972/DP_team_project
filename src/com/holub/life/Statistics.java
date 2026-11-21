@@ -11,19 +11,18 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * Calculates statistics from completed-board events without changing the board.
+ * 게임판 변경이 완료된 이벤트를 받아 생존 수, 변화량, 색상별 통계를 계산한다.
  *
- * <p>Universe supplies the completed transition's change lists. Statistics
- * counts them without retaining a previous board or comparing snapshots.
- * Deliver events sequentially, in operation order.
+ * <p>Universe가 전달한 탄생·사망 좌표를 집계하므로 이전 게임판을 보관하거나 비교하지 않는다.
+ * 이벤트는 게임판 작업이 완료된 순서대로 전달해야 한다.
  */
 public final class Statistics implements BoardChangeListener {
     /**
-     * livingRatio is a percentage in [0, 100].
+     * 화면에 전달하는 통계 결과.
+     * livingRatio는 전체 칸 수를 기준으로 한 생존 비율(0~100%)이다.
      *
-     * <p>When hasGenerationDelta is false, births and deaths are zero
-     * placeholders. A view should display an unavailable marker such as "-",
-     * rather than interpreting those placeholders as a measured zero change.
+     * <p>hasGenerationDelta가 false이면 세대 변화량을 표시할 수 없다.
+     * 이때 births와 deaths의 0은 임시 값이므로 화면에는 실제 변화량 0 대신 "—"를 표시한다.
      */
     public record Summary(
             long generation,
@@ -38,7 +37,7 @@ public final class Statistics implements BoardChangeListener {
         }
     }
 
-    /** ratio is the percentage of all living cells, not of all board positions. */
+    /** 한 색상의 생존 셀 수와 비율. ratio는 전체 생존 셀 수를 기준으로 한 백분율이다. */
     public record ColorCount(Color color, int cells, double ratio) {
         public ColorCount {
             Objects.requireNonNull(color, "color");
@@ -61,7 +60,7 @@ public final class Statistics implements BoardChangeListener {
         onUpdated.accept(summary);
     }
 
-    /** Empty until the first event has been received. */
+    /** 가장 최근의 집계 결과를 반환한다. 첫 이벤트를 받기 전에는 비어 있다. */
     public Optional<Summary> current() {
         return Optional.ofNullable(currentSummary);
     }
@@ -75,7 +74,7 @@ public final class Statistics implements BoardChangeListener {
         boolean hasGenerationDelta = event.kind() == BoardChangeEvent.Kind.GENERATION;
         int births = hasGenerationDelta ? event.copyBirths().size() : 0;
         int deaths = hasGenerationDelta ? event.copyDeaths().size() : 0;
-        // A display-policy change is not an edit or a new generation.
+        // 같은 세대에서 색상 정책만 바뀌면 직전 결과의 탄생·사망 표시 상태를 유지한다.
         if (event.kind() == BoardChangeEvent.Kind.COLOR_POLICY_CHANGED
                 && currentSummary != null && currentSummary.generation() == event.generation()) {
             hasGenerationDelta = currentSummary.hasGenerationDelta();
@@ -86,7 +85,7 @@ public final class Statistics implements BoardChangeListener {
         for (Color color : event.aliveColors()) counts.merge(color, 1, Integer::sum);
         List<ColorCount> colorCounts = new ArrayList<>();
         for (Map.Entry<Color, Integer> entry : counts.entrySet()) {
-            // An empty board has no entries, so this never divides by zero.
+            // 생존 셀이 없으면 색상별 항목도 없어 이 반복문에서 0으로 나누지 않는다.
             colorCounts.add(new ColorCount(entry.getKey(), entry.getValue(),
                     entry.getValue() * 100.0 / livingCells));
         }
