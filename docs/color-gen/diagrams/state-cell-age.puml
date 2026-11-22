@@ -8,7 +8,7 @@ mainframe stm Resident (셀 하나)
 
 state Dead
 state Alive : entry / age = 0
-state Alive : transition() [willBeAlive] / age = age + 1
+state Alive : transition() [willBeAlive and not held] / age = age + 1
 
 [*] -down-> Dead : 생성
 
@@ -22,6 +22,9 @@ Alive -up-> Dead : clear()
 
 note right of Alive
   그릴 때의 색 = colorPolicy.colorOf(age)
+  held: 이번 세대에 Freezing이 고정한 칸.
+  다음 생사가 지금 생사로 되돌려지므로
+  상태가 바뀌지 않고 나이도 늘지 않는다
 end note
 note right of Dead
   나이와 상관없이 죽은 칸 색으로 그린다

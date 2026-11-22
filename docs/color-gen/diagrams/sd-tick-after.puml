@@ -5,10 +5,11 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd tick (dev 94f50b3)
+mainframe sd tick (dev 838182c)
 
 participant ":Clock" as C
 participant ":Universe" as U
+participant "freezing : FreezingManager" as F
 participant "outermostCell : Neighborhood" as N
 participant ":Resident" as R
 participant "Resident" as RC
@@ -17,7 +18,7 @@ participant "colorPolicy : CellColorPolicy" as P
 [o-> C : 시간 이벤트
 C -> U : tick()
 
-alt 캡처·배치 편집 중
+alt 캡처·배치 편집 중 또는 Freezing 영역 선택 중
   U --> C
 else
   U -> N : figureNextState(DUMMY × 8)
@@ -26,16 +27,28 @@ else
   end
   U -> U : before = liveCells()
 
+  U -> F : beforeTransition(outermostCell)
+  loop 고정된 영역의 칸마다
+    F -> N : holdNextState(칸, 스냅샷)
+    N -> R : holdNextState(칸, 스냅샷)
+    R -> R : willBeAlive = 스냅샷\nheld = true
+  end
+
   U -> N : transition()
   loop 모든 블록의 칸마다
     N -> R : transition()
-    R -> R : age = (전후 모두 생존) ? age + 1 : 0
-    R -> R : amAlive = willBeAlive
+    opt not held
+      R -> R : age = (전후 모두 생존) ? age + 1 : 0
+    end
+    R -> R : held = false\namAlive = willBeAlive
     R --> N : changed
   end
   N --> U : changed
 
-  U -> U : generation++\nnotifyBoardChanged(GENERATION, before)
+  U -> U : generation++
+  U -> F : afterGeneration()
+  note right of F : 남은 세대를 줄이고\n0이 된 영역은 고정을 푼다
+  U -> U : notifyBoardChanged(GENERATION, before)
 
   U -> RC : colorChangesWithAge()
   note left of RC : static 메서드라\n클래스에 보낸다
@@ -46,4 +59,5 @@ else
     U -> U : refreshNow()
   end
 end
+note over F, N : FreezingManager는 영역마다 상태 객체(State 패턴)에 묻고,\nFrozen 상태인 영역만 스냅샷을 되돌린다. 그림에서는 이 단계를 줄였다
 @enduml

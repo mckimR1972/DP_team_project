@@ -15,6 +15,7 @@ interface Cell <<interface>> {
   + userClicked(here : Point, surface : Rectangle)
   + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
   + colorAt(row : int, column : int) : Color
+  + holdNextState(location : Point, alive : boolean) : boolean
   + create() : Cell
 }
 
@@ -29,6 +30,7 @@ class Resident {
   - amAlive : boolean
   - willBeAlive : boolean
   - age : int = 0
+  - heldThisGeneration : boolean = false
   ~ {static} setColorPolicy(policy : CellColorPolicy)
   ~ {static} colorChangesWithAge() : boolean
   + transition() : boolean
@@ -36,6 +38,7 @@ class Resident {
   + userClicked(here : Point, surface : Rectangle)
   + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
   + colorAt(row : int, column : int) : Color
+  + holdNextState(location : Point, alive : boolean) : boolean
 }
 
 interface CellColorPolicy <<interface>> {
@@ -91,7 +94,9 @@ note bottom of Resident
   Context
   redraw()와 colorAt()이
   colorPolicy.colorOf(age)로 색을 받는다.
-  colorAt()은 통계 기능(#10)이 더했다
+  colorAt()은 통계 기능(#10),
+  holdNextState()와 heldThisGeneration은
+  Freezing 기능(#7)이 더했다
 end note
 note right of Universe
   Client
