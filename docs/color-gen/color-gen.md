@@ -154,190 +154,77 @@ FR-7과 FR-8은 이 기능의 유스케이스가 아니라, 셀을 살리거나 
 
 ## 2. 기존 코드에서 바뀐 부분
 
+원본 클래스 중 `Resident`와 `Universe`를 고쳤다. 아래에는 코드를 옮기는 대신 원본과 무엇이 달라졌는지를 적었다. 여기서 원본은 색 기능을 붙이기 전의 코드다. Holub 원본에 있던 오류(`transition()`이 반대 값을 돌려주던 것 등)는 그 전에 따로 고쳤다([fix-life-game-changes.md](../fixes/fix-life-game-changes.md)). 테스트 설정(`build.gradle`의 `forkEvery = 1`)을 바꾼 이유는 5.10절에 있다.
+
 ### 2.1 Resident: 나이를 세고 색을 규칙에 묻는다
 
-원래 `Resident.redraw()`는 살아 있는 셀을 private 상수 `LIVE_COLOR`(빨강)로 칠했다. 여기에 셀마다의 나이와, 모든 셀이 함께 쓰는 색 규칙 참조를 더했다.
+원본 Resident는 셀의 생사(`amAlive`, `willBeAlive`)만 가지고, 살아 있는 셀을 상수 `LIVE_COLOR`(빨강)로 칠했다. 여기에 셀마다의 나이와, 모든 셀이 함께 쓰는 색 규칙을 더했다.
 
-```java
-static final Color LIVE_COLOR = Color.RED;   // 원본 상수. private을 떼어 Color 메뉴도 쓴다
-
-// 모든 셀이 함께 쓰는 색 규칙. 다른 스레드에서 읽어도 바뀐 값이 보이게 volatile
-private static volatile CellColorPolicy colorPolicy = new FixedColorPolicy( LIVE_COLOR );
-
-static void setColorPolicy( CellColorPolicy policy )      // 같은 패키지 전용
-{	if( policy == null )
-		throw new IllegalArgumentException( "null color policy" );
-	colorPolicy = policy;
-}
-
-static boolean colorChangesWithAge()                      // 같은 패키지 전용
-{	return colorPolicy.changesWithAge();
-}
-
-private int age = 0;    // 연속으로 살아남은 세대 수 (태어나면 0)
-
-/** 세대를 넘길 때만 호출한다. 나이도 함께 바뀌므로
- *  패턴 배치 같은 편집에는 쓰지 않는다.
- */
-public boolean transition()
-{	boolean changed = amAlive != willBeAlive;            // 원본 그대로
-	if( !heldThisGeneration )                            // Freezing(#7)
-		age = (amAlive && willBeAlive) ? age + 1 : 0;    // 추가
-	heldThisGeneration = false;                          // Freezing(#7)
-	amAlive = willBeAlive;
-	return changed;
-}
-```
-
-Freezing 기능(#7)은 고정된 칸의 다음 생사를 `holdNextState()`로 고정한 순간의 상태로 되돌리고, 그 칸에 `heldThisGeneration`을 표시한다. 표시된 칸은 이번 `transition()`에서 나이를 세지 않는다. 고정된 칸은 클릭·드래그·템플릿 배치가 막혀 있어서 고정된 동안 생사가 뒤집히지 않고, "살아날 때 나이 0" 규칙도 그대로다.
-
-| 메서드 | 원본 | 바뀐 뒤 |
+| 부분 | 원본 | 바뀐 뒤 |
 | --- | --- | --- |
-| `redraw()` | `g.setColor(amAlive ? LIVE_COLOR : DEAD_COLOR)` | `g.setColor(amAlive ? colorPolicy.colorOf(age) : DEAD_COLOR)` |
-| `userClicked()` | `amAlive = !amAlive;` | 그 뒤에 `age = 0;` |
-| `transfer()`의 Load | 불러온 상태를 넣는다 | 맨 앞에 `age = 0;` (나이는 저장되지 않는다) |
-| `clear()`, 생성자, `create()` | | 바뀌지 않음 |
+| 필드 | `amAlive`, `willBeAlive` | 셀마다 `age`(연속으로 살아남은 세대 수)를 더했다. 모든 셀이 함께 쓰는 static `colorPolicy`를 더했고, 처음 값은 원본 빨강 한 가지 색(`FixedColorPolicy(LIVE_COLOR)`)이다<br>이유: 색을 나이로 정하려면 셀마다 나이가 있어야 한다. 색 규칙은 판 전체에 하나라서 모든 셀이 참조 하나를 함께 쓴다(5.3절) |
+| `LIVE_COLOR` | Resident 안에서만 쓰는 상수(`private`) | `private`을 떼어 같은 패키지 안에서 쓸 수 있게 했다. 값(빨강)은 그대로다<br>이유: Color 메뉴가 같은 빨강을 쓰게 해서, 처음 값과 Single Color, 순환의 첫 색이 어긋나지 않게 한다(5.8절) |
+| 새 메서드 | | `setColorPolicy()`: 규칙을 바꾼다. null은 거부한다<br>`colorChangesWithAge()`: 지금 규칙이 나이에 따라 색이 바뀌는지 알려 준다<br>둘 다 같은 패키지 안에서만 쓴다<br>이유: Color 메뉴가 규칙을 바꾸고, Universe가 구체 규칙을 몰라도 다시 그릴 범위를 정하게 한다(5.6절) |
+| `transition()` | 다음 생사로 바꾸고, 생사가 바뀌었는지 돌려준다 | 바꾸기 전에 나이를 정한다. 전후 모두 살아 있으면 1을 더하고, 그 밖에는 0이다. 돌려주는 값은 원본과 같다<br>이유: 세대를 넘길 때 모든 셀에 한 번씩 불린다. 다음 상태 계산(`figureNextState()`)은 멈춘 블록을 건너뛰어 그곳에서는 멈춘 셀의 나이를 셀 수 없다(5.1절) |
+| `redraw()` | 살아 있으면 `LIVE_COLOR`, 죽었으면 죽은 칸 색 | 살아 있으면 `colorPolicy.colorOf(age)`, 죽었으면 죽은 칸 색<br>이유: 색을 정하는 방법을 규칙 객체에 맡겨, 규칙이 늘어도 Resident를 고치지 않는다(4.1절) |
+| `userClicked()` | 생사를 뒤집는다 | 뒤집은 뒤 나이를 0으로 둔다<br>이유: 클릭으로 살린 셀은 막 생긴 셀이다. 죽인 셀의 나이는 쓰지 않으므로 조건 없이 0으로 둔다(5.7절) |
+| `transfer()`의 Load | 불러온 생사를 넣는다 | 넣기 전에 나이를 0으로 둔다. 나이는 저장하지 않는다<br>이유: 저장 파일 형식을 바꾸지 않으므로 파일에 나이가 없다(5.4절) |
+| `clear()`, 생성자, `create()` | | 바뀌지 않음<br>이유: 죽은 셀의 나이는 그리지 않고, 다시 살아날 때 위 경로 중 하나가 0으로 둔다(5.7절) |
 
-`transition()`의 반환값(생사가 바뀌었는가)은 원본과 같다. 그래서 Resident와 Neighborhood가 주고받는 "변화"의 뜻이 그대로이고, 블록 계산 건너뛰기와 활성 블록 표시가 원본처럼 동작한다.
+`transition()`이 돌려주는 값(생사가 바뀌었는가)이 원본과 같으므로, Resident와 Neighborhood가 주고받는 "변화"의 뜻도 그대로다. 블록 계산 건너뛰기와 활성 블록 표시가 원본처럼 동작한다.
+
+Freezing 기능은 고정된 칸의 다음 생사를 `holdNextState()`로 고정한 순간의 상태로 되돌리고, 그 칸은 이번 `transition()`에서 나이를 세지 않게 했다. 고정된 칸은 클릭·드래그·템플릿 배치가 막혀 있어서, 고정된 동안 생사가 뒤집히지 않는다.
 
 ### 2.2 Universe: 매 틱 세대를 확정한다
 
-원본의 틱 처리는 다음 상태를 계산한 결과 바뀔 셀이 있을 때만 확정했고, 확정해서 바뀐 셀이 있을 때만 다시 그렸다.
+원본 Universe의 틱 처리는 다음 상태를 계산해 바뀔 셀이 있을 때만 세대를 확정했고, 확정해서 바뀐 셀이 있을 때만 바뀐 블록을 다시 그렸다. 여기에 멈춘 패턴도 나이를 세고 색이 바뀌도록, 세대는 매 틱 확정하고 색 순환이 켜져 있으면 판 전체를 매 틱 다시 그리게 했다.
 
-```java
-// 원본 (dev c49ca39)
-if( outermostCell.figureNextState( Cell.DUMMY, ... ) )
-{	if( outermostCell.transition() )
-		refreshNow();
-}
-```
+| 단계 | 원본 | 바뀐 뒤 |
+| --- | --- | --- |
+| 다음 상태 계산(`figureNextState()`) | 바뀔 셀이 없으면 여기서 멈췄다 | 결과와 상관없이 다음 단계로 간다<br>이유: 바뀔 셀이 없는 세대에도 나이를 세려면 확정까지 가야 한다 |
+| 세대 확정(`transition()`) | 바뀔 셀이 있을 때만 | 매 틱. 바뀌는 셀이 없어도 나이를 센다<br>이유: 멈춘 패턴도 나이를 먹어야 10세대마다 색이 바뀐다(FR-6). 생사 결과는 원본과 같다(5.1절) |
+| 다시 그리는 조건 | 확정해서 바뀐 셀이 있을 때 | 색 순환이 켜져 있으면 매 틱(`Resident.colorChangesWithAge()`로 묻는다). 꺼져 있으면 원본처럼 바뀐 셀이 있을 때<br>이유: 색 순환 중에는 생사가 그대로여도 색이 바뀔 수 있다. 꺼져 있을 때는 원본과 같게 그린다(NFR-2) |
+| 다시 그리는 방법(`refreshNow()`) | 바뀐 블록만 화면에 바로 그렸다 | 판 전체 다시 그리기를 Swing의 `repaint()`로 요청한다<br>이유: 원본 방식으로 판 전체를 그리면 Fast에서 클릭과 메뉴가 수 초씩 밀렸다. `repaint()`는 밀린 요청을 하나로 합친다(5.9절) |
 
-2×2 블록처럼 멈춘 패턴은 이 두 조건에 걸려 나이가 늘지 않고 다시 그려지지도 않는다. 그래서 매 틱 확정하고, 다시 그릴 범위는 현재 색 규칙에 묻게 했다.
+캡처·템플릿 기능도 편집 오버레이를 그리려고 `refreshNow()`를 같은 방식으로 바꿔서, 지금은 `refreshNow()`가 `repaint()`만 부른다.
 
-```java
-// 지금 (dev 838182c). 다른 기능이 더한 줄은 주석으로 표시했다
-public void tick()
-{	if (patternTools.isEditing() || freezingTools.isEditing()) return; // 캡처·템플릿(#9), Freezing(#7)
-	patternTools.boardChanged();                          // 캡처·템플릿(#9)
-	outermostCell.figureNextState( Cell.DUMMY, ... );
-	boolean[][] before = liveCells();                     // 통계(#10)
-
-	FreezingManager freezing = freezingTools.manager();   // Freezing(#7)
-	freezing.beforeTransition( outermostCell );           // Freezing(#7): 고정된 칸의 다음 생사를 되돌림
-
-	// 바뀌는 셀이 없어도 매 틱 불러야 멈춘 패턴도 나이를 먹는다
-	boolean changed = outermostCell.transition();
-
-	// 같은 완료 이벤트를 통계와 사운드에 전달한다
-	generation++;                                         // 통계(#10)
-	freezing.afterGeneration();                           // Freezing(#7): 남은 세대 감소
-	notifyBoardChanged(BoardChangeEvent.Kind.GENERATION, before); // 통계(#10)
-
-	// 색상 또는 생존 상태가 바뀌면 보드와 편집 오버레이를 함께 다시 그린다
-	if( Resident.colorChangesWithAge() )
-		refreshNow();
-	else if( changed )
-		refreshNow();
-}
-
-private void refreshNow()
-{	repaint();
-}
-```
-
-색 순환이 켜져 있으면 매 틱, 꺼져 있으면 셀이 바뀐 틱에만 판 전체 `repaint()`를 요청한다. 원본의 `refreshNow()`는 바뀐 블록만 화면에 바로 그렸다. 색 순환 중에는 판 전체를 그려야 하는데, 원본 방식으로 그리면 Fast에서 입력이 수 초씩 밀려서 `repaint()`로 요청하게 했다(5.9절). 캡처·템플릿 기능도 편집 오버레이를 그리려고 같은 변경을 해서, 지금은 `refreshNow()`가 `repaint()`만 부른다.
+다른 기능도 틱 처리에 단계를 더했다. 통계는 확정 전에 판을 복사해 두었다가 확정 뒤 알리고, Freezing은 계산과 확정 사이에서 고정된 칸의 다음 생사를 되돌리고, 캡처·템플릿 편집이나 Freezing 영역 선택 중이면 틱을 건너뛴다. 이 단계들은 위 표의 규칙(매 틱 확정, 다시 그리는 조건)을 바꾸지 않는다. 전체 순서는 3.2절의 시퀀스 다이어그램에 있다.
 
 ### 2.3 Universe: Color 메뉴
 
-원본의 Grid, Go 메뉴와 같은 방식(`MenuSite.addLine()`)으로 Color 메뉴를 더했다. 시계가 처음 만들어질 때 Go 메뉴가 생기므로, 시계 리스너를 등록한 다음에 추가해야 Color 메뉴가 Go 뒤에 온다.
+원본의 Grid, Go 메뉴와 같은 방식(`MenuSite.addLine()`)으로 Color 메뉴를 더했다. Go 메뉴는 시계가 처음 만들어질 때 생기므로, 시계 리스너를 등록한 뒤에 추가해 Color 메뉴가 Go 뒤에 오게 했다.
 
-```java
-// Go 메뉴는 위의 Clock.instance()에서 생기므로 그 뒤에 추가해야 Go 다음에 붙는다
-MenuSite.addLine( this, "Color", "Single Color", new ActionListener()
-{	public void actionPerformed(ActionEvent e)
-	{	useColorPolicy( new FixedColorPolicy( Resident.LIVE_COLOR ) );
-	}
-} );
-MenuSite.addLine( this, "Color", "Cycle by Generation", new ActionListener()
-{	public void actionPerformed(ActionEvent e)
-	{	// 10세대마다 빨강 → 파랑 → 초록
-		useColorPolicy( new CyclingColorPolicy
-			( 10, Resident.LIVE_COLOR, new Color(0x0072B2), new Color(0x009E73) ) );
-	}
-} );
+| 메뉴 항목 | 만드는 색 규칙 |
+| --- | --- |
+| Single Color | `FixedColorPolicy(LIVE_COLOR)`: 원본 빨강 한 가지 색 |
+| Cycle by Generation | `CyclingColorPolicy(10, 빨강, 파랑 #0072B2, 초록 #009E73)`: 10세대마다 다음 색 |
 
-private void useColorPolicy( CellColorPolicy policy )
-{	Resident.setColorPolicy( policy );
-	notifyBoardChanged( BoardChangeEvent.Kind.COLOR_POLICY_CHANGED ); // 통계(#10)
-	repaint();      // 시계가 멈춰 있어도 고른 규칙의 색이 바로 보이게 한다
-}
-```
+두 항목은 모두 새로 만든 `useColorPolicy()`를 거친다. 이 메서드는 `Resident.setColorPolicy()`로 규칙을 바꾸고, 통계 기능에 규칙이 바뀌었음을 알린 뒤, `repaint()`로 판 전체를 다시 그리게 요청한다. 그래서 시계가 멈춰 있어도 고른 규칙의 색이 바로 보인다.
 
-### 2.4 build.gradle: 테스트 클래스마다 JVM 분리
-
-```groovy
-// Universe 싱글턴은 JVM당 한 번만 메뉴와 시계를 등록하므로 테스트 클래스마다 JVM을 따로 띄운다
-forkEvery = 1
-```
-
-게임 코드가 아니라 테스트 설정이다. 이유와 대안은 5.10절에 있다.
-
-### 2.5 새로 만든 클래스
+### 2.4 새로 만든 클래스
 
 | 클래스 | 하는 일 |
 | --- | --- |
-| `CellColorPolicy` | 나이로 색을 정하는 규칙의 인터페이스. `colorOf(age)`와 `changesWithAge()` |
-| `FixedColorPolicy` | 나이와 상관없이 한 가지 색. 원본 빨강에 쓴다 |
-| `CyclingColorPolicy` | `period` 세대마다 다음 색, 마지막 색 다음에는 처음 색. 색은 2개 이상 |
-
-```java
-public interface CellColorPolicy {
-    /** 나이가 age인 셀의 색. age는 0 이상이고 막 태어난 셀은 0 */
-    Color colorOf(int age);
-
-    /** 나이에 따라 색이 바뀌는 규칙이면 true (Universe가 매 틱 판 전체를 다시 그림) */
-    boolean changesWithAge();
-}
-
-public final class CyclingColorPolicy implements CellColorPolicy {
-    private final int period;
-    private final Color[] colors;
-
-    public CyclingColorPolicy(int period, Color... colors) {
-        if (period <= 0)
-            throw new IllegalArgumentException("period must be positive: " + period);
-        if (colors == null)
-            throw new IllegalArgumentException("colors must not be null");
-        if (colors.length < 2)
-            throw new IllegalArgumentException("at least two colors are needed: " + colors.length);
-        for (int i = 0; i < colors.length; i++)
-            if (colors[i] == null)
-                throw new IllegalArgumentException("colors[" + i + "] is null");
-        this.period = period;
-        this.colors = colors.clone();
-    }
-
-    public Color colorOf(int age) { return colors[(age / period) % colors.length]; }
-    public boolean changesWithAge() { return true; }
-}
-```
+| `CellColorPolicy` | 색 규칙의 인터페이스. 나이로 색을 정하는 `colorOf(age)`와, 나이에 따라 색이 바뀌는 규칙인지 알려 주는 `changesWithAge()`가 있다 |
+| `FixedColorPolicy` | 나이와 상관없이 한 가지 색. `changesWithAge()`는 false다. 원본 빨강에 쓴다 |
+| `CyclingColorPolicy` | `period` 세대마다 다음 색, 마지막 색 다음에는 처음 색(`colors[(age / period) % colors.length]`). `changesWithAge()`는 true다 |
 
 | 정한 것 | 이유 |
 | --- | --- |
-| 두 구현 모두 `final` 클래스이고 필드는 `private final`. setter와 getter는 없다 | 4,096개 셀이 규칙 객체 하나를 함께 쓰고, 이벤트 스레드의 `redraw()`와 틱 처리가 함께 읽는다. 바뀌지 않는 객체라 맞출 것이 없다. 내용이 바뀔 수 있으면 `setColorPolicy()`를 거치지 않고, 다시 그리기 요청도 없이 모든 셀의 색이 바뀐다 |
-| 생성자에서 `colors.clone()`으로 복사 | 넘긴 배열을 바깥에서 바꿔도 규칙이 바뀌지 않게 한다 |
-| 잘못된 값은 생성자에서 `IllegalArgumentException`. `colorOf()`는 검사하지 않음 | 검사하지 않으면 간격 0은 처음 그릴 때, 음수 간격은 10세대 뒤에 예외가 나고, null 색은 오류 없이 엉뚱한 색으로 칠해진다(`Graphics.setColor(null)`은 무시된다). 실수가 객체를 만드는 줄에서 바로 드러나게 한다 |
-| `CyclingColorPolicy`는 색 2개 이상 | 색이 1개면 색이 바뀌지 않는데도 `changesWithAge()`가 true라서 매 틱 판 전체를 다시 그리게 된다. 한 가지 색은 `FixedColorPolicy`가 맡는다 |
+| 두 구현 모두 만든 뒤 바뀌지 않는 객체다(`final` 클래스, `private final` 필드, setter 없음) | 4,096개 셀이 규칙 객체 하나를 함께 쓰고, 그리기와 틱 처리가 함께 읽는다. 내용이 바뀔 수 있으면 `setColorPolicy()`와 다시 그리기 요청 없이 모든 셀의 색이 바뀐다 |
+| 생성자에서 색 배열을 복사한다 | 넘긴 배열을 바깥에서 바꿔도 규칙이 바뀌지 않게 한다 |
+| 잘못된 값(간격 0 이하, 색 2개 미만, 빈 값)은 생성자에서 거부한다 | 거부하지 않으면 그리는 도중에 예외가 나거나 엉뚱한 색이 칠해진다. 실수가 객체를 만드는 줄에서 바로 드러나게 한다 |
+| `CyclingColorPolicy`는 색이 2개 이상이어야 한다 | 색이 1개면 색이 바뀌지 않는데도 매 틱 판 전체를 다시 그리게 된다. 한 가지 색은 `FixedColorPolicy`가 맡는다 |
 
-### 2.6 다른 기능과 맞물린 부분
+### 2.5 다른 기능과 맞물린 부분
 
 | 기능 | 맞물린 곳 | 지금 상태 |
 | --- | --- | --- |
-| 캡처·템플릿 (#9, #13) | 템플릿 배치와 되돌리기가 셀을 살리고 죽이는 경로 | 바뀌는 칸만 `userClicked()`로 편집한다. 새로 생긴 셀은 나이 0, 기존 셀의 나이는 그대로다. 처음에는 판 전체를 Clear한 뒤 Load하는 방식이라 색 순환 중 모든 셀이 빨강으로 돌아갔는데, #9 병합 때 바뀌는 칸만 편집하도록 맞췄다 |
-| 캡처·템플릿 (#9) | `refreshNow()`, 시계 | `refreshNow()`가 `repaint()`를 부르고, 시계가 Swing 타이머로 바뀌어 틱이 이벤트 스레드에서 돈다 |
-| 사운드 (#3) | 틱 처리 | 통계 기능과 같은 `GENERATION` 이벤트로 생긴 셀과 사라진 셀을 받는다. 매 틱 `transition()`을 부르는 순서는 그대로다 |
-| Freezing (#7) | 틱 처리, `Resident.transition()`의 나이 계산 | `figureNextState()`와 `transition()` 사이에서 고정된 칸의 다음 생사를 되돌리고, 그 칸은 나이를 세지 않는다. 그래서 고정된 셀은 색 순환 중에도 고정한 순간의 색을 유지하고, 풀리면 멈춘 나이에서 다시 센다. `transition()`을 매 틱 부르는 것과 다시 그리기 규칙은 그대로다(2.1절) |
-| 통계 (#10) | 틱 처리, 색별 집계 | 매 틱 확정 전에 판을 복사해 두고, 확정 뒤 `GENERATION` 이벤트로 통계와 사운드에 알린다. `transition()`을 매 틱 부르는 것과 다시 그리기 규칙은 그대로다. `Cell.colorAt()`을 더해 살아 있는 셀을 화면 색별로 세고, `useColorPolicy()`가 `COLOR_POLICY_CHANGED`로 규칙이 바뀌었음을 알린다(5.11절) |
+| 캡처·템플릿 | 템플릿 배치와 되돌리기가 셀을 살리고 죽이는 경로 | 바뀌는 칸만 `userClicked()`로 편집한다. 새로 생긴 셀은 나이 0이고, 기존 셀의 나이는 그대로다 |
+| 캡처·템플릿 | `refreshNow()`, 시계 | `refreshNow()`가 `repaint()`를 부르고, 시계가 Swing 타이머로 바뀌어 틱이 이벤트 스레드에서 돈다 |
+| 사운드 | 틱 처리 | 통계 기능과 같은 `GENERATION` 이벤트로 생긴 셀과 사라진 셀을 받는다. 매 틱 `transition()`을 부르는 순서는 그대로다 |
+| Freezing | 틱 처리, `Resident.transition()`의 나이 계산 | `figureNextState()`와 `transition()` 사이에서 고정된 칸의 다음 생사를 되돌리고, 그 칸은 나이를 세지 않는다. 그래서 고정된 셀은 색 순환 중에도 고정한 순간의 색을 유지하고, 풀리면 멈춘 나이에서 다시 센다(2.1절) |
+| 통계 | 틱 처리, 색별 집계 | 매 틱 확정 전에 판을 복사해 두고, 확정 뒤 `GENERATION` 이벤트로 통계와 사운드에 알린다. `Cell.colorAt()`을 더해 살아 있는 셀을 화면 색별로 세고, `useColorPolicy()`가 `COLOR_POLICY_CHANGED`로 규칙이 바뀌었음을 알린다(5.11절) |
 
 ## 3. 구조와 동작
 
