@@ -13,6 +13,7 @@
 | 사운드 이펙트 | [sound-effects.md](sound-effects.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
 | 단일 진행 오류 | [fix-single-step-halt.md](fix-single-step-halt.md) | 실행 중 Tick이 멈추지 않던 원본 오류의 원인, 수정, 테스트 |
 | Freezing (영역 고정) | [FREEZING.md](FREEZING.md) | 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 테스트 |
+| Freezing 명세·설계 | [Freezing 문서 묶음](freezing/README.md) | 유스케이스 명세, 변경 요약, 기존 코드와의 비교, 패턴 후보와 설계 결정, 다이어그램 |
 
 캡처 문서 묶음에서는 요구사항 → 설계 결정 → 코드 → 테스트 → 도식의 ID를 연결한다. 이는 캡처 자료의 정리 방식이며, 다른 팀원의 문서 형식을 일괄 변경하는 규칙은 아니다.
 
