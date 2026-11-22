@@ -12,6 +12,7 @@
 | 기본 오류 | [fix-life-game-changes.md](fix-life-game-changes.md) | 기존 코드 오류 수정과 회귀 검사 |
 | 사운드 이펙트 | [sound-effects.md](sound-effects.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
 | 사운드 기능 명세 | [sound-effects-spec.md](sound-effects-spec.md) | 유스케이스 명세, 요구사항, 적용·미적용 GoF 패턴, 요구사항별 테스트 |
+| 사운드 UML | [sound-uml.md](sound-uml.md) | 클래스(전·후), 시퀀스, 상태 다이어그램, 시스템 시퀀스와 연산 계약 |
 | 단일 진행 오류 | [fix-single-step-halt.md](fix-single-step-halt.md) | 실행 중 Tick이 멈추지 않던 원본 오류의 원인, 수정, 테스트 |
 | Freezing (영역 고정) | [FREEZING.md](FREEZING.md) | 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 테스트 |
 
