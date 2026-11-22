@@ -1,0 +1,59 @@
+@startuml sd-sweep
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd 재생선 한 스텝 (Hear Board Sweep E)
+
+participant "noteScheduler :\nScheduledExecutorService" as Q
+participant "effects :\nSoundEffects" as S
+participant ":Universe" as U
+participant ":NoteMapper" as NM
+participant "sweep :\nMidiChannel" as SW
+participant "pad :\nMidiChannel" as P
+
+note over Q, P : sound-notes 스레드. 150ms마다 반복된다
+
+[o-> Q : 150ms 주기
+Q -> S : playStep()
+
+alt enabled == false
+  S -> P : noteOff(누르던 패드 음)
+  S -> U : setPlayhead(-1)
+else
+  S -> S : cells = latestCells
+  note right of S : 마지막 이벤트의 복사본.\nUniverse의 셀은 읽지 않는다
+  S -> S : firstColumn = step × 4
+
+  alt 재생선 켜짐
+    S -> U : setPlayhead(firstColumn)
+    S -> NM : sweepNotesFor(cells, firstColumn, 4, chord,\nstep % 4 == 0)
+    NM --> S : 최대 3음
+    loop 음마다
+      S -> Q : schedule(noteOn 명령, 흔들림)
+      S -> Q : schedule(noteOff 명령, + 400ms)
+    end
+  else
+    S -> U : setPlayhead(-1)
+  end
+
+  S -> NM : padNotesFor(chord), padLevelFor(산 셀 수)
+  NM --> S : 패드 음, 세기
+  alt 세기 == 0 (빈 판 또는 패드 꺼짐)
+    S -> P : noteOff(누르던 패드 음)
+  else
+    S -> P : controlChange(EXPRESSION, 세기)
+    opt 코드가 바뀌었음
+      S -> P : noteOff(이전 음), noteOn(새 음)
+    end
+  end
+
+  S -> S : step = (step + 1) % 16
+  opt step == 0
+    S -> S : chord++
+    note right of S : 한 바퀴(16스텝)마다\nC → Am → F → G
+  end
+end
+@enduml

@@ -1,0 +1,45 @@
+@startuml sd-settings
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd 설정 창에서 악기 바꾸기 (Configure Sound E)
+
+actor "사용자" as User
+participant "effects :\nSoundEffects" as S
+participant "dialog :\nSoundSettingsDialog" as D
+participant "settings :\nSoundSettings" as ST
+participant "noteScheduler :\nScheduledExecutorService" as Q
+participant "channels :\nMidiChannel" as CH
+
+== Swing 이벤트 스레드 ==
+
+User -> S : Sound > Settings 선택
+opt settingsDialog == null
+  create D
+  S -> D : new SoundSettingsDialog(게임 창, settings)
+  S -> D : setLocation(게임 창 오른쪽)
+end
+S -> D : setVisible(true)
+note right of D : 모달이 아니므로 게임은 계속 진행된다
+
+User -> D : 체크박스 해제 (예: 스트럼)
+D -> ST : setOn(STRUM, false)
+note right of ST : 다음 소리부터 스트럼 없이 낸다
+
+User -> D : 악기 선택 (예: 재생선 = 하프)
+D -> ST : setInstrument(SWEEP, 하프)
+ST -> ST : choices[SWEEP] = 하프
+ST -> S : instrumentListener.run()
+S -> Q : execute(applyInstruments 명령)
+S --> D
+
+== sound-notes 스레드 ==
+
+Q -> S : applyInstruments()
+S -> CH : programChange(악기 번호)
+S -> CH : noteOff(누르던 패드 음)
+note right of CH : 패드는 다음 스텝에\n새 악기로 다시 시작한다
+@enduml

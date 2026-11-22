@@ -1,0 +1,91 @@
+@startuml class-before
+!pragma layout smetana
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam classAttributeIconSize 0
+hide circle
+hide empty members
+skinparam ranksep 60
+skinparam nodesep 50
+title 사운드를 붙이기 전 (원본 Holub 코드)
+
+class Life {
+  - Life()
+}
+
+class Universe {
+  - {static} theInstance : Universe
+  - outermostCell : Cell
+  + {static} instance() : Universe
+  - refreshNow()
+  - doLoad()
+  - doStore()
+}
+
+class Clock {
+  - publisher : Publisher
+  + {static} instance() : Clock
+  + startTicking(ms : int)
+  + stop()
+  + addClockListener(observer : Listener)
+  + tick()
+}
+
+interface "Clock.Listener" as ClockListener <<interface>> {
+  + tick()
+}
+
+class Publisher {
+  + subscribe(subscriber : Object)
+  + cancelSubscription(subscriber : Object)
+  + publish(deliveryAgent : Distributor)
+}
+
+interface Cell <<interface>> {
+  + figureNextState(이웃 8칸 : Cell) : boolean
+  + transition() : boolean
+  + isAlive() : boolean
+  + widthInCells() : int
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
+  + createMemento() : Storable
+}
+
+class Neighborhood {
+  - grid : Cell[][]
+  - gridSize : int
+}
+
+class Resident {
+  - amAlive : boolean
+  - willBeAlive : boolean
+}
+
+class MenuSite {
+  + {static} addLine(requester : Object, menu : String, name : String, listener : ActionListener)
+}
+
+Life ..> Universe : 화면에 붙임
+Universe --> "1" Cell : outermostCell
+Cell <|.. Neighborhood
+Cell <|.. Resident
+Neighborhood o-- "64" Cell : grid (8×8)
+
+Universe ..> MenuSite : Grid 메뉴 등록
+Clock --> Publisher
+Publisher o-- "*" ClockListener : subscribers
+Universe ..> ClockListener : 익명 클래스로 구현해 등록
+
+note right of Universe
+  tick()마다 transition() 후 다시 그리기만 한다.
+  어떤 셀이 생기고 사라졌는지
+  밖에서 알 방법이 없다.
+end note
+
+note bottom of Cell
+  isAlive()는 "이 블록 안에 산 셀이 있는가"이다.
+  좌표 하나의 생사를 묻는 연산은 없다.
+end note
+@enduml

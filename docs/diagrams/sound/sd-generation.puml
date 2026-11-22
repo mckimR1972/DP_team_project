@@ -1,0 +1,78 @@
+@startuml sd-generation
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd 세대 소리 (Hear Generation Sound E)
+
+participant ":Clock" as C
+participant ":Universe" as U
+participant "outermostCell :\nNeighborhood" as N
+participant "effects :\nSoundEffects" as S
+participant ":RepeatTracker" as R
+participant ":NoteMapper" as NM
+participant "noteScheduler :\nScheduledExecutorService" as Q
+participant "voices[i] :\nMidiChannel" as V
+
+== Swing 이벤트 스레드 ==
+
+[o-> C : 시간 이벤트
+C -> U : tick()
+U -> U : before = liveCells()
+U -> N : transition()
+N --> U : changed
+U -> U : generation++
+U -> U : event = BoardChangeEvent(GENERATION,\nbefore와 비교한 births, deaths)
+U -> S : onBoardChanged(event)
+note right of U : 같은 이벤트를 Statistics도 받는다.\nFreezing 처리와 통계는 생략
+S -> S : latestCells = event.copyAliveCells()
+
+alt births와 deaths가 모두 비어 있음
+  S --> U
+else 생긴 셀 또는 사라진 셀이 있음
+  S -> S : generationChanged(births, deaths)
+  opt enabled == false
+    S --> U
+  end
+  opt 반복 페이드 켜짐
+    S -> R : gainFor(births, deaths)
+    R --> S : gain (1.0 ~ 0.0)
+  end
+
+  alt 반복 페이드 켜짐 and 판 전멸
+    S -> NM : endingChordFor(chord)
+    NM --> S : 3음
+    loop 음마다 (0, 90, 180ms)
+      S -> Q : schedule(noteOn 명령, i × 90ms)
+      S -> Q : schedule(noteOff 명령, i × 90 + 900ms)
+    end
+  else gain == 0 or 직전 소리 후 120ms 안
+    note over S : 이번 세대는 건너뛴다
+  else
+    S -> NM : notesFor(births, 64, chord)
+    NM --> S : 최대 5음 (왼쪽부터 정렬)
+    S -> NM : humanized(notes) [작은 흔들림 켜짐], scaled(notes, gain)
+    NM --> S : notes
+    loop 생성음 켜짐 음마다 (voice = 0..4)
+      S -> Q : schedule(noteOn 명령, voice × 25ms + 흔들림)
+      S -> Q : schedule(noteOff 명령, + 220ms)
+    end
+    opt 대량 생성 켜짐 and births >= 12
+      S -> NM : burstLayerFor(births, notes)
+      S -> Q : schedule(대량 생성 레이어 noteOn / noteOff)
+    end
+    opt 소멸 타악기 켜짐 and deaths가 있음
+      S -> Q : schedule(타악기 명령, 60ms)
+    end
+  end
+  S --> U
+end
+U -> U : refreshNow()
+
+== sound-notes 스레드 (예약한 시간이 되면) ==
+
+Q -> V : controlChange(PAN, pan)\nnoteOn(pitch, velocity)
+Q -> V : noteOff(pitch)
+@enduml

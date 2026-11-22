@@ -1,0 +1,38 @@
+@startuml state-sound
+!pragma layout smetana
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+hide empty description
+mainframe stm 사운드 켜짐과 꺼짐 (SoundEffects)
+
+state "소리 없음" as NoDevice
+NoDevice : 리스너와 메뉴가 없다
+NoDevice : 게임은 소리 없이 그대로 동작한다
+
+state "켜짐" as On
+On : onBoardChanged(e) / latestCells = e.copyAliveCells()
+On : onBoardChanged(e) [e.kind == GENERATION and 변화 있음] / generationChanged(births, deaths)
+On : playStep / 재생선 이동, 산 셀 연주, 패드 조절, step++
+On : Settings 선택 / showSettings()
+
+state "꺼짐" as Off
+Off : onBoardChanged(e) / latestCells = e.copyAliveCells()
+Off : playStep / 패드 끄기, setPlayhead(-1)
+Off : Settings 선택 / showSettings()
+
+[*] --> NoDevice : install(universe)\n[신시사이저를 열 수 없음]
+[*] --> On : install(universe)\n[신시사이저를 열었음]\n/ addBoardChangeListener(effects),\nscheduleAtFixedRate(playStep, 0, 150ms)
+
+On --> Off : Sound > Off\n/ enabled = false
+Off --> On : Sound > On\n/ enabled = true
+
+note right of Off
+  꺼져 있어도 판의 변화는 계속 받아 둔다.
+  다시 켜면 다음 스텝부터
+  그동안 바뀐 판을 연주한다.
+  재생선 위치(step)와 코드(chord)는
+  꺼진 동안 움직이지 않는다.
+end note
+@enduml

@@ -1,0 +1,52 @@
+@startuml sd-install
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd 사운드 설치 (SoundEffects.install)
+
+participant ":Life" as L
+participant "SoundEffects" as SC
+participant "MidiSystem" as MS
+participant "effects : SoundEffects" as S
+participant ":Universe" as U
+participant "noteScheduler :\nScheduledExecutorService" as Q
+participant "MenuSite" as M
+
+note over L, M : 모두 Swing 이벤트 스레드에서 실행된다
+
+L -> SC : install(universe)
+SC -> MS : getSynthesizer()
+
+alt MIDI 신시사이저를 열 수 없음
+  MS --> SC : MidiUnavailableException
+  SC --> L : "Sound disabled" 출력 후 반환
+  note right of L : 리스너도 메뉴도 등록하지 않는다.\n게임은 소리 없이 그대로 실행된다
+else 신시사이저를 열었음
+  MS --> SC : synthesizer
+  SC -> SC : synthesizer.open()
+  create S
+  SC -> S : new SoundEffects(universe, synthesizer)
+  S -> S : 채널 9개 할당\n(생성음 5, 대량 생성, 패드, 재생선, 타악기)
+  create Q
+  S -> Q : <<create>>\nExecutors.newSingleThreadScheduledExecutor()
+  S -> S : applyInstruments()
+  S -> S : settings.onInstrumentChange(\n() -> noteScheduler.execute(applyInstruments))
+  S --> SC
+
+  SC -> U : addBoardChangeListener(effects)
+  U -> S : onBoardChanged(INITIAL 이벤트)
+  S -> S : latestCells = event.copyAliveCells()
+  S --> U
+  U --> SC
+
+  SC -> Q : scheduleAtFixedRate(effects::playStep, 0, 150ms)
+  note right of Q : 첫 스텝 전에 INITIAL로\n판을 받아 두었으므로\nlatestCells는 비어 있지 않다
+
+  SC -> S : createMenus()
+  S -> M : addLine(Sound, On / Off / Settings)
+  SC --> L
+end
+@enduml
