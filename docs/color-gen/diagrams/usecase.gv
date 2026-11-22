@@ -19,11 +19,11 @@ graph usecase {
   pkg4 [shape=box, label="", width=6.722, height=2.556, fixedsize=true, pos="542.6,-477.0!"];
 
   // 유스케이스
-  On [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Turn On Color Cycling E", width=2.778, height=0.472, fixedsize=true, pos="468.0,383.0!"];
-  Off [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Turn Off Color Cycling E", width=2.778, height=0.472, fixedsize=true, pos="468.0,335.0!"];
-  Count [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Count Cell Age E", width=2.778, height=0.472, fixedsize=true, pos="724.0,335.0!"];
-  Recolor [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Recolor Cells by Age E", width=2.778, height=0.472, fixedsize=true, pos="864.0,383.0!"];
-  Drag [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Draw Cells by Dragging E", width=2.778, height=0.472, fixedsize=true, pos="504.1,232.0!"];
+  On [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Turn On Color Cycling(E)", width=2.778, height=0.472, fixedsize=true, pos="468.0,383.0!"];
+  Off [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Turn Off Color Cycling(E)", width=2.778, height=0.472, fixedsize=true, pos="468.0,335.0!"];
+  Count [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Count Cell Age(E)", width=2.778, height=0.472, fixedsize=true, pos="724.0,335.0!"];
+  Recolor [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Recolor Cells by Age(E)", width=2.778, height=0.472, fixedsize=true, pos="864.0,383.0!"];
+  Drag [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Draw Cells by Dragging(E)", width=2.778, height=0.472, fixedsize=true, pos="504.1,232.0!"];
   Edit [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Edit Cells", width=2.778, height=0.472, fixedsize=true, pos="530.0,120.0!"];
   Run [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Run / Halt Game", width=2.778, height=0.472, fixedsize=true, pos="530.0,72.0!"];
   Step [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Step One Generation", width=2.778, height=0.472, fixedsize=true, pos="530.0,24.0!"];
@@ -31,13 +31,13 @@ graph usecase {
   StoreLoad [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Store / Load Board", width=2.778, height=0.472, fixedsize=true, pos="530.0,-72.0!"];
   Exit [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Exit Game", width=2.778, height=0.472, fixedsize=true, pos="530.0,-120.0!"];
   Advance [shape=ellipse, style=filled, fillcolor="#F1F1F1", label=<<table border="0" cellborder="0" cellspacing="0" cellpadding="1"><tr><td>Advance Generation</td></tr><hr/><tr><td><font point-size="10">extension points<br/>세대 확정 후</font></td></tr></table>>, width=3.056, height=0.889, fixedsize=true, pos="830.0,48.0!"];
-  Capture [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Capture Template E", width=2.778, height=0.472, fixedsize=true, pos="491.8,-234.0!"];
-  Place [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Place Template E", width=2.778, height=0.472, fixedsize=true, pos="491.8,-282.0!"];
-  Undo [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Undo Placement E", width=2.778, height=0.472, fixedsize=true, pos="491.8,-330.0!"];
-  Toggle [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Toggle Sound E", width=2.778, height=0.472, fixedsize=true, pos="414.6,-442.0!"];
-  Config [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Configure Sound E", width=2.778, height=0.472, fixedsize=true, pos="414.6,-490.0!"];
-  Sweep [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Hear Board Sweep E", width=2.778, height=0.472, fixedsize=true, pos="414.6,-538.0!"];
-  GenSound [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Hear Generation Sound E", width=2.778, height=0.472, fixedsize=true, pos="670.6,-442.0!"];
+  Capture [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Capture Template(E)", width=2.778, height=0.472, fixedsize=true, pos="491.8,-234.0!"];
+  Place [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Place Template(E)", width=2.778, height=0.472, fixedsize=true, pos="491.8,-282.0!"];
+  Undo [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Undo Placement(E)", width=2.778, height=0.472, fixedsize=true, pos="491.8,-330.0!"];
+  Toggle [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Toggle Sound(E)", width=2.778, height=0.472, fixedsize=true, pos="414.6,-442.0!"];
+  Config [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Configure Sound(E)", width=2.778, height=0.472, fixedsize=true, pos="414.6,-490.0!"];
+  Sweep [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Hear Board Sweep(E)", width=2.778, height=0.472, fixedsize=true, pos="414.6,-538.0!"];
+  GenSound [shape=ellipse, style=filled, fillcolor="#F1F1F1", label="Hear Generation Sound(E)", width=2.778, height=0.472, fixedsize=true, pos="670.6,-442.0!"];
 
   // 액터 (막대 인형)
   a_head [shape=circle, label="", width=0.25, height=0.25, fixedsize=true, pos="40.0,36.0!"];
@@ -77,8 +77,8 @@ graph usecase {
   rel2 [shape=plaintext, label="«include»", fontsize=10, pos="676.0,74.0!"];
   Step -- Advance [style=dashed, dir=forward, arrowhead=vee, arrowsize=0.8];
   rel3 [shape=plaintext, label="«include»", fontsize=10, pos="676.0,21.0!"];
-  Count -- Advance [style=dashed, dir=forward, arrowhead=vee, arrowsize=0.8];
-  rel4 [shape=plaintext, label="«extend»", fontsize=10, pos="737.0,191.5!"];
+  Advance -- Count [style=dashed, dir=forward, arrowhead=vee, arrowsize=0.8];
+  rel4 [shape=plaintext, label="«include»", fontsize=10, pos="737.0,191.5!"];
   Recolor -- Advance [style=dashed, dir=forward, arrowhead=vee, arrowsize=0.8];
   rel5 [shape=plaintext, label="«extend»", fontsize=10, pos="893.0,287.5!"];
   GenSound -- Advance [style=dashed, dir=forward, arrowhead=vee, arrowsize=0.8];

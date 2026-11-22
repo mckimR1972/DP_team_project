@@ -9,8 +9,8 @@ left to right direction
 actor "사용자" as User
 
 rectangle "Life Game" {
-  usecase "Turn On Color Cycling E" as On
-  usecase "Turn Off Color Cycling E" as Off
+  usecase "Turn On Color Cycling(E)" as On
+  usecase "Turn Off Color Cycling(E)" as Off
   usecase "Run / Halt Game" as Run
   usecase "Step One Generation" as Step
 
@@ -19,8 +19,8 @@ rectangle "Life Game" {
 extension points
 세대 확정 후"
 
-  usecase "Recolor Cells by Age E" as Recolor
-  usecase "Count Cell Age E" as Count
+  usecase "Recolor Cells by Age(E)" as Recolor
+  usecase "Count Cell Age(E)" as Count
 }
 
 User -- On
@@ -36,8 +36,5 @@ note on link
   condition: {색 순환이 켜져 있음}
   extension point: 세대 확정 후
 end note
-Advance <.. Count : <<extend>>
-note on link
-  extension point: 세대 확정 후
-end note
+Advance ..> Count : <<include>>
 @enduml
