@@ -2,7 +2,7 @@
 
 기준: dev `a480113`. T 번호는 설명을 위한 **시나리오 묶음**이며 JUnit 실행 개수와 같지 않다. 아래는 모두 현재 테스트 소스에 대응한다. 실행 상태는 [계획·결과](test-plan.md)를 따른다.
 
-소스 위치: [test/com/holub/life](../../test/com/holub/life). 표의 `클래스.메서드`는 그대로 검색할 수 있는 이름이다.
+소스 위치: [test/capture/com/holub/life](../../test/capture/com/holub/life). 표의 `클래스.메서드`는 그대로 검색할 수 있는 이름이다.
 
 ## 모델·저장·규칙 검사
 
