@@ -111,25 +111,23 @@
 
 ### 3.1 클래스 다이어그램
 
-굵게 표시한 `«new»`는 Freezing이 추가한 타입, `«changed»`는 고친 기존 타입이다.
+새로 만든 타입은 `FreezingTools`, `FreezingManager`, `FreezingRegion`, `FreezingState`, `NormalState`, `FrozenState`이고, 고친 기존 타입은 `Cell`, `Neighborhood`, `Resident`, `Universe`다. `PatternTools`는 캡처 기능의 클래스로 고치지 않았다. State 패턴의 역할은 Context = `FreezingRegion`, State = `FreezingState`, ConcreteState = `NormalState`·`FrozenState`다.
 
 ```mermaid
 classDiagram
     direction LR
 
     class Cell {
-        <<interface, changed>>
+        <<interface>>
         +figureNextState(...) boolean
         +transition() boolean
         +isAliveAt(row, column) boolean
         +holdNextState(location, alive) boolean
     }
     class Neighborhood {
-        <<changed>>
         -grid Cell[][]
     }
     class Resident {
-        <<changed>>
         -amAlive boolean
         -willBeAlive boolean
         -age int
@@ -140,7 +138,6 @@ classDiagram
     Neighborhood o-- "*" Cell
 
     class Universe {
-        <<changed, Mediator>>
         -outermostCell Cell
         -generation long
         -freezingTools FreezingTools
@@ -152,7 +149,6 @@ classDiagram
         +cancel()
     }
     class FreezingTools {
-        <<new, Swing>>
         -selecting boolean
         +beginSelection()
         +cancel()
@@ -161,7 +157,6 @@ classDiagram
         +paintOverlay(Graphics2D)
     }
     class FreezingManager {
-        <<new>>
         -regions List~FreezingRegion~
         -currentGeneration LongSupplier
         +install(selected, generations) FreezingRegion
@@ -175,7 +170,6 @@ classDiagram
         +addListener(Runnable)
     }
     class FreezingRegion {
-        <<new, Context>>
         -area Rectangle
         -snapshot boolean[][]
         -startGeneration long
@@ -187,18 +181,16 @@ classDiagram
         +holdSnapshot(board) boolean
     }
     class FreezingState {
-        <<interface, new, State>>
+        <<interface>>
         +beforeTransition(region, board) boolean
         +afterGeneration(region)
         +isFrozen() boolean
         +remainingGenerations() int
     }
     class NormalState {
-        <<new, ConcreteState>>
-        +INSTANCE$
+        +INSTANCE NormalState
     }
     class FrozenState {
-        <<new, ConcreteState>>
         -remaining int
     }
 
@@ -211,7 +203,7 @@ classDiagram
     FreezingManager ..> Universe : 세대 번호 읽기
     FreezingManager --> Cell : board
     FreezingManager o-- "*" FreezingRegion : regions
-    FreezingRegion --> "1" FreezingState : state
+    FreezingRegion --> FreezingState : state
     FreezingState <|.. NormalState
     FreezingState <|.. FrozenState
     FrozenState ..> FreezingRegion : holdSnapshot, changeState
@@ -304,38 +296,34 @@ sequenceDiagram
 
 ### 3.4 상태 다이어그램: 영역 하나
 
-`FreezingRegion.state`가 가리키는 객체의 변화다.
+`FreezingRegion.state`가 가리키는 객체의 변화다. 영역은 `new FreezingRegion(area)`로 만들어질 때 `NormalState`이고, `freeze()`의 n은 1 이상이어야 하며 이때 스냅샷을 저장한다. `FrozenState`인 동안에는 세대마다 `beforeTransition()`에서 영역의 다음 상태를 스냅샷으로 바꾼다. `NormalState`로 돌아간 영역은 `FreezingManager`가 목록에서 뺀다.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Normal : new FreezingRegion(area)
-    Normal : NormalState
-    Normal : 규칙 그대로 (아무것도 하지 않음)
-    Frozen : FrozenState (remaining = n)
-    Frozen : beforeTransition / 영역의 다음 상태 = 스냅샷
+    [*] --> Normal
+    Normal: NormalState (규칙 그대로)
+    Frozen: FrozenState (스냅샷 유지, 남은 세대 n)
 
-    Normal --> Frozen : freeze(board, n, g), n은 1 이상 / 스냅샷 저장
-    Frozen --> Frozen : afterGeneration(), 남은 세대가 아직 1 이상
-    Frozen --> Normal : afterGeneration(), 남은 세대가 0 (자동 해제)
-    Frozen --> Normal : release() (강제 해제, 전체 해제, Clear, Load)
-    Normal --> [*] : FreezingManager가 목록에서 제거
+    Normal --> Frozen: freeze(board, n, g)
+    Frozen --> Frozen: afterGeneration(), 남은 세대 1 이상
+    Frozen --> Normal: afterGeneration(), 남은 세대 0 (자동 해제)
+    Frozen --> Normal: release() (강제 해제, Clear, Load)
 ```
 
 수치 예: 세대 10에 n = 5로 설치하면 remaining은 5다. 11·12·13·14·15세대 갱신에서 고정이 적용되고 갱신이 끝날 때마다 4·3·2·1·0이 된다. 15세대 갱신의 `afterGeneration()`에서 `NormalState`로 바뀌어 목록에서 빠지고, 16세대 갱신은 정상 규칙으로 계산한다(`FreezingModelTest`의 `e_installAtGenerationTenForFiveIsFrozenThroughFifteenAndFreeFromSixteen`).
 
 ### 3.5 상태 다이어그램: 화면의 영역 선택 모드
 
-영역의 상태(3.4)와는 다른 객체다. `FreezingTools.selecting` 필드가 갖는 값이며 State 패턴으로 만든 것은 아니다.
+영역의 상태(3.4)와는 다른 객체다. `FreezingTools.selecting` 필드가 갖는 값이며 State 패턴으로 만든 것은 아니다. 영역 선택 버튼을 누르면 패턴 편집을 끝내고 되돌리기 이력을 비우고 시계를 멈춘다. 선택 중에는 세대 진행과 일반 그리기가 막힌다.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
-    Idle : 선택 안 함 (selecting = false)
-    Selecting : 영역 선택 중 (selecting = true)
-    Selecting : 세대 진행·일반 그리기 차단
+    Idle: 선택 안 함 (selecting = false)
+    Selecting: 영역 선택 중 (selecting = true)
 
-    Idle --> Selecting : 영역 선택 버튼 / 패턴 편집 종료, 되돌리기 이력 비움, Clock.stop()
-    Selecting --> Idle : 설치 성공
-    Selecting --> Idle : Esc, 오른쪽 클릭, 선택 끝내기 버튼, 탭 전환
-    Selecting --> Idle : Grid 메뉴의 Clear, Load 성공 (reset)
+    Idle --> Selecting: 영역 선택 버튼
+    Selecting --> Idle: 설치 성공
+    Selecting --> Idle: Esc, 오른쪽 클릭, 선택 끝내기 버튼, 탭 전환
+    Selecting --> Idle: Clear, Load 성공 (reset)
 ```
