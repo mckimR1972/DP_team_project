@@ -19,7 +19,7 @@ Color 메뉴에서 Cycle by Generation을 고르면, 살아 있는 셀이 10세�
 
 확장 유스케이스는 과제 안내문의 규칙대로 이름 끝에 `E`를 붙였다. 그림에는 색 순환 유스케이스와, 이들이 맞물리는 원본 유스케이스(Run / Halt Game, Step One Generation, Advance Generation)만 그렸다.
 
-![색 순환 유스케이스 다이어그램](diagrams/color-gen/usecase-color.png)
+![색 순환 유스케이스 다이어그램](diagrams/usecase-color.png)
 
 | 유스케이스 | 시작하는 곳 | 기존 유스케이스와의 관계 | 내용 |
 | --- | --- | --- | --- |
@@ -349,9 +349,9 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
 바꾸기 전(원본 dev `c49ca39`)과 바꾼 후(dev `94f50b3`)의 클래스 다이어그램이다. 이 기능과 관계있는 클래스와 멤버만 그렸다.
 
-![바꾸기 전 클래스 다이어그램](diagrams/color-gen/class-before.png)
+![바꾸기 전 클래스 다이어그램](diagrams/class-before.png)
 
-![바꾼 후 클래스 다이어그램](diagrams/color-gen/class-after.png)
+![바꾼 후 클래스 다이어그램](diagrams/class-after.png)
 
 - 밑줄은 static 멤버다. `colorPolicy` 연관 이름에 밑줄을 그어 Resident 클래스가 참조 하나를 가진다는 것을 나타냈다.
 - `LIVE_COLOR`는 Color 메뉴도 쓰므로 private(`-`)에서 package(`~`)로 바뀌었다.
@@ -374,9 +374,9 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
 원본과 지금의 틱 처리를 시퀀스 다이어그램으로 비교한다. Neighborhood는 블록 안의 블록을 거쳐 Resident까지 내려가지만, 그림에서는 이 Composite 재귀를 "칸마다" loop 하나로 줄였다.
 
-![원본 틱 처리 시퀀스 다이어그램](diagrams/color-gen/sd-tick-before.png)
+![원본 틱 처리 시퀀스 다이어그램](diagrams/sd-tick-before.png)
 
-![지금 틱 처리 시퀀스 다이어그램](diagrams/color-gen/sd-tick-after.png)
+![지금 틱 처리 시퀀스 다이어그램](diagrams/sd-tick-after.png)
 
 1. 시계(Swing 타이머)가 Universe의 틱 리스너를 부른다.
 2. 캡처·배치 편집 중이거나 Freezing 영역을 고르는 중이면 여기서 끝난다.
@@ -392,7 +392,7 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
 ### 3.3 Color 메뉴를 고를 때
 
-![Color 메뉴 시퀀스 다이어그램](diagrams/color-gen/sd-color-menu.png)
+![Color 메뉴 시퀀스 다이어그램](diagrams/sd-color-menu.png)
 
 1. 메뉴 항목의 `ActionListener`가 규칙 객체를 만든다. Single Color는 `new FixedColorPolicy(Resident.LIVE_COLOR)`, Cycle by Generation은 `new CyclingColorPolicy(10, 빨강, 파랑, 초록)`이다. 그림은 Cycle by Generation이고, Single Color도 만드는 객체만 다르다.
 2. `useColorPolicy()`가 `Resident.setColorPolicy()`로 static 참조를 바꾼다. 셀의 나이는 바뀌지 않는다. 이어서 `COLOR_POLICY_CHANGED` 이벤트로 통계에 알린다(통계 #10).
@@ -401,14 +401,14 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
 색 모드를 상태로 보면 아래와 같다. 두 상태의 차이는 틱마다 판 전체를 다시 그리는지(내부 전이 `tick()`)뿐이다.
 
-![색 모드 상태 다이어그램](diagrams/color-gen/state-color-mode.png)
+![색 모드 상태 다이어그램](diagrams/state-color-mode.png)
 
 - 같은 메뉴를 다시 고르면 같은 내용의 새 규칙 객체로 바뀐다. 상태를 나갔다 다시 들어오는 자기 전이라서 entry 동작인 `repaint()`도 다시 일어난다. 화면은 그대로다.
 - 이 상태는 Strategy 객체를 바꿔 끼운 결과다. State 패턴으로 만들지 않은 이유는 5.2절에 있다.
 
 ### 3.4 셀의 나이가 바뀌는 경우
 
-![셀 하나의 상태 다이어그램](diagrams/color-gen/state-cell-age.png)
+![셀 하나의 상태 다이어그램](diagrams/state-cell-age.png)
 
 - Alive로 들어오는 길은 셋(세대 진행으로 태어남, 클릭, Load)이고, 모두 들어오는 순간 나이가 0이 된다. 그래서 `entry / age = 0` 하나로 적었다.
 - Alive에 머무는 동안에는 세대 진행이 내부 전이로 나이를 1씩 늘린다. 상태를 나가고 다시 들어오는 것이 아니라서 entry 동작은 일어나지 않는다.
@@ -435,7 +435,7 @@ public final class CyclingColorPolicy implements CellColorPolicy {
 
 게임을 블랙박스로 보면, 이 기능이 새로 만들거나 바꾼 시스템 연산은 셋이다. 아래 시스템 시퀀스 다이어그램은 색 순환을 켜고 돌린 뒤 끄는 한 시나리오다.
 
-![시스템 시퀀스 다이어그램](diagrams/color-gen/ssd.png)
+![시스템 시퀀스 다이어그램](diagrams/ssd.png)
 
 | 시스템 연산 | 실제 입력 | 이 기능과의 관계 |
 | --- | --- | --- |
@@ -781,15 +781,7 @@ Universe는 JVM에서 한 번만 만들어지고, 그때 메뉴와 시계 리스
 ./gradlew test
 ```
 
-dev `d215c7a`(Tick 수정 #16까지 병합) 기준으로 전체 294개 테스트가 모두 통과한다. 이 중 색 순환 기능의 테스트는 39개다. 아래는 2026-11-19에 Gradle 9.7.1 / JDK 17(build.gradle의 툴체인)로 실행한 Gradle 테스트 보고서 화면이다.
-
-색 순환 테스트 4개 클래스만 실행한 결과:
-
-![색 순환 테스트 결과](color-gen/test-color.png)
-
-전체 테스트 결과:
-
-![전체 테스트 결과](color-gen/test-all.png)
+dev `838182c`(Freezing #7까지 병합) 기준으로 전체 384개 테스트가 모두 통과한다(Gradle 9.7.1, JDK 17 툴체인). 이 중 색 순환 기능의 테스트는 39개다. 고정된 셀의 나이와 색이 멈췄다가 다시 이어지는지는 Freezing 기능의 테스트(`FreezingModelTest`, `FreezingIntegrationTest`)가 확인한다.
 
 | 테스트 클래스 | 개수 | 대상 | 게임 창 |
 | --- | --- | --- | --- |
