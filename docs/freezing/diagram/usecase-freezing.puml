@@ -1,5 +1,4 @@
 @startuml usecase-freezing
-!pragma layout smetana
 skinparam monochrome true
 skinparam dpi 150
 skinparam shadowing false

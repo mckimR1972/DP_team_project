@@ -2,7 +2,7 @@
 
 `.puml`이 원본이고 `.png`는 PlantUML로 그린 결과다. 코드 기준은 dev `838182c`.
 
-다시 그리려면 이 폴더에서 `java -jar plantuml.jar -charset UTF-8 -tpng *.puml`을 실행한다. 클래스·유스케이스·상태 그림은 `!pragma layout smetana`를 써서 Graphviz 없이 그려진다.
+다시 그리려면 Graphviz를 설치한 뒤 이 폴더에서 `java -DPLANTUML_LIMIT_SIZE=8192 -jar plantuml.jar -charset UTF-8 -tpng *.puml`을 실행한다. 클래스 그림은 폭이 4096px을 넘어서 한도를 늘려야 잘리지 않는다.
 
 ## 유스케이스
 

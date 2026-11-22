@@ -1,5 +1,4 @@
 @startuml state-region
-!pragma layout smetana
 skinparam monochrome true
 skinparam dpi 150
 skinparam shadowing false

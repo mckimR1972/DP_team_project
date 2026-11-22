@@ -1,5 +1,4 @@
 @startuml state-selection
-!pragma layout smetana
 skinparam monochrome true
 skinparam dpi 150
 skinparam shadowing false
@@ -8,11 +7,11 @@ hide empty description
 mainframe stm 영역 선택 모드 (FreezingTools.selecting)
 
 state "선택 안 함" as Idle
-state Idle : selecting = false
+Idle : selecting = false
 
 state "영역 선택 중" as Selecting
-state Selecting : selecting = true
-state Selecting : 세대 진행, 일반 그리기 막힘
+Selecting : selecting = true
+Selecting : 세대 진행, 일반 그리기 막힘
 
 [*] --> Idle : 프로그램 시작
 
