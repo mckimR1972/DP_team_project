@@ -335,23 +335,23 @@ sequenceDiagram
 
 진동자처럼 같은 변화가 계속 반복되면 세대 소리가 점점 작아진다. `RepeatTracker`는 births와 deaths로 만든 해시값을 최근 8개까지 기억해 두고, 새 값이 그 안에 있으면 반복으로 본다. 재생선과 패드는 이 상태와 관계없이 계속 나기 때문에 진동자만 남은 판도 완전히 조용해지지는 않는다.
 
-```mermaid
-stateDiagram-v2
-    [*] --> Full
-    Full: 원래 크기 (gain 1.0)
-    Fading: 점점 작게 (반복 1회마다 -1/12)
-    Silent: 무음 (gain 0)
-    Ending: 마무리 화음 재생
+![반복 페이드 상태 다이어그램](diagrams/sound/state-fade.png)
 
-    Full --> Fading: 최근 8세대 안에 같은 변화
-    Fading --> Fading: 반복 계속
-    Fading --> Silent: 12번 반복
-    Fading --> Full: 새로운 변화
-    Silent --> Full: 새로운 변화
-    Full --> Ending: 판 전멸
-    Fading --> Ending: 판 전멸
-    Ending --> Full: 셀이 다시 생김
-```
+판이 전멸한 세대의 마무리 화음은 상태가 아니라 그 세대에 한 번 하는 동작이라서, 상태 다이어그램에서는 상태로 두지 않고 노트로 적었다. 나머지 UML은 [sound-uml.md](sound-uml.md)에 있다.
+
+### 3.5 다른 기능과 맞물리는 부분
+
+사운드는 판의 변화를 `BoardChangeEvent`로만 받기 때문에, 다른 기능이 판을 바꿀 때 어떤 이벤트를 보내는지가 곧 사운드와의 연결 방식이다. 기능마다 정리하면 다음과 같다.
+
+| 기능 | 사운드가 받는 것 | 결과 | 확인한 테스트 |
+|---|---|---|---|
+| 통계 | 같은 `GENERATION` 이벤트 (등록 순서상 통계가 먼저 받음) | 통계 탭의 세대·탄생·사망 수와 그 세대에 나는 소리가 같은 변화에서 나온다 | `realBlinkerUpdatesStatisticsAndSchedulesBirthAndDeathSoundsOnce` |
+| Freezing | 고정된 셀은 전이 전후가 같아서 births·deaths에 들어가지 않는다 | 고정된 셀은 세대 소리를 내지 않고, 풀린 첫 세대부터 다시 들린다. 재생선은 판 복사본을 읽으므로 고정된 산 셀도 연주한다 | `FreezingSoundIntegrationTest` 3개 |
+| 색 순환 | 색 규칙을 바꾸면 `COLOR_POLICY_CHANGED` 이벤트 | 세대 소리는 나지 않고 재생선이 읽는 판만 갱신된다. 이벤트에 든 색 목록은 사운드가 쓰지 않는다 | `realColorMenuRefreshesStatisticsWithoutSchedulingGenerationSound` |
+| 캡처·템플릿 | 배치는 `TEMPLATE`, 되돌리기는 `TEMPLATE_UNDO` 이벤트 | 세대 소리 없이 다음 재생선 스텝부터 바뀐 판을 연주한다. 캡처·배치 편집 중에는 세대가 진행되지 않으므로 세대 소리도 없다 | `nonGenerationEventUpdatesSweepWithoutGenerationSounds` |
+| 드래그 그리기 | 셀이 실제로 바뀐 마우스 입력마다 `EDIT` 이벤트 | 그리는 동안은 조용하고, 그린 셀을 재생선이 바로 연주한다 | `nonGenerationEventUpdatesSweepWithoutGenerationSounds`, `disabledSoundStillReceivesEditsForTheNextSweep` |
+
+색을 소리에 반영할지(예: 셀 색에 따라 악기나 음높이를 바꾸기)는 팀에서 기능 간 조합을 정리할 때 색 기능 코드를 보고 정하기로 했던 항목이다. 지금 구현에는 넣지 않았고, 사운드는 셀이 살아 있는지만 본다.
 
 ## 4. 적용한 설계 패턴
 
@@ -469,7 +469,18 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 그래서 코드마다 어울리는 5음을 따로 두고 코드 진행에 맞춰 바꿨다. 같은 모양이라도 코드가 바뀌면 다르게 들리고, 어떤 셀 조합이든 그 순간의 코드 안에 있는 음만 나온다. 5음은 모두 C장조 음계 안에 있어서 코드가 바뀌는 순간에도 튀는 음이 없다.
 
-### 5.6 아직 정리하지 못한 부분
+### 5.6 통계와 같은 이벤트를 쓸까, 따로 둘까
+
+통계 기능을 합칠 때(#10) 판 변화를 받는 통로가 둘이 되었다. 사운드는 `GenerationListener`로 생성·소멸 좌표(`List<Point>`)를 받았고, 통계는 `BoardChangeListener`로 판 전체(`BitSet`)를 받아 직전 판과 직접 비교했다. 이 통합은 통계 담당이 진행했고, 사운드 쪽 수신부 변경도 그때 함께 들어갔다.
+
+| 방법 | 장점 | 문제 |
+|---|---|---|
+| 두 통로를 그대로 둔다 | 사운드와 통계 코드를 고치지 않아도 된다 | `Universe`가 알림 경로 두 개를 따로 관리하고, 생성·소멸 비교를 사운드 쪽과 통계 쪽에서 두 번 한다. 자료 구조도 달라서 두 기능이 본 변화가 같다는 보장이 없다 |
+| 하나의 이벤트로 합친다 | 비교는 `Universe`에서 한 번만 하고, 두 기능이 같은 세대 번호와 같은 변화 목록을 받는다. 편집·Clear·Load 때도 이벤트가 와서 재생선이 판을 직접 읽지 않아도 된다 | 사운드가 쓰지 않는 값(색 목록, `COLOR_POLICY_CHANGED`)도 이벤트에 들어 있어서, 이벤트가 바뀌면 사운드도 영향을 받을 수 있다 |
+
+하나로 합치는 쪽을 골랐다. 사운드 쪽에서는 수신부만 바꾸면 됐고(4.1), 이전 판과 비교하는 일을 `Universe`에 두기로 한 처음 결정(5.1)과도 맞는다.
+
+### 5.7 아직 정리하지 못한 부분
 
 지금 `SoundEffects` 안에는 `settings.isOn(...)`으로 기능마다 분기하는 곳이 10군데 있다. 생성음, 타악기, 패드, 재생선 등을 각각 객체로 나눠 공통 인터페이스 뒤에 두면(Strategy) 분기는 없어질 것이다. 문제는 이 기능들이 서로 독립적이지 않다는 점이다. 현재 코드(`chord`)와 반복 페이드 값(`gain`)을 여러 기능이 같이 쓰고, 생성음에서 고른 화음을 대량 생성 레이어가 다시 받아 쓴다. 인터페이스를 정하려면 이 값들을 어떻게 넘길지부터 정해야 해서, 이번에는 동작을 먼저 맞추고 이 정리는 남겨 두었다.
 
