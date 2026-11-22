@@ -1,0 +1,29 @@
+@startuml state-region
+!pragma layout smetana
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+hide empty description
+mainframe stm Freezing 영역 (FreezingRegion.state)
+
+state NormalState
+state NormalState : 규칙 그대로
+
+state FrozenState
+state FrozenState : beforeTransition() / holdSnapshot(board)
+state FrozenState : afterGeneration() / --remaining
+
+[*] --> NormalState : new FreezingRegion(area)
+
+NormalState --> FrozenState : freeze(board, n, g) [n >= 1]\n/ 스냅샷 저장, remaining = n
+FrozenState --> FrozenState : afterGeneration() [remaining > 0]
+FrozenState --> NormalState : afterGeneration() [remaining <= 0]\n자동 해제
+FrozenState --> NormalState : release()\n강제 해제, Clear, Load
+
+note bottom of FrozenState
+  예: 세대 10에 n = 5로 설치하면
+  11~15세대 갱신 동안 고정,
+  16세대 갱신부터 정상 규칙
+end note
+@enduml

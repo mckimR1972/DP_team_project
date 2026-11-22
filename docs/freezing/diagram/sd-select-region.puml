@@ -1,0 +1,39 @@
+@startuml sd-select-region
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd Select Region E
+
+actor "사용자" as User
+participant ":FreezingTools" as T
+participant ":Universe" as U
+participant ":PatternTools" as P
+participant ":Clock" as C
+participant ":FreezingManager" as M
+
+User -> T : 영역 선택 클릭
+T -> U : beforeSelect.run()
+note right of U : Universe가 넘겨 준 Runnable
+opt 패턴 편집 중
+  U -> P : cancel()
+end
+U -> P : boardChanged()
+T -> C : stop()
+T -> T : selecting = true
+
+User -> T : mousePressed(e)
+T -> T : anchor = cellAt(point)
+
+loop 끄는 동안
+  User -> T : mouseDragged(e)
+  T -> T : selectThrough(end)
+  T -> M : overlapsFrozen(selection)
+  M --> T : overlaps
+  T -> T : install.setEnabled(!overlaps)
+end
+
+User -> T : mouseReleased(e)
+@enduml

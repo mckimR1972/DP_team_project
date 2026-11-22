@@ -1,0 +1,178 @@
+@startuml class-freezing
+!pragma layout smetana
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam classAttributeIconSize 0
+hide circle
+skinparam ranksep 70
+skinparam nodesep 60
+
+interface Cell <<interface>> {
+  + figureNextState(이웃 8칸 : Cell) : boolean
+  + transition() : boolean
+  + isAliveAt(row : int, column : int) : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+  + widthInCells() : int
+}
+
+class Neighborhood {
+  - gridSize : int
+  + transition() : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+}
+
+class Resident {
+  - amAlive : boolean
+  - willBeAlive : boolean
+  - age : int = 0
+  - heldThisGeneration : boolean
+  + transition() : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+}
+
+class Universe {
+  - {static} theInstance : Universe
+  - generation : long
+  + {static} instance() : Universe
+  ~ freezingControls() : JPanel
+  ~ freezing() : FreezingManager
+  ~ finishFreezingEditing()
+  - setCell(cell : Point, alive : boolean) : boolean
+  # paintComponent(g : Graphics)
+}
+
+class Clock {
+  + {static} instance() : Clock
+  + addClockListener(observer : Listener)
+  + stop()
+}
+
+class Life {
+  ~ {static} createSidebar(universe : Universe, statisticsPanel : StatisticsPanel) : JTabbedPane
+}
+
+class PatternTools {
+  ~ setPlacementGuard(guard : Predicate<Rectangle>)
+  ~ boardChanged()
+  ~ cancel()
+}
+
+class FreezingTools {
+  - selecting : boolean
+  - anchor : Point
+  - selection : Rectangle
+  - duration : JSpinner
+  ~ beginSelection()
+  ~ cancel()
+  ~ reset()
+  ~ isEditing() : boolean
+  ~ blockedEdit()
+  ~ paintOverlay(g : Graphics2D)
+  - installSelection()
+  - refresh()
+}
+
+class FreezingManager {
+  - currentGeneration : LongSupplier
+  - listeners : Runnable[*]
+  ~ install(selected : Rectangle, generations : int) : FreezingRegion
+  ~ release(region : FreezingRegion)
+  ~ releaseAll()
+  ~ reset()
+  ~ beforeTransition(cells : Cell) : boolean
+  ~ afterGeneration()
+  ~ isFrozen(cell : Point) : boolean
+  ~ overlapsFrozen(area : Rectangle) : boolean
+  ~ addListener(listener : Runnable)
+}
+
+class FreezingRegion {
+  - area : Rectangle
+  - snapshot : boolean[*]
+  - startGeneration : long
+  - duration : int
+  ~ freeze(board : Cell, generations : int, currentGeneration : long)
+  ~ release()
+  ~ beforeTransition(board : Cell) : boolean
+  ~ afterGeneration()
+  ~ changeState(next : FreezingState)
+  ~ holdSnapshot(board : Cell) : boolean
+  ~ isFrozen() : boolean
+}
+
+interface FreezingState <<interface>> {
+  + beforeTransition(region : FreezingRegion, board : Cell) : boolean
+  + afterGeneration(region : FreezingRegion)
+  + isFrozen() : boolean
+  + remainingGenerations() : int
+}
+
+class NormalState {
+  ~ {static} INSTANCE : NormalState
+  + beforeTransition(region : FreezingRegion, board : Cell) : boolean
+  + afterGeneration(region : FreezingRegion)
+}
+
+class FrozenState {
+  - remaining : int
+  ~ FrozenState(generations : int)
+  + beforeTransition(region : FreezingRegion, board : Cell) : boolean
+  + afterGeneration(region : FreezingRegion)
+}
+
+Cell <|.. Neighborhood
+Cell <|.. Resident
+Neighborhood "1" *-up-> "64" Cell : - grid
+
+Universe --> "1" Cell : - outermostCell
+Universe --> "1" FreezingTools : - freezingTools
+Universe --> "1" PatternTools : - patternTools
+Universe ..> Clock : 틱 리스너 등록
+Universe ..> FreezingManager : <<create>>,\nbeforeTransition()\nafterGeneration()
+Universe ..> PatternTools : 배치 가드 연결
+Life ..> Universe : Freezing 탭 추가
+
+FreezingTools --> "1" FreezingManager : - manager
+FreezingTools ..> Clock : stop()
+FreezingManager "1" *--> "0..*" FreezingRegion : - regions
+FreezingManager --> "1" Cell : - board
+FreezingManager ..> FreezingTools : Runnable로 변경 알림
+
+FreezingRegion --> "1" FreezingState : - state
+FreezingRegion ..> Cell : isAliveAt()\nholdNextState()
+FreezingRegion ..> FrozenState : <<create>>
+FreezingState <|.. NormalState
+FreezingState <|.. FrozenState
+FrozenState ..> FreezingRegion : holdSnapshot()\nchangeState()
+
+note top of FreezingState : State
+note bottom of NormalState : ConcreteState\n값이 없어 객체 하나를 공유
+note bottom of FrozenState
+  ConcreteState
+  남은 세대가 0이 되면 스스로
+  NormalState로 바꾼다 (Auto Release E)
+end note
+note left of FreezingRegion
+  Context
+  고정 중인지 if로 묻지 않고
+  state에 그대로 넘긴다
+end note
+note right of FreezingTools
+  화면 담당
+  Select Region E, Set Duration E의
+  입력을 받아 manager에 넘긴다
+end note
+note right of FreezingManager
+  Install Freezing E : install()
+  Release Freezing E : release(), releaseAll(), reset()
+  Auto Release E : afterGeneration()
+  Swing 코드 없음
+end note
+note right of Universe
+  세대 처리에서 계산과 전이 사이에
+  Freezing 단계를 끼운다.
+  고정된 칸은 setCell()이 건너뛴다
+end note
+@enduml

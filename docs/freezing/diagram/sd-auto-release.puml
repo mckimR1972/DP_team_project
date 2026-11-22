@@ -1,0 +1,38 @@
+@startuml sd-auto-release
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd Auto Release E
+
+participant ":Clock" as C
+participant ":Universe" as U
+participant "outermostCell : Cell" as B
+participant ":FreezingManager" as M
+participant "region : FreezingRegion" as R
+participant "state : FrozenState" as F
+
+C -> U : tick()
+U -> B : figureNextState(...)
+U -> M : beforeTransition(outermostCell)
+M -> R : beforeTransition(cells)
+R -> F : beforeTransition(region, board)
+F -> R : holdSnapshot(board)
+loop 영역의 칸마다
+  R -> B : holdNextState(location, snapshot[y][x])
+end
+U -> B : transition()
+U -> U : generation++
+
+U -> M : afterGeneration()
+M -> R : afterGeneration()
+R -> F : afterGeneration(region)
+F -> F : --remaining
+opt remaining <= 0
+  F -> R : changeState(NormalState.INSTANCE)
+end
+M -> M : regions.removeIf(풀린 영역)
+U -> U : notifyBoardChanged(GENERATION)
+@enduml
