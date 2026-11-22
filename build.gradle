@@ -18,7 +18,17 @@ java {
 // Preserve the existing source and test directories.
 sourceSets {
     main.java.srcDirs = ['src']
-    test.java.srcDirs = ['test']
+    // 테스트는 기능별 폴더에 두고, 패키지는 com.holub.life 그대로 쓴다
+    test.java.srcDirs = [
+        'test/original',
+        'test/color-gen',
+        'test/statistics',
+        'test/capture',
+        'test/freezing',
+        'test/sound',
+        'test/integration',
+        'test/support'
+    ]
 }
 
 configurations {
