@@ -1,6 +1,6 @@
 # Freezing 다이어그램
 
-`.puml`이 원본이고 `.png`는 PlantUML로 그린 결과다. 코드 기준은 dev `838182c`.
+`.puml`이 원본이고 `.png`는 PlantUML로 그린 결과다. 코드 기준은 main `4dc39e6`(dev `cfba2ed`와 `src`가 같다). 유스케이스 그림은 #21에도 같은 파일로 들어 있다.
 
 다시 그리려면 Graphviz를 설치한 뒤 이 폴더에서 `java -DPLANTUML_LIMIT_SIZE=8192 -jar plantuml.jar -charset UTF-8 -tpng *.puml`을 실행한다. 클래스 그림은 폭이 4096px을 넘어서 한도를 늘려야 잘리지 않는다.
 

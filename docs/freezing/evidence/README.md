@@ -3,7 +3,7 @@
 Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡처했다.
 
 - 실행: 2026-11-21, `.\gradlew.bat clean test --rerun-tasks --console=plain`
-- 코드: main `4dc39e6` (dev `838182c`와 같은 내용)
+- 코드: main `4dc39e6`. 그 뒤 dev(`cfba2ed`, PR #24)는 테스트 파일을 기능별 폴더로 옮기기만 했고 테스트 클래스와 메서드는 같다
 - 환경: Windows 11, JDK 17, Gradle 9.5.1
 
 | 화면 | 내용 | 결과 |

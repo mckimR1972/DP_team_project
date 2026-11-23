@@ -49,6 +49,7 @@ class Clock {
 }
 
 class Life {
+  - universe : Universe
   ~ {static} createSidebar(universe : Universe, statisticsPanel : StatisticsPanel) : JTabbedPane
 }
 
@@ -59,6 +60,7 @@ class PatternTools {
 }
 
 class FreezingTools {
+  - beforeSelect : Runnable
   - selecting : boolean
   - anchor : Point
   - selection : Rectangle
@@ -75,7 +77,7 @@ class FreezingTools {
 
 class FreezingManager {
   - currentGeneration : LongSupplier
-  - listeners : Runnable[*]
+  - listeners : List<Runnable>
   ~ install(selected : Rectangle, generations : int) : FreezingRegion
   ~ release(region : FreezingRegion)
   ~ releaseAll()
@@ -112,6 +114,8 @@ class NormalState {
   ~ {static} INSTANCE : NormalState
   + beforeTransition(region : FreezingRegion, board : Cell) : boolean
   + afterGeneration(region : FreezingRegion)
+  + isFrozen() : boolean
+  + remainingGenerations() : int
 }
 
 class FrozenState {
@@ -119,25 +123,27 @@ class FrozenState {
   ~ FrozenState(generations : int)
   + beforeTransition(region : FreezingRegion, board : Cell) : boolean
   + afterGeneration(region : FreezingRegion)
+  + isFrozen() : boolean
+  + remainingGenerations() : int
 }
 
 Cell <|.. Neighborhood
 Cell <|.. Resident
 Neighborhood "1" *-up-> "64" Cell : - grid
 
+Life --> "1" Universe : - universe
 Universe --> "1" Cell : - outermostCell
 Universe --> "1" FreezingTools : - freezingTools
 Universe --> "1" PatternTools : - patternTools
 Universe ..> Clock : 틱 리스너 등록
 Universe ..> FreezingManager : <<create>>,\nbeforeTransition()\nafterGeneration()
-Universe ..> PatternTools : 배치 가드 연결
-Life ..> Universe : Freezing 탭 추가
+Universe ..> PatternTools : setPlacementGuard(\narea -> overlapsFrozen(area))
 
-FreezingTools --> "1" FreezingManager : - manager
+FreezingTools --> "1" FreezingManager : - manager\naddListener(this::refresh)
+FreezingTools ..> FreezingRegion : 활성 목록 표시
 FreezingTools ..> Clock : stop()
-FreezingManager "1" *--> "0..*" FreezingRegion : - regions
+FreezingManager "1" o--> "0..*" FreezingRegion : - regions
 FreezingManager --> "1" Cell : - board
-FreezingManager ..> FreezingTools : Runnable로 변경 알림
 
 FreezingRegion --> "1" FreezingState : - state
 FreezingRegion ..> Cell : isAliveAt()\nholdNextState()
@@ -145,6 +151,7 @@ FreezingRegion ..> FrozenState : <<create>>
 FreezingState <|.. NormalState
 FreezingState <|.. FrozenState
 FrozenState ..> FreezingRegion : holdSnapshot()\nchangeState()
+FrozenState ..> NormalState : 남은 세대가 0이면\nINSTANCE로 전환
 
 note top of FreezingState : State
 note bottom of NormalState : ConcreteState\n값이 없어 객체 하나를 공유
@@ -161,17 +168,26 @@ end note
 note right of FreezingTools
   화면 담당
   Select Region E, Set Duration E의
-  입력을 받아 manager에 넘긴다
+  입력을 받아 manager에 넘긴다.
+  beforeSelect는 Universe가 넘긴
+  "패턴 편집 종료"다
 end note
 note right of FreezingManager
   Install Freezing E : install()
   Release Freezing E : release(), releaseAll(), reset()
   Auto Release E : afterGeneration()
-  Swing 코드 없음
+  listeners에는 FreezingTools.refresh가
+  Runnable로만 들어 있다.
+  FreezingTools 타입도 Swing도 모른다
 end note
 note right of Universe
+  Mediator
+  FreezingTools에는 Runnable(beforeSelect),
+  PatternTools에는 Predicate(배치 가드)만 넘긴다.
+  두 도구는 서로를 모른다.
   세대 처리에서 계산과 전이 사이에
   Freezing 단계를 끼운다.
-  고정된 칸은 setCell()이 건너뛴다
+  고정 칸: mousePressed는 획을 시작하지 않고
+  setCell()은 그 칸을 건너뛴다
 end note
 @enduml

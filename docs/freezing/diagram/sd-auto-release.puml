@@ -13,26 +13,38 @@ participant "outermostCell : Cell" as B
 participant ":FreezingManager" as M
 participant "region : FreezingRegion" as R
 participant "state : FrozenState" as F
+participant ":FreezingTools" as T
 
 C -> U : tick()
-U -> B : figureNextState(...)
-U -> M : beforeTransition(outermostCell)
-M -> R : beforeTransition(cells)
-R -> F : beforeTransition(region, board)
-F -> R : holdSnapshot(board)
-loop 영역의 칸마다
-  R -> B : holdNextState(location, snapshot[y][x])
+opt 패턴 편집 중이거나 영역 선택 중
+  U --> C : 바로 return (세대 진행 없음)
 end
+U -> B : figureNextState(...)
+U -> U : before = liveCells()
+U -> M : beforeTransition(outermostCell)
+loop 영역마다
+  M -> R : beforeTransition(cells)
+  R -> F : beforeTransition(region, board)
+  F -> R : holdSnapshot(board)
+  loop 영역의 칸마다
+    R -> B : holdNextState(location, snapshot[y][x])
+  end
+end
+note right of R : NormalState인 영역은\n아무것도 하지 않는다
 U -> B : transition()
 U -> U : generation++
 
 U -> M : afterGeneration()
-M -> R : afterGeneration()
-R -> F : afterGeneration(region)
-F -> F : --remaining
-opt remaining <= 0
-  F -> R : changeState(NormalState.INSTANCE)
+loop 영역마다
+  M -> R : afterGeneration()
+  R -> F : afterGeneration(region)
+  F -> F : --remaining
+  opt remaining <= 0
+    F -> R : changeState(NormalState.INSTANCE)
+  end
 end
 M -> M : regions.removeIf(풀린 영역)
-U -> U : notifyBoardChanged(GENERATION)
+M -> T : refresh()
+note right : addListener()로 등록한\nRunnable
+U -> U : notifyBoardChanged(GENERATION, before)
 @enduml

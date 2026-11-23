@@ -21,11 +21,19 @@ opt 패턴 편집 중
   U -> P : cancel()
 end
 U -> P : boardChanged()
+note right of P : 되돌리기 이력 비움
 T -> C : stop()
 T -> T : selecting = true
 
 User -> T : mousePressed(e)
-T -> T : anchor = cellAt(point)
+alt 오른쪽 버튼
+  T -> T : cancel()
+else 왼쪽 버튼
+  T -> T : anchor = cellAt(point)
+  opt anchor != null (보드 안)
+    T -> T : selectThrough(anchor)
+  end
+end
 
 loop 끄는 동안
   User -> T : mouseDragged(e)
@@ -36,4 +44,7 @@ loop 끄는 동안
 end
 
 User -> T : mouseReleased(e)
+T -> T : selectThrough(end)
+T -> T : anchor = null
+note over T : selectThrough()는 누를 때와 놓을 때도\noverlapsFrozen()으로 설치 버튼을 정한다
 @enduml

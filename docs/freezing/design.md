@@ -1,9 +1,9 @@
 # Freezing: 설계 패턴 후보와 설계 결정
 
 - 코드 기준: dev `838182c` (PR #7 병합 후)
-- 결정의 근거 기록: [PR #7](https://github.com/mckimR1972/DP_team_project/pull/7) 본문 6~7절, [../FREEZING.md](../FREEZING.md) 5·7·8절
+- 결정의 근거 기록: [PR #7](https://github.com/mckimR1972/DP_team_project/pull/7) 본문 6~7절, [FREEZING.md](FREEZING.md) 5·7·8절
 - 관련 문서: [유스케이스와 요약](usecase-and-summary.md), [변경 상세](changes.md)
-- 다이어그램: [diagram/](diagram/README.md) (유스케이스, 클래스, 유스케이스별 시퀀스, 상태)
+- 다이어그램: [diagram/](diagram/README.md) (유스케이스, 클래스, 유스케이스별 시퀀스, 상태). 이 문서의 결정 1~2는 `class-freezing`, `state-region`, `sd-auto-release`에, 1.4의 Mediator는 `class-freezing`의 `Universe` 노트와 `sd-select-region`에 나온다
 - 테스트 결과 화면: [evidence/](evidence/README.md)
 
 ## 1. 설계 패턴 후보
@@ -31,10 +31,12 @@
 
 | 후보 | 장점 | 단점 | 판단 |
 | --- | --- | --- | --- |
-| `FreezingManager`가 `FreezingTools`를 직접 호출 | 가장 간단하다 | 모델이 Swing 클래스에 의존한다. 화면 없이 테스트할 수 없다 | 제외 |
+| `FreezingManager`가 `FreezingTools`를 직접 호출 (사후 비교) | 가장 간단하다 | 모델이 Swing 클래스에 의존한다. 화면 없이 테스트할 수 없다 | 제외 |
 | 기존 `BoardChangeListener` 재사용 (Observer) | 통로가 하나다 | 그 이벤트는 “보드의 셀이 바뀌었다”는 뜻인데 설치·해제는 셀을 바꾸지 않는다. 통계가 필요 없는 재집계를 하고, 통계·사운드가 새 종류를 걸러 내도록 다른 사람의 코드를 고쳐야 한다 | 제외 |
 | 전용 리스너 인터페이스 (Observer) | 이름으로 뜻이 드러난다 | 구독자에게 넘길 데이터가 없다. 구독자는 `manager.regions()`를 다시 읽으면 된다 | 제외 |
 | **`Runnable` 콜백 (Observer의 가벼운 형태)** | JDK 타입만 쓴다. 모델에 Swing 코드가 없다 | 무엇이 바뀌었는지는 알려 주지 않아 화면이 목록 전체를 다시 읽는다 | **선택** |
+
+“사후 비교”로 표시한 행은 PR #7이나 `FREEZING.md`에 대안으로 적혀 있지 않고, 선택한 구조를 설명하려고 이 문서에서 덧붙인 비교다. 나머지 행은 `FREEZING.md` 7.1에 적힌 이유다.
 
 ### 1.4 기능 사이의 규칙을 어디에 둘까
 
