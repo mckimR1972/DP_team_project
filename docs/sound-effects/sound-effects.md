@@ -462,13 +462,13 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 사운드 작업으로 추가한 테스트는 32개다. 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. PR #3의 커밋은 하나씩 따로 빌드하고 테스트를 돌려서, 중간 커밋에서도 실패가 없게 했다.
 
-![전체 테스트 결과](sound-effects/test-all.png)
+![전체 테스트 결과](evidence/test-all.png)
 
-![NoteMapperTest 결과](sound-effects/test-notemapper.png)
+![NoteMapperTest 결과](evidence/test-notemapper.png)
 
-![RepeatTrackerTest 결과](sound-effects/test-repeattracker.png)
+![RepeatTrackerTest 결과](evidence/test-repeattracker.png)
 
-![SoundSettingsTest 결과](sound-effects/test-soundsettings.png)
+![SoundSettingsTest 결과](evidence/test-soundsettings.png)
 
 ### 6.2 화면과 MIDI 없이 테스트하기
 
