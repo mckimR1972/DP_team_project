@@ -1,0 +1,26 @@
+@startuml ssd-turn-off
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd Turn Off Color Cycling(E)
+
+actor "사용자" as User
+participant ":LifeGame" as System
+
+note over User, System : 게임이 돌고 있을 때도, 멈춰 있을 때도 끌 수 있다
+
+User -> System : turnOffColorCycling()
+alt 색 순환이 켜져 있었음
+  System --> User : 살아 있는 셀의 색(빨강)
+else 이미 꺼져 있었음
+  System --> User : 색은 그대로
+end
+
+loop 게임이 실행 중
+  System --> User : 다음 세대의 생사(살아 있는 셀은 빨강)
+  note right : 세대 간격마다\n시스템이 보여 준다
+end
+@enduml

@@ -232,15 +232,19 @@ Freezing 기능은 고정된 칸의 다음 생사를 `holdNextState()`로 고정
 
 ### 3.1 시스템 시퀀스 다이어그램
 
-게임을 블랙박스로 보면, 이 기능이 새로 만들거나 바꾼 시스템 연산은 셋이다. 아래 시스템 시퀀스 다이어그램은 색 순환을 켜고 돌린 뒤 끄는 한 시나리오다.
+게임을 블랙박스로 보면, 이 기능이 새로 만들거나 바꾼 시스템 연산은 셋이다. 시스템 시퀀스 다이어그램은 유스케이스마다 한 장씩 그렸다. 이벤트 이름은 메뉴 항목이 아니라 사용자의 의도로 적었고, 반환은 화면 모습이 아니라 사용자가 받는 정보로 적었다. 세대를 넘기는 시계는 게임 안에 있으므로 입력으로 그리지 않았다. 사용자가 속도를 고르면 시스템이 세대 간격마다 다음 세대를 보여 주므로, 이 부분은 시스템에서 사용자로 가는 출력만 loop로 그렸다. 켜기와 끄기는 이미 그 상태였을 때(대체 시나리오 2a)를 alt로 나누고, 그 뒤 게임이 돌면 세대마다 어떤 색을 받는지까지 그렸다. Run / Halt Game에서 halt()는 세대 진행을 끝내는 입력이라 loop 안의 break로 그렸다.
 
-![시스템 시퀀스 다이어그램](diagrams/ssd.png)
+![Turn On Color Cycling(E)의 시스템 시퀀스 다이어그램](diagrams/ssd-turn-on.png)
+
+![Turn Off Color Cycling(E)의 시스템 시퀀스 다이어그램](diagrams/ssd-turn-off.png)
+
+![색 순환이 켜져 있을 때 Run / Halt Game의 시스템 시퀀스 다이어그램](diagrams/ssd-run-halt.png)
 
 | 시스템 연산 | 실제 입력 | 이 기능과의 관계 |
 | --- | --- | --- |
-| `selectCycleByGeneration()` | Color > Cycle by Generation | 새로 생김 |
-| `selectSingleColor()` | Color > Single Color | 새로 생김 |
-| `tick()` | 시계의 틱, Go > Tick (Single Step) | 원본에 있던 연산이고 사후 조건이 바뀜 |
+| `turnOnColorCycling()` | Color > Cycle by Generation | 새로 생김 |
+| `turnOffColorCycling()` | Color > Single Color | 새로 생김 |
+| `advanceGeneration()` | Go 메뉴에서 속도를 고른 뒤 세대 간격마다, 또는 Go > Tick (Single Step) | 원본에 있던 연산(Advance Generation)이고 사후 조건이 바뀜 |
 
 ### 3.2 연산 계약
 
@@ -248,11 +252,11 @@ Freezing 기능은 고정된 칸의 다음 생사를 `holdNextState()`로 고정
 
 | 연산 | Cross References | Preconditions | Postconditions |
 | --- | --- | --- | --- |
-| `selectCycleByGeneration()` | Turn On Color Cycling(E) | 없음 | `CyclingColorPolicy` 인스턴스 cp가 생성되었다. cp.period가 10, cp.colors가 \[빨강, 파랑, 초록\]이 되었다. `Resident.colorPolicy`가 이전 규칙과의 연관을 끊고 cp와 연관되었다. 모든 Resident의 `age`는 바뀌지 않았다 |
-| `selectSingleColor()` | Turn Off Color Cycling(E) | 없음 | `FixedColorPolicy` 인스턴스 fp가 생성되었다. fp.color가 `Resident.LIVE_COLOR`가 되었다. `Resident.colorPolicy`가 이전 규칙과의 연관을 끊고 fp와 연관되었다. 모든 Resident의 `age`는 바뀌지 않았다 |
-| `tick()` | Run / Halt Game, Step One Generation, Advance Generation, Count Cell Age(E), Recolor Cells by Age(E) | 캡처·배치 편집 중이 아니다. Freezing 영역을 고르는 중이 아니다 | Freezing으로 고정되지 않은 모든 Resident r의 r.amAlive가 이번 틱에 계산된 다음 생사가 되었다. 그중 틱 전후 모두 살아 있는 r은 r.age가 틱 전의 r.age + 1이 되었고, 그 밖의 r은 r.age가 0이 되었다. 생사가 바뀐 셀이 없는 틱에도 이 나이 변화가 일어났다. 고정된 Resident는 amAlive와 age가 바뀌지 않았다 |
+| `turnOnColorCycling()` | Turn On Color Cycling(E) | 없음 | `CyclingColorPolicy` 인스턴스 cp가 생성되었다. cp.period가 10, cp.colors가 \[빨강, 파랑, 초록\]이 되었다. `Resident.colorPolicy`가 이전 규칙과의 연관을 끊고 cp와 연관되었다. 모든 Resident의 `age`는 바뀌지 않았다 |
+| `turnOffColorCycling()` | Turn Off Color Cycling(E) | 없음 | `FixedColorPolicy` 인스턴스 fp가 생성되었다. fp.color가 `Resident.LIVE_COLOR`가 되었다. `Resident.colorPolicy`가 이전 규칙과의 연관을 끊고 fp와 연관되었다. 모든 Resident의 `age`는 바뀌지 않았다 |
+| `advanceGeneration()` | Run / Halt Game, Step One Generation, Advance Generation, Count Cell Age(E), Recolor Cells by Age(E) | 캡처·배치 편집 중이 아니다. Freezing 영역을 고르는 중이 아니다 | Freezing으로 고정되지 않은 모든 Resident r의 r.amAlive가 이번 세대에 계산된 다음 생사가 되었다. 그중 세대 전후 모두 살아 있는 r은 r.age가 이전 r.age + 1이 되었고, 그 밖의 r은 r.age가 0이 되었다. 생사가 바뀐 셀이 없는 세대에도 이 나이 변화가 일어났다. 고정된 Resident는 amAlive와 age가 바뀌지 않았다 |
 
-원본의 `tick()`은 바뀔 셀이 없으면 확정하지 않았다. 원본에는 나이가 없어서 그래도 상태가 같았지만, 이 기능에서는 멈춘 패턴도 나이를 먹어야 하므로 "생사가 바뀐 셀이 없는 틱에도"라는 사후 조건이 생겼다. 고정된 Resident에 대한 마지막 사후 조건은 Freezing 기능이 더한 것이다. 클릭(Edit Cells)과 Load(Store / Load Board)에도 "그 셀의 `age`가 0이 되었다"는 사후 조건이 하나씩 더해졌다.
+`advanceGeneration()`은 사용자가 직접 부르는 연산이 아니라, 속도를 고른 뒤 시스템이 세대 간격마다 일으키거나 Go > Tick이 한 번 일으키는 연산이다. 원본의 세대 진행은 바뀔 셀이 없으면 확정하지 않았다. 원본에는 나이가 없어서 그래도 상태가 같았지만, 이 기능에서는 멈춘 패턴도 나이를 먹어야 하므로 "생사가 바뀐 셀이 없는 세대에도"라는 사후 조건이 생겼다. 고정된 Resident에 대한 마지막 사후 조건은 Freezing 기능이 더한 것이다. 클릭(Edit Cells)과 Load(Store / Load Board)에도 "그 셀의 `age`가 0이 되었다"는 사후 조건이 하나씩 더해졌다.
 
 ### 3.3 시퀀스 다이어그램
 

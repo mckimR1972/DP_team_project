@@ -1,0 +1,21 @@
+@startuml ssd-run-halt
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd Run / Halt Game (색 순환이 켜져 있을 때)
+
+actor "사용자" as User
+participant ":LifeGame" as System
+
+User -> System : selectSpeed(Fast)
+loop 게임이 실행 중
+  System --> User : 다음 세대의 생사와 셀마다 나이에 맞는 색
+  note right : 세대 간격마다 시스템이 보여 준다.\n생사가 그대로인 세대에도\n나이가 늘어 색이 바뀐다
+  break 사용자가 멈춤
+    User -> System : halt()
+  end
+end
+@enduml
