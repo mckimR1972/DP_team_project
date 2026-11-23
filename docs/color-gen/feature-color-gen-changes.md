@@ -135,7 +135,7 @@ assertNotNull(gridActions.get("Clear"));     // 기록이 없으면 여기서 �
 | `src/com/holub/life/CellColorPolicy.java` (새 파일) | Strategy | `colorOf(int age)`: 나이에 따른 살아 있는 셀의 색. `changesWithAge()`: 나이에 따라 색이 바뀌는 규칙인지 |
 | `src/com/holub/life/FixedColorPolicy.java` (새 파일) | ConcreteStrategy | 나이와 상관없이 한 가지 색. 원본의 빨강을 유지할 때 쓴다 |
 | `src/com/holub/life/CyclingColorPolicy.java` (새 파일) | ConcreteStrategy | period 세대마다 다음 색, 마지막 색 다음에는 처음 색 |
-| `test/com/holub/life/CellColorPolicyTest.java` (새 파일) | 테스트 | 아래 테스트 5개 |
+| `test/color-gen/com/holub/life/CellColorPolicyTest.java` (새 파일) | 테스트 | 아래 테스트 5개 |
 
 ### 바꾼 이유
 
@@ -177,8 +177,8 @@ assertNotNull(gridActions.get("Clear"));     // 기록이 없으면 여기서 �
 | 파일 | GoF Strategy에서의 역할 | 내용 |
 | --- | --- | --- |
 | `src/com/holub/life/Resident.java` | Context | 모든 셀이 함께 쓰는 색 규칙 참조(static)와 `setColorPolicy()`, 셀마다의 `age`, `transition()`의 나이 계산, `redraw()`가 규칙에서 받는 색, `userClicked()`와 `transfer()` Load의 `age = 0` |
-| `test/com/holub/life/CellAgeColorTest.java` (새 파일) | 테스트 | 아래 테스트 7개 |
-| `test/com/holub/life/DefaultCellColorTest.java` (새 파일) | 테스트 | 아래 테스트 1개 |
+| `test/color-gen/com/holub/life/CellAgeColorTest.java` (새 파일) | 테스트 | 아래 테스트 7개 |
+| `test/color-gen/com/holub/life/DefaultCellColorTest.java` (새 파일) | 테스트 | 아래 테스트 1개 |
 
 ### 바꾼 이유
 
@@ -296,8 +296,8 @@ Universe가 매 틱 `transition()`을 불러, 생사가 바뀌지 않는 틱에�
 | --- | --- | --- |
 | `src/com/holub/life/Universe.java` | Client | 시계 리스너의 틱 처리: 매 틱 `transition()`을 부르고, `Resident.colorChangesWithAge()`로 다시 그릴 범위를 정한다. `refreshNow()`가 판 전체를 그릴지를 인자로 받는다 |
 | `src/com/holub/life/Resident.java` | Context | `colorChangesWithAge()` 추가(같은 패키지 전용), 색 규칙 참조에 `volatile` |
-| `test/com/holub/life/UniverseColorTest.java` (새 파일) | 테스트 | 아래 테스트 2개 |
-| `test/com/holub/life/CellAgeColorTest.java` | 테스트 | 아래 테스트 1개 추가 |
+| `test/color-gen/com/holub/life/UniverseColorTest.java` (새 파일) | 테스트 | 아래 테스트 2개 |
+| `test/color-gen/com/holub/life/CellAgeColorTest.java` | 테스트 | 아래 테스트 1개 추가 |
 
 ### 바꾼 이유
 
@@ -442,7 +442,7 @@ Grid, Go 메뉴 뒤에 Color 메뉴를 추가했다. Single Color를 고르면 �
 | --- | --- | --- |
 | `src/com/holub/life/Universe.java` | Client | Color 메뉴 항목 2개. 고른 항목에 맞는 규칙 객체(ConcreteStrategy)를 만들어 `useColorPolicy()`로 Resident에 넘기고 판을 바로 다시 그린다 |
 | `src/com/holub/life/Resident.java` | Context | 원본 상수 `LIVE_COLOR`의 `private`을 떼어 Universe가 원본 빨강으로 쓰게 함 |
-| `test/com/holub/life/UniverseColorTest.java` | 테스트 | 아래 테스트 2개 추가 |
+| `test/color-gen/com/holub/life/UniverseColorTest.java` | 테스트 | 아래 테스트 2개 추가 |
 
 ### 바꾼 이유
 
@@ -597,7 +597,7 @@ Grid, Go 메뉴 뒤에 Color 메뉴를 추가했다. Single Color를 고르면 �
 
 | 파일 | 내용 |
 | --- | --- |
-| `test/com/holub/life/UniverseColorTest.java` | 아래 테스트 2개와 도우미 메서드 2개 추가 |
+| `test/color-gen/com/holub/life/UniverseColorTest.java` | 아래 테스트 2개와 도우미 메서드 2개 추가 |
 | `src/com/holub/life/Resident.java` | `colorPolicy`의 주석 한 줄. #9로 시계가 Swing 타이머가 되어 "시계 스레드에서도 읽으므로"가 맞지 않게 됐다. `volatile`은 그대로 둔다 |
 
 ### 바꾼 이유
