@@ -5,102 +5,102 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam classAttributeIconSize 0
 hide circle
-skinparam ranksep 70
-skinparam nodesep 60
+left to right direction
+skinparam linetype ortho
+skinparam ranksep 110
+skinparam nodesep 90
 
 interface Cell <<interface>> {
-  + figureNextState(이웃 8칸 : Cell) : boolean
-  + transition() : boolean
-  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
-  + userClicked(here : Point, surface : Rectangle)
-  + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
-  + colorAt(row : int, column : int) : Color
-  + holdNextState(location : Point, alive : boolean) : boolean
-  + create() : Cell
+  + figureNextState()
+  + transition()
+  + redraw()
+  + userClicked()
+  + transfer()
+  + colorAt()
+  + holdNextState()
+  + create()
 }
 
 class Neighborhood {
-  - gridSize : int
-  + transition() : boolean
-  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  - gridSize
+  + transition()
+  + redraw()
 }
 
 class Resident {
-  ~ {static} LIVE_COLOR : Color = Color.RED
-  - amAlive : boolean
-  - willBeAlive : boolean
-  - age : int = 0
-  - heldThisGeneration : boolean = false
-  ~ {static} setColorPolicy(policy : CellColorPolicy)
-  ~ {static} colorChangesWithAge() : boolean
-  + transition() : boolean
-  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
-  + userClicked(here : Point, surface : Rectangle)
-  + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
-  + colorAt(row : int, column : int) : Color
-  + holdNextState(location : Point, alive : boolean) : boolean
+  ~ {static} LIVE_COLOR
+  - amAlive
+  - willBeAlive
+  - age
+  - heldThisGeneration
+  ~ {static} setColorPolicy()
+  ~ {static} colorChangesWithAge()
+  + transition()
+  + redraw()
+  + userClicked()
+  + transfer()
+  + colorAt()
+  + holdNextState()
 }
 
 interface CellColorPolicy <<interface>> {
-  + colorOf(age : int) : Color
-  + changesWithAge() : boolean
+  + colorOf()
+  + changesWithAge()
 }
 
 class FixedColorPolicy {
-  - color : Color
-  + FixedColorPolicy(color : Color)
-  + colorOf(age : int) : Color
-  + changesWithAge() : boolean
+  - color
+  + FixedColorPolicy()
+  + colorOf()
+  + changesWithAge()
 }
 
 class CyclingColorPolicy {
-  - period : int
-  - colors : Color[2..*]
-  + CyclingColorPolicy(period : int, colors : Color[2..*])
-  + colorOf(age : int) : Color
-  + changesWithAge() : boolean
+  - period
+  - colors
+  + CyclingColorPolicy()
+  + colorOf()
+  + changesWithAge()
 }
 
 class Universe {
-  - {static} theInstance : Universe
-  + {static} instance() : Universe
-  # paintComponent(g : Graphics)
+  - {static} theInstance
+  + {static} instance()
+  # paintComponent()
   - refreshNow()
-  - useColorPolicy(policy : CellColorPolicy)
+  - useColorPolicy()
 }
 
 class Clock {
-  + {static} instance() : Clock
-  + addClockListener(observer : Listener)
+  + {static} instance()
+  + addClockListener()
 }
 
-Cell <|... Neighborhood
+Cell <|.left. Neighborhood
 Cell <|.. Resident
-Neighborhood "1" *-up-> "64" Cell : - grid
-Neighborhood -[hidden]right- Resident
-Universe --> "1" Cell : - outermostCell
-Universe ..> Clock : 틱 리스너 등록
-Universe ..> Resident : 프로토타입 생성,\n규칙 교체와 질의
-CellColorPolicy <|.. FixedColorPolicy
+Neighborhood "<U+2003><U+2003><U+2003><U+2003>1" *-left-> "<U+2003><U+2003><U+2003><U+2003>64" Cell
+Universe "1<U+2003>" -right-> "1<U+2003>" Cell
+Universe .left.> Clock : <<use>>
+Universe ..> Resident : <U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><<create, use>>
+CellColorPolicy <|.right. FixedColorPolicy
 CellColorPolicy <|.. CyclingColorPolicy
-Resident -right-> "1" CellColorPolicy : - <u>colorPolicy</u>
+Resident --> "\n1" CellColorPolicy
 Universe ..> FixedColorPolicy : <<create>>
 Universe ..> CyclingColorPolicy : <<create>>
 
-note top of CellColorPolicy : Strategy
-note bottom of FixedColorPolicy : ConcreteStrategy
-note bottom of CyclingColorPolicy : ConcreteStrategy
-note bottom of Resident
-  Context
+
+note right of Resident
   redraw()와 colorAt()이
   colorPolicy.colorOf(age)로 색을 받는다.
-  colorAt()은 통계 기능(#10),
+  colorAt()은 통계 기능이,
   holdNextState()와 heldThisGeneration은
-  Freezing 기능(#7)이 더했다
+  Freezing 기능이 더했다
 end note
-note right of Universe
-  Client
+note left of Universe
+  Resident를 프로토타입으로 판을 만들고,
+  시계에 틱 리스너를 등록한다.
   Color 메뉴에서 규칙을 만들어
-  useColorPolicy()로 바꿔 끼운다
+  useColorPolicy()로 바꿔 끼우고,
+  틱마다 colorChangesWithAge()에 묻는다
 end note
 @enduml

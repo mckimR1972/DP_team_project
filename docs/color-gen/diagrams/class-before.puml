@@ -5,56 +5,62 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam classAttributeIconSize 0
 hide circle
-skinparam ranksep 70
-skinparam nodesep 60
+left to right direction
+skinparam linetype ortho
+skinparam ranksep 80
+skinparam nodesep 70
 
 interface Cell <<interface>> {
-  + figureNextState(이웃 8칸 : Cell) : boolean
-  + transition() : boolean
-  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
-  + userClicked(here : Point, surface : Rectangle)
-  + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
-  + create() : Cell
+  + figureNextState()
+  + transition()
+  + redraw()
+  + userClicked()
+  + transfer()
+  + create()
 }
 
 class Neighborhood {
-  - gridSize : int
-  + transition() : boolean
-  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  - gridSize
+  + transition()
+  + redraw()
 }
 
 class Resident {
-  - {static} LIVE_COLOR : Color = Color.RED
-  - amAlive : boolean
-  - willBeAlive : boolean
-  + transition() : boolean
-  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
-  + userClicked(here : Point, surface : Rectangle)
-  + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
+  - {static} LIVE_COLOR
+  - amAlive
+  - willBeAlive
+  + transition()
+  + redraw()
+  + userClicked()
+  + transfer()
 }
 
 class Universe {
-  - {static} theInstance : Universe
-  + {static} instance() : Universe
-  + paint(g : Graphics)
+  - {static} theInstance
+  + {static} instance()
+  + paint()
   - refreshNow()
 }
 
 class Clock {
-  + {static} instance() : Clock
-  + addClockListener(observer : Listener)
+  + {static} instance()
+  + addClockListener()
 }
 
-Cell <|... Neighborhood
+Cell <|.. Neighborhood
 Cell <|.. Resident
-Neighborhood "1" *-up-> "64" Cell : - grid
-Neighborhood -[hidden]right- Resident
-Universe --> "1" Cell : - outermostCell
-Universe ..> Clock : 틱 리스너 등록
-Universe ..> Resident : 프로토타입 생성
+Neighborhood "1\n\n" *-up-> "64\n\n" Cell
+Resident -[hidden]right- Neighborhood
+Universe "1<U+2003>" -right-> "1<U+2003>" Cell
+Universe .left.> Clock : <<use>>
+Universe ..> Resident : <<create>>
 
-note bottom of Resident
+note right of Resident
   살아 있는 셀의 색은 redraw()가
   상수 LIVE_COLOR로 정한다
+end note
+note left of Universe
+  Resident를 프로토타입으로 판을 만들고,
+  시계에 틱 리스너를 등록한다
 end note
 @enduml
