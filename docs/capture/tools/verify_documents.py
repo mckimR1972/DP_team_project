@@ -9,6 +9,7 @@ import hashlib
 import html
 import json
 import re
+import struct
 import subprocess
 from urllib.parse import unquote, urlsplit
 import xml.etree.ElementTree as ET
@@ -83,12 +84,27 @@ def main():
     require(diff.returncode == 0, 'Code/test baseline differs; refresh evidence and documentation')
     documents = sorted((REPO / 'docs').rglob('*.md')) + [REPO / 'README.md']
     links, link_anchors = local_links(documents)
-    capture_docs = [REPO / 'docs/capture.md', ROOT / 'README.md']
+    capture_docs = [ROOT / 'capture.md', ROOT / 'README.md']
     texts = [p.read_text(encoding='utf-8') for p in capture_docs]
     require(len(contracts(texts[0])) == 6 and contracts(texts[0]) == contracts(texts[1]),
             'Shared/detailed operation contracts disagree')
-    expected_images = {(ROOT / 'diagrams/png' / (d['slug'] + '.png')).resolve() for d in items}
+    usecases = ['Capture Template E', 'Place Template E', 'Place Template Continuously E',
+                'Undo Placement E', 'Finish Template Editing E']
+    diagram = (ROOT / 'diagrams/01-use-cases.puml').read_text(encoding='utf-8')
+    for number, name in enumerate(usecases, 1):
+        label = f'E-{number:02} {name}'
+        require(all(re.search(r'^#{3,4} ' + re.escape(label) + r'$', text, re.M) for text in texts),
+                f'Use-case name differs between documents: {label}')
+        require(f'usecase "{label}"' in diagram, f'Use-case diagram label differs: {label}')
+    extended = diagram.split('rectangle "추가 시스템 기능"', 1)[1]
+    require(all(label.endswith(' E') for label in re.findall(r'usecase "([^"\n]+)"', extended)),
+            'An extended use-case name lacks its trailing E')
+    expected_images = {(ROOT / 'diagrams' / (d['slug'] + '.png')).resolve() for d in items}
     for path, body in zip(capture_docs, texts):
+        for snippet in re.findall(r'```java\n(.*?)```', body, re.S):
+            normalized = re.sub(r'\s+', '', snippet)
+            require(any(normalized in re.sub(r'\s+', '', source.read_text(encoding='utf-8'))
+                        for source in (REPO / 'src').rglob('*.java')), 'Quoted Java snippet differs from source')
         images = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', body)
         require(len(images) == 6 and {(path.parent / p).resolve() for p in images} == expected_images,
                 f'Inline diagram set differs: {path}')
@@ -102,6 +118,14 @@ def main():
     for item in items:
         path, fragment = item['document'].split('#')
         require(fragment in anchors((ROOT / path).read_text(encoding='utf-8')), f'Manifest link: {item["id"]}')
+        png = (ROOT / 'diagrams' / (item['slug'] + '.png')).read_bytes()
+        require(png[:8] == b'\x89PNG\r\n\x1a\n', f'Invalid PNG: {item["id"]}')
+        png_size = struct.unpack('>II', png[16:24])
+        svg = ET.parse(ROOT / 'diagrams/svg' / (item['slug'] + '.svg')).getroot()
+        svg_size = tuple(float(x) for x in svg.attrib['viewBox'].split()[2:])
+        # PlantUML rounds raster/vector bounds differently by up to three pixels.
+        require(all(abs(p - s) <= 4 for p, s in zip(png_size, svg_size)),
+                f'PNG is cropped or differs from SVG bounds: {item["id"]}')
 
     evidence_path = ROOT / manifest['evidence']
     evidence = json.loads(evidence_path.read_text(encoding='utf-8'))
@@ -129,7 +153,11 @@ def main():
     for cls, method in selected:
         require(any(s['name'].endswith('.' + cls) and method + '()' in s['cases'] for s in evidence['suites']),
                 f'Selected JUnit method absent in evidence: {cls}.{method}')
-    for screenshot in evidence['screenshots']:
+    require(len(evidence['screenshots']) == 5 and len(evidence.get('raw_screenshots', [])) == 4,
+            'Expected a test summary and four dated Swing screens with raw originals')
+    require(all(s['date'] == evidence['date'] and s['source_commit'] == baseline
+                for s in evidence['screenshots']), 'Screenshot date/commit differs')
+    for screenshot in evidence['screenshots'] + evidence.get('raw_screenshots', []):
         require(digest(evidence_path.parent / screenshot['file'], binary=True) == screenshot['sha256'], 'Screenshot changed')
     swing = evidence['swing']
     log = evidence_path.parent / swing['log_file']
@@ -174,7 +202,7 @@ def main():
                 'Browser rendering check failed')
     report = dict(status='passed', checked_at=datetime.now(timezone.utc).isoformat(), source_commit=baseline,
                   markdown_documents=len(documents), local_links=links, markdown_anchor_links=link_anchors,
-                  matching_operation_contracts=6, selected_junit_methods=len(selected),
+                  matching_operation_contracts=6, matching_usecase_names=5, selected_junit_methods=len(selected),
                   recorded_junit=totals, recorded_junit_suites=30, recorded_swing_checks=swing['checks'],
                   test_execution_date=evidence['date'], note='Recorded test evidence verified; JUnit was not rerun by this tool.',
                   inline_diagrams=12, browser=browser, pdf_pages=7, matching_pdf_pages=6,

@@ -83,13 +83,13 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 
 | 문서 | 내용 |
 | --- | --- |
-| [docs/fix-life-game-changes.md](docs/fix-life-game-changes.md) | 기본 오류 3가지 수정, 회귀 테스트 32개와 수정 전후 결과 |
-| [docs/feature-color-gen-changes.md](docs/feature-color-gen-changes.md) | 세대에 따른 셀 색 순환 기능의 변경 기록 |
-| [docs/color-gen-redraw-lag.md](docs/color-gen-redraw-lag.md) | 색 순환 중 화면 갱신 지연: 문제 상황, 원인, 해결 방안 |
-| [docs/capture.md](docs/capture.md) | 팀 공유용 캡처 담당 문서: 제출 요건과 그림·대표 테스트를 한 파일로 확인 |
-| [docs/capture/README.md](docs/capture/README.md) | 캡처 기능·유스케이스·설계·통합·테스트·도식을 모은 상세 문서 |
-| [docs/fix-single-step-halt.md](docs/fix-single-step-halt.md) | 실행 중 Tick(Single Step)이 멈추지 않는 문제: 원인, 수정, 다른 방법, 수정 전후 테스트 |
-| [docs/FREEZING.md](docs/FREEZING.md) | Freezing(영역 고정) 기능: 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 검증 |
+| [docs/fixes/fix-life-game-changes.md](docs/fixes/fix-life-game-changes.md) | 기본 오류 3가지 수정, 회귀 테스트 32개와 수정 전후 결과 |
+| [docs/color-gen/feature-color-gen-changes.md](docs/color-gen/feature-color-gen-changes.md) | 세대에 따른 셀 색 순환 기능의 변경 기록 |
+| [docs/color-gen/color-gen-redraw-lag.md](docs/color-gen/color-gen-redraw-lag.md) | 색 순환 중 화면 갱신 지연: 문제 상황, 원인, 해결 방안 |
+| [docs/capture/capture.md](docs/capture/capture.md) | 팀 공유용 캡처 기능 명세·GoF·UML·연산 계약·대표 테스트 |
+| [docs/capture/README.md](docs/capture/README.md) | 캡처 기능·설계 결정·통합·전체 테스트·도식과 검증 근거를 모은 상세 문서 |
+| [docs/fixes/fix-single-step-halt.md](docs/fixes/fix-single-step-halt.md) | 실행 중 Tick(Single Step)이 멈추지 않는 문제: 원인, 수정, 다른 방법, 수정 전후 테스트 |
+| [docs/freezing/FREEZING.md](docs/freezing/FREEZING.md) | Freezing(영역 고정) 기능: 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 검증 |
 
 ## GitHub 사용 규칙 (팀 공통)
 
@@ -114,7 +114,7 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 2. 작업을 조각으로 나눠, 조각마다 테스트를 통과시킨 뒤 커밋한다.
 
    ```sh
-   git add src/com/holub/life/Universe.java test/com/holub/life/UniverseColorTest.java
+   git add src/com/holub/life/Universe.java test/color-gen/com/holub/life/UniverseColorTest.java
    git commit -m "feat: Color 메뉴 추가"
    ```
 

@@ -1,14 +1,14 @@
 {
-  "version": "2.0",
-  "date": "2026-11-22",
-  "source_commit": "838182c62e13322b46b2ffbaf60cc8fd3c5fd9ab",
+  "version": "2.1",
+  "date": "2026-11-23",
+  "source_commit": "cfba2ed27be43eb09cff295154960fb8a276fa7e",
   "diagrams": [
     {
       "id": "D-01",
       "slug": "01-use-cases",
       "title": "기존 기능과 추가 기능의 통합 유스케이스",
       "summary": "기존 시스템과 추가 시스템을 구역으로 구별한다. 캡처 E-01~E-05와 다른 팀 기능을 같은 경계 안에 배치한다.",
-      "note": "현재 통합 코드의 팀 공유 초안이다. 전체 제출 시 다른 담당자가 기능명·범위를 함께 확인한다. E-03은 E-02의 선택적 확장이다.",
+      "note": "다른 담당 기능은 명칭을 대조한 대표 유스케이스다. 세부 목록·관계는 담당 문서를 따른다. E-03은 E-02의 선택적 확장이다.",
       "requirements": "R-01~R-09 / E-01~E-05",
       "tests": "T-01~T-25",
       "code": "PatternTools, BoardEditor, PatternLibrary, Universe",
@@ -65,13 +65,12 @@
       "slug": "06-integration",
       "title": "타 기능과의 설계 접점",
       "summary": "캡처는 모델 guard와 완료 알림으로 연결한다. 프리징·통계 구현을 직접 소유하거나 세대 이벤트를 만들어내지 않는다.",
-      "note": "실제 통합본의 조립을 실선으로 표시한다. guard true는 차단이며 완료 이벤트는 세대 진행과 구분된다.",
+      "note": "Universe가 PatternTools를 통해 guard를 주입하고 BoardChangeEvent를 구독자에게 전달한다. guard true는 차단이다.",
       "requirements": "R-05, R-08, R-09 / IF-01~IF-06",
       "tests": "T-14, T-15, T-22~T-25 / IT-01~IT-06 (통과)",
       "code": "PatternTools, BoardEditor, Universe, FreezingManager, BoardChangeEvent",
-      "document": "README.md#integration",
-      "orientation": "portrait"
+      "document": "README.md#integration"
     }
   ],
-  "evidence": "evidence/2026-11-21/results.json"
+  "evidence": "evidence/2026-11-23/results.json"
 }

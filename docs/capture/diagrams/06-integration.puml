@@ -11,15 +11,15 @@ component "BoardChangeEvent\n종류·완료 스냅샷" as Event
 component "Statistics" as Stats
 component "SoundEffects" as Sound
 Universe --> UI : IF-01/03\n편집 중 tick 차단
-Universe --> Editor : IF-04\nguard 조립
-Editor --> Freeze : 배치마다 Rectangle 검사\ntrue = 차단
-UI --> Editor : 입력 / endStroke / undo
+Universe --> UI : IF-04\nsetPlacementGuard(Predicate)
+Editor ..> Freeze : 주입된 Predicate 실행\n직접 참조 없음 / true = 차단
+UI --> Editor : guard 위임 / 입력 / endStroke / undo
 Editor --> Cells : IF-02\n변경 셀만 편집
 Editor --> UI : IF-05\n완료 콜백 한 번
 UI --> Universe : TEMPLATE / TEMPLATE_UNDO\nPropertyChange
-Universe --> Event : 완료된 보드 스냅샷
-Event --> Stats : 생존 수 갱신\n편집은 세대 증가 없음
-Event --> Sound : 보드 스냅샷 갱신\n편집은 자연 탄생음 아님
+Universe ..> Event : 완료 스냅샷 이벤트 생성
+Universe --> Stats : onBoardChanged(event)\n편집은 세대 증가 없음
+Universe --> Sound : onBoardChanged(event)\n편집은 자연 탄생음 아님
 note bottom of Editor
 프리징 영역 선택 시작: 캡처 종료 + 이력 비우기
 탭 전환: 숨겨진 작업 종료, 이력은 유지

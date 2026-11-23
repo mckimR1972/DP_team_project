@@ -11,7 +11,7 @@ async function main() {
   const repo = path.resolve(root, '..');
   const output = path.join(repo, 'build/capture-docs/preview');
   fs.mkdirSync(output, {recursive:true});
-  const documents = [path.join(root, 'capture.md'), path.join(root, 'capture/README.md')];
+  const documents = [path.join(root, 'capture/capture.md'), path.join(root, 'capture/README.md')];
   const previews = [];
   for (const [index, file] of documents.entries()) {
     const md = fs.readFileSync(file, 'utf8');

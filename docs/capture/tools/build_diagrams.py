@@ -57,7 +57,7 @@ def render_diagram(item, meta, jar):
     WIDTH, HEIGHT = A4 if item.get('orientation') == 'portrait' else landscape(A4)
     source = DIAGRAMS / (item['slug'] + '.puml')
     for extension in ('svg', 'png'):
-        target = DIAGRAMS / extension
+        target = DIAGRAMS if extension == 'png' else DIAGRAMS / extension
         target.mkdir(parents=True, exist_ok=True)
         command = ['java', '-Djava.awt.headless=true', '-jar', str(jar),
                    '-charset', 'UTF-8', '-failfast2', '-t' + extension,
@@ -65,7 +65,7 @@ def render_diagram(item, meta, jar):
         result = subprocess.run(command, capture_output=True, text=True, encoding='utf-8', errors='replace')
         if result.returncode:
             raise RuntimeError(result.stderr + result.stdout)
-    png = DIAGRAMS / 'png' / (item['slug'] + '.png')
+    png = DIAGRAMS / (item['slug'] + '.png')
     pdf_dir = DIAGRAMS / 'pdf'
     pdf_dir.mkdir(exist_ok=True)
     destination = pdf_dir / (item['slug'] + '.pdf')
@@ -127,7 +127,7 @@ def build_atlas(meta):
     for item in meta['diagrams']:
         files.extend([DIAGRAMS / (item['slug'] + '.puml'),
                       DIAGRAMS / 'svg' / (item['slug'] + '.svg'),
-                      DIAGRAMS / 'png' / (item['slug'] + '.png'),
+                      DIAGRAMS / (item['slug'] + '.png'),
                       DIAGRAMS / 'pdf' / (item['slug'] + '.pdf')])
     hashes = {}
     for path in files:
