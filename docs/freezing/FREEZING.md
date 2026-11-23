@@ -33,7 +33,7 @@
 
 오른쪽 사이드바의 **Freezing** 탭에서 쓴다.
 
-![Freezing 탭](freezing-tab.png)
+![Freezing 탭](evidence/freezing-tab.png)
 
 1. **지속 세대**(1~999, 기본 5)를 정한다.
 2. **영역 선택**을 누르고 보드에서 드래그한다. 반대 방향으로 끌어도 되고, 보드 밖으로 끌면 보드 끝에 맞춘다. 선택하는 동안 시뮬레이션은 멈춘다.
@@ -64,15 +64,15 @@
 
 | 클래스 | 책임 |
 | --- | --- |
-| [FreezingState](../src/com/holub/life/FreezingState.java) | State 인터페이스. 세대 처리의 두 시점(`beforeTransition`, `afterGeneration`)에서 할 일을 정의한다 |
-| [NormalState](../src/com/holub/life/NormalState.java) | 고정되지 않은 상태. 아무것도 하지 않는다. 값이 없어서 객체 하나를 공유한다 |
-| [FrozenState](../src/com/holub/life/FrozenState.java) | 고정 상태. 스냅샷을 적용하고 남은 세대를 줄인다. 0이 되면 Context를 `NormalState`로 바꾼다 |
-| [FreezingRegion](../src/com/holub/life/FreezingRegion.java) | Context. 영역, 스냅샷, 시작 세대, 지속 세대, 현재 State를 가진다 |
-| [FreezingManager](../src/com/holub/life/FreezingManager.java) | 영역 목록, 설치 검증(빈 영역, 지속 세대, 겹침), 해제, 초기화. Swing 코드가 없다 |
-| [FreezingTools](../src/com/holub/life/FreezingTools.java) | Freezing 탭 화면, 드래그 선택, 보드 위 표시 |
-| [Cell](../src/com/holub/life/Cell.java) 계층 | `holdNextState(location, alive)` 하나를 추가했다 |
-| [Universe](../src/com/holub/life/Universe.java) | 세대 처리에 Freezing 단계를 끼우고, 다른 기능과의 규칙(편집 차단, 배치 제한, 초기화)을 연결한다 |
-| [Life](../src/com/holub/life/Life.java) | 사이드바에 Freezing 탭을 추가한다 |
+| [FreezingState](../../src/com/holub/life/FreezingState.java) | State 인터페이스. 세대 처리의 두 시점(`beforeTransition`, `afterGeneration`)에서 할 일을 정의한다 |
+| [NormalState](../../src/com/holub/life/NormalState.java) | 고정되지 않은 상태. 아무것도 하지 않는다. 값이 없어서 객체 하나를 공유한다 |
+| [FrozenState](../../src/com/holub/life/FrozenState.java) | 고정 상태. 스냅샷을 적용하고 남은 세대를 줄인다. 0이 되면 Context를 `NormalState`로 바꾼다 |
+| [FreezingRegion](../../src/com/holub/life/FreezingRegion.java) | Context. 영역, 스냅샷, 시작 세대, 지속 세대, 현재 State를 가진다 |
+| [FreezingManager](../../src/com/holub/life/FreezingManager.java) | 영역 목록, 설치 검증(빈 영역, 지속 세대, 겹침), 해제, 초기화. Swing 코드가 없다 |
+| [FreezingTools](../../src/com/holub/life/FreezingTools.java) | Freezing 탭 화면, 드래그 선택, 보드 위 표시 |
+| [Cell](../../src/com/holub/life/Cell.java) 계층 | `holdNextState(location, alive)` 하나를 추가했다 |
+| [Universe](../../src/com/holub/life/Universe.java) | 세대 처리에 Freezing 단계를 끼우고, 다른 기능과의 규칙(편집 차단, 배치 제한, 초기화)을 연결한다 |
+| [Life](../../src/com/holub/life/Life.java) | 사이드바에 Freezing 탭을 추가한다 |
 
 ### 클래스 다이어그램
 
@@ -323,7 +323,7 @@ Strategy가 아니라 State를 고른 이유: 고정은 사용자가 골라 끼�
   patternTools.setPlacementGuard( area -> freezingTools.manager().overlapsFrozen(area) );
   ```
 
-  검사 단위는 템플릿의 **사각형 전체**다. 빈 여백만 영역과 겹쳐도 그 배치를 통째로 거부한다([capture/integration.md](capture/integration.md) IF-04와 같은 의미). 가드는 `BoardEditor.place()` 안에서 검사하므로, 클릭뿐 아니라 누른 채 끌어서 반복 배치할 때의 타이머와 보간도 우회하지 못한다. 드래그가 영역을 가로지르면 겹치지 않는 자리에만 찍힌다. 미리보기도 같은 가드로 빨간색이 된다.
+  검사 단위는 템플릿의 **사각형 전체**다. 빈 여백만 영역과 겹쳐도 그 배치를 통째로 거부한다([capture/integration.md](../capture/integration.md) IF-04와 같은 의미). 가드는 `BoardEditor.place()` 안에서 검사하므로, 클릭뿐 아니라 누른 채 끌어서 반복 배치할 때의 타이머와 보간도 우회하지 못한다. 드래그가 영역을 가로지르면 겹치지 않는 자리에만 찍힌다. 미리보기도 같은 가드로 빨간색이 된다.
 - **되돌리기 이력.** 템플릿을 놓은 뒤 그 자리를 고정하고 `배치 되돌리기`를 누르면, 되돌리기가 고정된 셀을 지울 수 있다. 그래서 **영역 선택을 시작할 때** 진행 중인 패턴 편집을 끝내고 되돌리기 이력을 비운다(`patternTools.boardChanged()`).
 - **캡처는 그대로 된다.** 영역 캡처는 읽기만 하므로 고정된 영역도 캡처할 수 있다.
 - **서로를 모른다.** `PatternTools`는 `Predicate`만 알고 `FreezingTools`는 `Runnable`만 안다. 두 도구를 아는 것은 `Universe`뿐이다.
@@ -361,7 +361,7 @@ Strategy가 아니라 State를 고른 이유: 고정은 사용자가 골라 끼�
 ### 6.9 화면 그리기
 
 - 그리는 순서: 셀 → Freezing 표시 → 사운드 재생선 → 패턴 미리보기.
-- 색상 기능에서 고친 지연 문제([color-gen-redraw-lag.md](color-gen-redraw-lag.md))를 되살리지 않도록, Freezing은 **영역이 있는 자리만** 다시 그리게 요청한다. 영역이 하나도 없으면 아무것도 요청하지 않는다. 바뀐 셀이 없는 세대에 보드 전체를 다시 그리지 않는다는 `UniverseColorTest`의 조건이 그대로 통과한다.
+- 색상 기능에서 고친 지연 문제([color-gen-redraw-lag.md](../color-gen/color-gen-redraw-lag.md))를 되살리지 않도록, Freezing은 **영역이 있는 자리만** 다시 그리게 요청한다. 영역이 하나도 없으면 아무것도 요청하지 않는다. 바뀐 셀이 없는 세대에 보드 전체를 다시 그리지 않는다는 `UniverseColorTest`의 조건이 그대로 통과한다.
 - 영역이 있는 동안에는 세대마다 그 자리를 다시 그린다. 배지의 남은 세대 숫자가 바뀌기 때문이다.
 
 <a id="patterns"></a>
@@ -528,7 +528,7 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 
 ### 9.3 캡처 문서가 남겨 둔 통합 검사
 
-[capture/test-plan.md](capture/test-plan.md)에는 이 PR이 병합된 뒤 실제 `FreezingManager`로 확인하기로 한 항목이 있다. `FreezingIntegrationTest`에 넣었다.
+[capture/test-plan.md](../capture/test-plan.md)에는 이 PR이 병합된 뒤 실제 `FreezingManager`로 확인하기로 한 항목이 있다. `FreezingIntegrationTest`에 넣었다.
 
 | ID | 내용 | 테스트 |
 | --- | --- | --- |
@@ -586,7 +586,7 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 
 6세대 화면은 [2절](#usage)의 그림이다. 아래는 4단계에서 템플릿 미리보기가 고정 영역 위에서 빨간색으로 바뀐 화면이다. 초록 세로선은 사운드의 재생선이다.
 
-![고정 영역 위의 템플릿 미리보기](freezing-template-guard.png)
+![고정 영역 위의 템플릿 미리보기](evidence/freezing-template-guard.png)
 
 데모에서 확인하지 못한 것: 소리가 듣기에 맞는지(사운드는 켜져 있었고 오류는 없었다), 사람이 직접 마우스로 끌 때의 느낌.
 
@@ -605,7 +605,7 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 | `src/.../Life.java` | Freezing 탭 (+3) |
 | `test/.../FreezingModelTest.java`, `FreezingIntegrationTest.java`, `FreezingSoundIntegrationTest.java` | 새 파일 |
 | `test/.../MergedFeaturesIntegrationTest.java` | 탭 개수 단언 (+2 / -1) |
-| `docs/FREEZING.md`, `docs/freezing-tab.png`, `docs/freezing-template-guard.png` | 문서와 그림 |
+| `docs/freezing/FREEZING.md`, `docs/freezing/evidence/freezing-tab.png`, `docs/freezing/evidence/freezing-template-guard.png` | 문서와 그림 |
 | `README.md`, `docs/README.md` | 문서 목차에 Freezing 추가 |
 
 다른 기능의 클래스(`PatternTools`, `BoardEditor`, `PlacePatternCommand`, `Statistics`, `StatisticsPanel`, `BoardChangeEvent`, `SoundEffects`, `CellColorPolicy`와 구현들, `Clock`)는 `dev`와 한 글자도 다르지 않다.

@@ -16,7 +16,7 @@
 5. [도식 원본과 개별 PDF](diagrams/README.md): 유스케이스·클래스·시퀀스·상태·연계 도식.
 6. [도식 합본 PDF](diagrams/capture-diagrams.pdf)와 [추적표](traceability.md): 발표·제출용 그림과 코드 근거를 함께 찾는 목차.
 
-각 문서와 도식은 내용 단위로 작성·커밋했다. 기존 [사용법](../capture-templates.md)과 [PR #13 기록](../capture-drag-design.md)은 보존한다. 후자의 통계 PR head 등은 작성 당시 기록이므로 최신 연계 문서를 우선 확인한다.
+각 문서와 도식은 내용 단위로 작성·커밋했다. 기존 [사용법](capture-templates.md)과 [PR #13 기록](capture-drag-design.md)은 보존한다. 후자의 통계 PR head 등은 작성 당시 기록이므로 최신 연계 문서를 우선 확인한다.
 
 ## 식별자와 갱신 원칙
 
