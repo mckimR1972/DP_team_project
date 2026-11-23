@@ -1,48 +1,19 @@
 # Freezing: 유스케이스 명세와 변경 요약
 
 - 코드 기준: dev `838182c` (PR #7 병합 후)
-- 관련 문서: [변경 상세](changes.md), [설계 결정과 다이어그램](design.md), [통합 기록과 테스트](../FREEZING.md)
+- 관련 문서: [변경 상세](changes.md), [설계 결정](design.md), [다이어그램](diagram/), [통합 기록과 테스트](FREEZING.md)
 
 ## 1. 유스케이스 명세
 
 확장 유스케이스는 과제 안내문의 규칙대로 이름 끝에 `E`를 붙였다. 이름은 PR #7 본문의 유스케이스 그림과 같다.
 
-```mermaid
-flowchart LR
-    user((사용자))
+![Freezing 유스케이스 다이어그램](diagram/usecase-freezing.png)
 
-    subgraph 기존 기능
-        run([Run / Halt Game])
-        step([Step One Generation])
-        adv([Advance Generation])
-        edit([Edit Cells])
-        clear([Clear Board])
-        load([Store / Load Board])
-    end
+원본: [diagram/usecase-freezing.puml](diagram/usecase-freezing.puml)
 
-    subgraph 확장 기능 Freezing
-        install([Install Freezing E])
-        region([Select Region E])
-        duration([Set Duration E])
-        release([Release Freezing E])
-        auto([Auto Release E])
-    end
-
-    user --- install
-    user --- release
-    user --- run
-    user --- step
-
-    install -. "«include»" .-> region
-    install -. "«include»" .-> duration
-    run -. "«include»" .-> adv
-    step -. "«include»" .-> adv
-    auto -. "«extend» 남은 세대가 0" .-> adv
-```
-
-- Advance Generation은 원본에서 한 세대를 계산하고 확정하는 부분이다. Run / Halt Game과 Step One Generation이 모두 포함하므로 Auto Release E는 이 공통 부분에 붙였다(색 순환 문서의 전체 유스케이스 그림과 같은 구조). PR #7 본문의 그림에서는 Run / Halt Game에 직접 붙어 있었다.
+- Advance Generation은 원본에서 한 세대를 계산하고 확정하는 부분이다. Run / Halt Game과 Step One Generation이 모두 포함하므로 Auto Release E는 이 공통 부분의 확장 지점 “세대 확정 후”에 붙였다(색 순환 문서의 유스케이스 그림과 같은 구조). PR #7 본문의 그림에서는 Run / Halt Game에 직접 붙어 있었다.
 - Select Region E와 Set Duration E는 설치할 때마다 반드시 거치므로 «include»다. Auto Release E는 남은 세대가 0이 된 세대에만 일어나므로 «extend»다.
-- Edit Cells, Clear Board, Store / Load Board는 Freezing이 동작을 제한하거나 초기화되는 기존 유스케이스다. 관계선은 긋지 않았고 아래 표의 “다른 유스케이스에 주는 영향”에 적었다.
+- Edit Cells, Clear Board, Store / Load Board는 Freezing이 동작을 제한하거나 초기화되는 기존 유스케이스지만 «include»나 «extend» 관계가 아니어서 그림에 넣지 않았다. 영향은 아래 UC-FZ-01의 “다른 유스케이스에 주는 영향”과 UC-FZ-04에 적었다.
 
 | ID | 기능 이름 | 액터 | 기존 유스케이스와의 관계 |
 | --- | --- | --- | --- |
