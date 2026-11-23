@@ -156,7 +156,7 @@ FR-7과 FR-8은 이 기능의 유스케이스가 아니라, 셀을 살리거나 
 | Grid > Exit | 변화 없음 | 변화 없음 |
 | 활성 블록의 파란 테두리 | 변화 없음. 판이 멈춘 뒤에도 남음 | 판이 멈추면 한 세대 뒤에 지워짐 |
 
-메뉴에는 Grid, Go 뒤에 Color 메뉴가 생긴다. 생사가 원본과 같은지는 JUnit으로 확인한다(NFR-1 `lifeRuleIsUnchanged`, NFR-2 기존 테스트, 6.5절).
+메뉴에는 Grid, Go 뒤에 Color 메뉴가 생긴다. 생사가 원본과 같은지는 JUnit으로 확인한다(NFR-1 `lifeRuleIsUnchanged`, NFR-2 기존 테스트, 6.3절).
 
 ## 2. 기존 코드에서 바뀐 부분
 
@@ -756,7 +756,7 @@ Color 메뉴는 원본 메뉴의 Command 구조를 그대로 따른다.
 
 **결과.** A를 택했다. 지금 Universe의 `refreshNow()`는 `repaint()`만 부른다. 캡처·템플릿 기능도 편집 오버레이를 판과 함께 그리려고 같은 변경을 했기 때문에, 두 기능이 같은 그리기 경로를 쓴다. 이렇게 바꾼 뒤에는 색 순환을 켜든 끄든, 패턴 판이든 무작위 판이든 최대 지연이 3 ms였다(NFR-4).
 
-**설계 단계에서 놓친 이유.** 5.1절 비교표의 그리기 시간(색 순환 켬 2.0\~2.3 ms)은 화면 대신 이미지에 그려서 잰 값이었다. 화면에 바로 그리는 비용은 그보다 30배 넘게 컸다. JUnit은 창이 없어 실제 화면 그리기를 하지 않았고, 실제 창 확인은 세대를 하나씩 보내며 색만 봐서 작업이 쌓이지 않았다. 그래서 다시 그리기 요청을 세는 테스트(6.3절)와 연속 실행 지연 측정(6.6절)을 더했다.
+**설계 단계에서 놓친 이유.** 5.1절 비교표의 그리기 시간(색 순환 켬 2.0\~2.3 ms)은 화면 대신 이미지에 그려서 잰 값이었다. 화면에 바로 그리는 비용은 그보다 30배 넘게 컸다. JUnit은 창이 없어 실제 화면 그리기를 하지 않았고, 실제 창 확인은 세대를 하나씩 보내며 색만 봐서 작업이 쌓이지 않았다. 그래서 다시 그리기 요청을 세는 테스트(6.3절)와 연속 실행 지연 측정(6.4절)을 더했다.
 
 **비용.** 이벤트 스레드가 바쁘면 Swing이 요청을 합치므로 중간 세대의 화면이 보이지 않을 수 있다. 세대 계산은 매 세대 그대로 한다.
 
@@ -792,126 +792,124 @@ Universe는 JVM에서 한 번만 만들어지고, 그때 메뉴와 시계 리스
 
 ### 6.1 실행 결과
 
+전체 테스트는 다음 명령으로 돌린다.
+
 ```
 ./gradlew test
 ```
 
-dev `838182c`(Freezing #7까지 병합) 기준으로 전체 384개 테스트가 모두 통과한다(Gradle 9.7.1, JDK 17 툴체인). 이 중 색 순환 기능의 테스트는 39개다. 고정된 셀의 나이와 색이 멈췄다가 다시 이어지는지는 Freezing 기능의 테스트(`FreezingModelTest`, `FreezingIntegrationTest`)가 확인한다.
+지금 코드 기준으로 전체 384개 테스트가 모두 통과한다. 이 중 색 순환 기능의 테스트는 39개다.
 
-| 테스트 클래스 | 개수 | 대상 | 게임 창 |
+| 테스트 클래스 | 메서드 수 | 실행 수 | 대상 |
 | --- | --- | --- | --- |
-| `CellColorPolicyTest` | 22 (메서드 5개, 매개변수화 포함) | 색 규칙 클래스 | 쓰지 않음 |
-| `CellAgeColorTest` | 9 | Neighborhood와 Resident (판 모델) | 쓰지 않음 |
-| `DefaultCellColorTest` | 1 | Resident의 처음 값 | 쓰지 않음 |
-| `UniverseColorTest` | 7 | Universe의 실제 틱 처리와 메뉴 | 창 없이 실제 Universe |
+| `CellColorPolicyTest` | 5 | 22 | 색 규칙 클래스 |
+| `CellAgeColorTest` | 9 | 9 | Neighborhood와 Resident (판 모델) |
+| `DefaultCellColorTest` | 1 | 1 | Resident의 처음 값 |
+| `UniverseColorTest` | 7 | 7 | Universe의 틱 처리와 메뉴 (실제 Universe 객체) |
+| 합계 | 22 | 39 | |
 
-색 기능을 붙일 때(PR #8) 원래 있던 테스트 32개(`ResidentTest`, `NeighborhoodTest`, `UniverseStoreTest`)는 고치지 않고 통과했다. `CellAgeColorTest`와 `UniverseColorTest`의 각 1개는 캡처·템플릿 기능을 붙인 팀원이 색 기능과의 연계를 확인하려고 더한 것이다. 통계 기능(#10)은 `CellAgeColorTest`의 색 읽기 도우미에, 그린 색과 `colorAt()`이 같은지 확인하는 줄을 더했다. PR #8의 커밋은 하나씩 빌드하고 테스트를 돌려, 중간 커밋에서도 실패가 없게 했다.
+실행 수는 입력값을 바꿔 여러 번 돌리는 테스트를 입력값마다 따로 센 수다.
 
-### 6.2 화면 없이 테스트하는 방법
+색 기능을 붙이기 전부터 있던, 원본 동작을 검사하는 테스트(`ResidentTest`, `NeighborhoodTest`, `UniverseStoreTest`)는 색 기능 때문에 고친 곳 없이 모두 통과한다(NFR-2). 이 세 테스트는 Holub 원본에 딸린 것이 아니라, 원본의 오류를 고친 뒤 팀이 원본 동작을 지키려고 만든 것이다.
 
-- **색은 그려서 읽는다.** 게임이 실제로 쓰는 `redraw()`로 판을 이미지에 그린 뒤 셀 한가운데 픽셀의 색을 읽는다. 창이 없어도 동작한다.
-- **나이는 간격 1인 규칙으로 읽는다.** `CyclingColorPolicy(1, 빨강, 파랑, 초록)`이면 1세대마다 색이 달라져 그려진 색이 곧 나이다. 게임이 쓰는 생성자에 값만 다르게 넣는다. 그래서 나이를 읽는 메서드를 게임 코드에 넣지 않았다.
-- **살아 있는 셀은 저장 경로로 읽는다.** Grid > Store와 같은 `transfer()` 경로로 테스트 쪽 Memento에 받아 읽는다.
+### 6.2 JUnit 테스트를 만드는 방법
+
+JUnit 테스트는 게임 창을 띄우지 않고 돈다(NFR-5). 그래서 테스트를 다음과 같이 만들었다.
+
+- **색은 그려서 읽는다.** 게임이 실제로 쓰는 `redraw()`로 판을 이미지에 그린 뒤 셀 한가운데 픽셀의 색을 읽는다.
+- **나이는 간격 1인 규칙으로 읽는다.** `CyclingColorPolicy(1, 빨강, 파랑, 초록)`이면 나이 0, 1, 2가 각각 빨강, 파랑, 초록으로 그려져, 색으로 나이를 읽을 수 있다. 게임이 쓰는 생성자에 값만 다르게 넣는다. 그래서 나이를 읽는 메서드를 게임 코드에 넣지 않았다.
+- **살아 있는 셀은 저장 경로로 읽는다.** Grid > Store가 판을 저장할 때 쓰는 `transfer()`를 그대로 불러, 살아 있는 셀의 위치를 테스트가 만든 저장용 객체(Memento)에 받아 읽는다.
 - **Universe는 창 없이 만든다.** `UniverseStoreTest`와 같은 방법으로 Mockito가 `MenuSite`와 `Clock`을 대신하고, Universe가 등록한 메뉴 콜백과 시계 리스너를 받아 둔다. 받아 둔 리스너의 `tick()`을 직접 불러 Universe의 실제 틱 처리를 확인한다.
 - **다시 그리기 요청은 RepaintManager로 센다.** 테스트 안에서 RepaintManager를 바꿔 끼워, 틱을 보내는 동안 Universe가 요청한 판 전체 다시 그리기를 센다. 다른 기능이 화면 일부만 다시 그리는 요청(사운드의 재생선)은 세지 않는다.
-- **규칙은 준비 단계에서 직접 되돌린다.** `@BeforeEach`, `@AfterEach`는 메뉴를 거치지 않고 `Resident.setColorPolicy()`로 규칙을 되돌린다. 메뉴가 고장 났을 때 메뉴 테스트만 실패하게 하기 위해서다.
+- **규칙은 준비·정리 단계에서 직접 되돌린다.** `@BeforeEach`, `@AfterEach`는 메뉴를 거치지 않고 `Resident.setColorPolicy()`로 규칙을 되돌린다. 메뉴가 고장 났을 때 메뉴 테스트만 실패하게 하기 위해서다.
 
-### 6.3 테스트 케이스와 목적
+### 6.3 테스트 케이스와 요구사항
 
-| 확인하려는 것 | 테스트 | 확인 내용 |
-| --- | --- | --- |
-| 고정 색은 나이와 상관없다 | `CellColorPolicyTest.fixedPolicyReturnsTheSameColorForEveryAge` | 나이 0, 9, 10, 30, 1000에서 모두 빨강 |
-| 순환 공식과 경계 | `CellColorPolicyTest.cyclingPolicyStepsEveryTenGenerationsAndWrapsAround` | 0·9 빨강, 10·19 파랑, 20·29 초록, 30 빨강, 1000 파랑 (색이 바뀌는 경계 포함 8가지) |
-| 다시 그리기를 정하는 값 | `CellColorPolicyTest.onlyTheCyclingPolicyChangesWithAge` | 고정 색은 `changesWithAge()`가 false, 순환은 true |
-| 불변 객체 | `CellColorPolicyTest.cyclingPolicyKeepsItsOwnCopyOfTheColors` | 생성자에 넘긴 배열을 나중에 바꿔도 색이 그대로 |
-| 잘못된 값 거부 | `CellColorPolicyTest.policiesRejectInvalidArguments` | 고정 색 null, 간격 0, 간격 −10, 색 0개, 색 1개, 배열 null, null 색 포함 7가지 모두 `IllegalArgumentException` |
-| 멈춘 패턴의 색 순환 | `CellAgeColorTest.stillLifeChangesColorEveryTenGenerationsAndWrapsAround` | 2×2 블록이 9틱까지 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강 |
-| 나이 계산 규칙 | `CellAgeColorTest.survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver` | 블링커에서 살아남은 칸은 나이 1, 2, 태어난 칸과 다시 태어난 칸은 0, 죽은 칸은 죽은 칸 색 |
-| 클릭으로 살린 셀 | `CellAgeColorTest.cellRevivedByClickStartsAtAgeZero` | 초록 블록의 한 칸을 두 번 눌러 죽였다 살리면 그 칸만 빨강 |
-| Store / Load | `CellAgeColorTest.storeThenLoadKeepsCellsAndRestartsColor` | 초록 블록을 Store → Load하면 같은 네 칸이 빨강으로 복원되고, 10틱 뒤 파랑 |
-| Clear 뒤 | `CellAgeColorTest.cellClickedAfterClearStartsRed` | Clear 뒤 초록이던 칸은 죽은 칸 색, 다시 클릭한 칸은 빨강 |
-| 생사 규칙 불변 | `CellAgeColorTest.lifeRuleIsUnchanged` | 무작위 판 32개 × 100세대가 매 세대 Life 규칙을 직접 계산한 결과와 같음 |
-| null 규칙 거부 | `CellAgeColorTest.setColorPolicyRejectsNullAndKeepsThePreviousPolicy` | null이면 예외, 그 뒤에도 이전 규칙으로 그림 |
-| 현재 규칙을 따르는 값 | `CellAgeColorTest.colorChangesWithAgeFollowsTheCurrentPolicy` | 순환이면 `Resident.colorChangesWithAge()`가 true, 고정이면 false |
-| 캡처는 모양만 저장 | `CellAgeColorTest.captureCopiesOnlyLivingCellsRegardlessOfColorAndAge` | 파랑일 때와 초록일 때 캡처한 모양이 같고, 배치한 셀은 빨강 |
-| 처음 화면이 원본과 같음 | `DefaultCellColorTest.liveCellsStayRedWhenNoColorPolicyIsChosen` | 규칙을 한 번도 정하지 않은 판의 블록이 25세대 동안 빨강 |
-| 꺼진 상태는 원본 색 | `UniverseColorTest.stillLifeStaysRedWhileCyclingIsOff` | 색 순환이 꺼져 있으면 블록이 30틱 뒤에도 빨강 |
-| 매 틱 확정 | `UniverseColorTest.stillLifeCyclesThroughColorsWhenNothingElseChanges` | 블록만 있는 판에서 Universe의 실제 틱으로 10틱 파랑, 20틱 초록, 30틱 빨강 |
-| 꺼진 동안에도 나이를 셈 | `UniverseColorTest.ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor` | 원본 규칙으로 25틱 뒤 Cycle by Generation을 고르면 틱 없이 바로 초록 |
-| Single Color | `UniverseColorTest.singleColorBringsBackTheOriginalRed` | 초록인 블록이 Single Color를 고르면 바로 빨강, 10틱 뒤에도 빨강 |
-| 템플릿 편집은 기존 나이 유지 | `UniverseColorTest.placementAndUndoPreserveExistingCellAge` | 배치와 되돌리기 뒤에도 기존 셀의 나이가 그대로 |
-| 색 순환 중 다시 그리기 요청 | `UniverseColorTest.cyclingTickRequestsRepaintEvenWhenNothingChanges` | 색 순환을 켜고 블록만 둔 판에 10틱을 보내면 판 전체 `repaint()` 요청 10번 |
-| 꺼진 상태의 다시 그리기 | `UniverseColorTest.tickWithCyclingOffRepaintsOnlyWhenCellsChange` | 블록만 있으면 10틱 동안 0번, 블링커를 더하면 10번 |
-| 드래그 배치와 되돌리기 | `PatternToolsTest.dragAndUndoPreserveTheAgeColorsOfExistingCells` (팀원 테스트) | 순환 규칙에서 드래그로 찍고 되돌려도 기존 셀은 파랑, 새 셀은 빨강 |
+색 기능 테스트 메서드 22개(실행 수 39개, 6.1절)와, 색 기능과의 연계를 확인하는 캡처·템플릿 기능의 테스트 1개를 클래스별로 정리했다. 표의 "틱"은 세대를 하나 진행하는 것을 말한다.
 
-- 생사 규칙 비교에서는 판을 그리지 않는다. 색 규칙은 그리기에서만 읽으므로, 그리지 않으면 켜든 끄든 같은 계산이 된다. 매 세대 그리면서 켬과 끔을 비교하면 약 27초, 그리지 않으면 약 1.3초 걸렸다.
+**색 규칙** (`CellColorPolicyTest`)
+
+| 확인하려는 것 | 테스트 | 확인 내용 | 요구사항 |
+| --- | --- | --- | --- |
+| 고정 색은 나이와 상관없다 | `fixedPolicyReturnsTheSameColorForEveryAge` | 나이 0, 9, 10, 30, 1000에서 모두 빨강 | FR-2 |
+| 순환 공식과 경계 | `cyclingPolicyStepsEveryTenGenerationsAndWrapsAround` | 0·9 빨강, 10·19 파랑, 20·29 초록, 30 빨강, 1000 파랑 (색이 바뀌는 경계 포함 8가지) | FR-5 |
+| 다시 그리기를 정하는 값 | `onlyTheCyclingPolicyChangesWithAge` | 고정 색은 `changesWithAge()`가 false, 순환은 true | FR-6 |
+| 불변 객체 | `cyclingPolicyKeepsItsOwnCopyOfTheColors` | 생성자에 넘긴 배열을 나중에 바꿔도 색이 그대로 | NFR-7 |
+| 잘못된 값 거부 | `policiesRejectInvalidArguments` | 고정 색 null, 간격 0, 간격 −10, 색 0개, 색 1개, 배열 null, null 색 포함 7가지 모두 `IllegalArgumentException` | NFR-7 |
+
+**판 모델 (Neighborhood와 Resident)** (`CellAgeColorTest`)
+
+| 확인하려는 것 | 테스트 | 확인 내용 | 요구사항 |
+| --- | --- | --- | --- |
+| 멈춘 패턴의 색 순환 | `stillLifeChangesColorEveryTenGenerationsAndWrapsAround` | 2×2 블록이 9틱에 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강 | FR-5 |
+| 나이 계산 규칙 | `survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver` | 블링커에서 살아남은 칸은 1틱 뒤 나이 1, 2틱 뒤 나이 2, 태어난 칸과 다시 태어난 칸은 0, 죽은 칸은 죽은 칸 색 | FR-4, FR-9 |
+| 클릭으로 살린 셀 | `cellRevivedByClickStartsAtAgeZero` | 초록 블록의 한 칸을 두 번 눌러 죽였다 살리면 그 칸만 빨강 | FR-7 |
+| Store / Load | `storeThenLoadKeepsCellsAndRestartsColor` | 초록 블록을 Store → Load하면 같은 네 칸이 빨강으로 복원되고, 10틱 뒤 파랑 | FR-7, NFR-3 |
+| Clear 뒤 | `cellClickedAfterClearStartsRed` | Clear 뒤 초록이던 칸은 죽은 칸 색, 다시 클릭한 칸은 빨강 | FR-7, FR-9 |
+| 생사 규칙 불변 | `lifeRuleIsUnchanged` | 무작위 판 32개 × 100세대가 매 세대 Life 규칙을 직접 계산한 결과와 같음 | NFR-1 |
+| null 규칙 거부 | `setColorPolicyRejectsNullAndKeepsThePreviousPolicy` | null이면 예외, 그 뒤에도 이전 규칙으로 그림 | NFR-7 |
+| 현재 규칙을 따르는 값 | `colorChangesWithAgeFollowsTheCurrentPolicy` | 순환이면 `Resident.colorChangesWithAge()`가 true, 고정이면 false | FR-6 |
+| 캡처는 모양만 저장 | `captureCopiesOnlyLivingCellsRegardlessOfColorAndAge` | 파랑일 때와 초록일 때 캡처한 모양이 같고, 배치한 셀은 빨강 | FR-7 |
+
+**처음 값** (`DefaultCellColorTest`)
+
+| 확인하려는 것 | 테스트 | 확인 내용 | 요구사항 |
+| --- | --- | --- | --- |
+| 처음 화면이 원본과 같음 | `liveCellsStayRedWhenNoColorPolicyIsChosen` | 규칙을 한 번도 정하지 않은 판의 블록이 25틱 동안 빨강 | FR-3 |
+
+**Universe의 틱 처리와 메뉴** (`UniverseColorTest`)
+
+| 확인하려는 것 | 테스트 | 확인 내용 | 요구사항 |
+| --- | --- | --- | --- |
+| 꺼진 상태는 원본 색 | `stillLifeStaysRedWhileCyclingIsOff` | 색 순환이 꺼져 있으면 블록이 30틱 뒤에도 빨강 | FR-3 |
+| 바뀌는 셀이 없어도 매 틱마다 나이를 셈 | `stillLifeCyclesThroughColorsWhenNothingElseChanges` | 블록만 있는 판에서 Universe의 실제 틱으로 10틱 파랑, 20틱 초록, 30틱 빨강 | FR-6 |
+| 꺼진 동안에도 나이를 셈 | `ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor` | 색 순환을 끈 채(원본 빨강) 25틱 뒤 Cycle by Generation을 고르면 틱 없이 바로 초록 | FR-1, FR-4 |
+| Single Color | `singleColorBringsBackTheOriginalRed` | 초록인 블록이 Single Color를 고르면 바로 빨강, 10틱 뒤에도 빨강 | FR-2 |
+| 템플릿 편집은 기존 나이 유지 | `placementAndUndoPreserveExistingCellAge` | 배치와 되돌리기 뒤에도 기존 셀의 나이가 그대로 | FR-8 |
+| 색 순환 중 다시 그리기 요청 | `cyclingTickRequestsRepaintEvenWhenNothingChanges` | 색 순환을 켜고 블록만 둔 판에 10틱을 보내면 판 전체 `repaint()` 요청 10번 | FR-6, NFR-4 |
+| 꺼진 상태의 다시 그리기 | `tickWithCyclingOffRepaintsOnlyWhenCellsChange` | 판 전체 `repaint()` 요청이 블록만 있으면 10틱 동안 0번, 블링커를 더하면 10번 | NFR-2 |
+
+**캡처·템플릿 기능과의 연계** (`PatternToolsTest`)
+
+| 확인하려는 것 | 테스트 | 확인 내용 | 요구사항 |
+| --- | --- | --- | --- |
+| 드래그 배치와 되돌리기 | `dragAndUndoPreserveTheAgeColorsOfExistingCells` | 순환 규칙에서 템플릿을 드래그로 찍으면 기존 셀은 파랑 그대로, 새 셀은 빨강이고, 되돌린 뒤에도 기존 셀은 파랑 | FR-7, FR-8 |
+
+표의 테스트 밖에서 함께 확인하는 요구사항은 다음과 같다.
+
+- 원본 동작을 검사하는 테스트(`ResidentTest`, `NeighborhoodTest`, `UniverseStoreTest`, 6.1절)도 NFR-2를, `UniverseStoreTest`는 NFR-3을 함께 확인한다.
+- NFR-5는 `CellColorPolicyTest`, `CellAgeColorTest`, `DefaultCellColorTest`가 게임 창 없이 돈다는 것으로 확인한다.
+- NFR-6은 5.5절의 색 비교로, NFR-8은 3.4절의 클래스 다이어그램과 4.1절의 역할 표로 확인한다. 테스트로 확인하지 않는다.
+- FR-4의 Freezing 부분은 Freezing 기능의 테스트(`FreezingModelTest`, `FreezingIntegrationTest`)가 확인한다. FR-7의 드래그 그리기는 클릭과 같은 `userClicked()`를 거치므로 클릭 테스트로 함께 확인한다.
+
+몇몇 테스트는 다음 이유로 이렇게 만들었다.
+
+- 생사 규칙 비교(`lifeRuleIsUnchanged`)는 색 순환을 끈 상태로 한 번만 돌리고, 판을 그리지 않는다. 생사 계산(`figureNextState()`, `transition()`)은 색 규칙을 읽지 않아, 색 순환을 켜든 끄든 생사가 같기 때문이다. 무작위 판 32개 × 100세대를 돌릴 때, 색 순환을 켜고 끄기를 바꿔 가며 매 세대 판을 그리면 약 27초가 걸리지만, 판을 그리지 않는 이 방법은 약 1.3초면 끝난다.
 - 생사 규칙 비교의 판은 클릭으로 만든다. Load로 만들면 원본의 Load 문제(5.11절) 때문에 Life 규칙 계산과 달라졌다.
 - `DefaultCellColorTest`를 따로 둔 것은, `CellAgeColorTest`가 테스트마다 규칙을 바꿨다가 되돌려 처음 값을 볼 수 없기 때문이다. `forkEvery = 1`이라 이 클래스는 새 JVM에서 규칙을 한 번도 바꾸지 않은 판을 확인한다.
 
-### 6.4 줄마다 지키는 테스트
+### 6.4 JUnit으로 확인할 수 없는 것과 실제 창 확인
 
-처음 두 테스트만 있을 때 확인해 보니, 처음 값을 순환 규칙으로 바꾸거나 `userClicked()`·`transfer()`의 `age = 0`을 지워도 테스트가 모두 통과했다. 그래서 추가한 줄마다 그 줄을 지우거나 바꾸면 실패하는 테스트를 하나 이상 두고, 결함을 하나씩 넣은 사본에서 확인했다. 결함 사본은 저장소 밖에서만 만들었다.
+창이 없는 테스트에서는 `repaint()`가 화면에 그리지 않고, Universe를 쓰는 테스트는 색을 읽을 때 직접 `paint()`를 부른다. 시계도 대신 넣으므로 Go 메뉴가 생기지 않는다. 그래서 아래는 실제 게임 창을 띄워 확인했다. 화면 픽셀은 `paint()`를 부르지 않고 `java.awt.Robot`으로 읽었다.
 
-| 바꾼 줄 | 넣은 결함 | 실패한 테스트 |
-| --- | --- | --- |
-| 색 규칙의 처음 값 | 고정 빨강 대신 순환 규칙으로 시작 | `liveCellsStayRedWhenNoColorPolicyIsChosen` |
-| `setColorPolicy()`의 null 검사 | 검사를 지움 | `setColorPolicyRejectsNullAndKeepsThePreviousPolicy` |
-| `transition()`의 나이 계산 | 줄을 지움 | `lifeRuleIsUnchanged`를 뺀 `CellAgeColorTest` 6개 |
-| `transition()`의 나이 계산 | 태어난 셀이 나이 1부터 시작 | `survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver` |
-| `redraw()`의 색 | 규칙 대신 원래 빨강 | `lifeRuleIsUnchanged`를 뺀 `CellAgeColorTest` 6개 |
-| `userClicked()`의 `age = 0` | 줄을 지움 | `cellRevivedByClickStartsAtAgeZero`, `cellClickedAfterClearStartsRed` |
-| `transfer()` Load의 `age = 0` | 줄을 지움 | `storeThenLoadKeepsCellsAndRestartsColor` |
-| 매 틱 `transition()` 호출 | 원본처럼 바뀔 셀이 있을 때만 부름 | `stillLifeCyclesThroughColorsWhenNothingElseChanges` |
-| `colorChangesWithAge()` | 늘 false | `colorChangesWithAgeFollowsTheCurrentPolicy` |
-| Single Color 항목 | 빨강 대신 파랑 | `singleColorBringsBackTheOriginalRed` |
-| Cycle by Generation 항목 | 색 순서를 바꿈, 간격 20 | 메뉴 테스트 2개 |
-| `useColorPolicy()`의 `setColorPolicy()` | 호출을 지움 | 메뉴 테스트 2개 |
-| 색 순환 중 다시 그리기 요청 | 요청을 지움 | `cyclingTickRequestsRepaintEvenWhenNothingChanges` |
-| 꺼진 상태의 다시 그리기 | 바뀐 셀이 없어도 매 틱 그림 | `tickWithCyclingOffRepaintsOnlyWhenCellsChange` |
-| 색 배열 복사, 색 2개 이상 | 복사하지 않음, 색 1개 허용 | `cyclingPolicyKeepsItsOwnCopyOfTheColors`, "only one color" 경우 |
+| 확인 | 결과 |
+| --- | --- |
+| 색 순환 중 판 전체 다시 그리기 | 블록이 9틱 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강 |
+| 메뉴를 고른 순간의 다시 그리기 | 25틱 뒤 시계를 멈춘 채 Cycle by Generation을 고르면 바로 초록, Single Color를 고르면 바로 빨강 |
+| 메뉴 순서 | Grid, Go, Color |
+| 연속 실행 지연 | Fast·Medium으로 6초 동안 돌리며 0.1초마다 이벤트 큐 대기를 잼. 색 순환을 켜든 끄든 최대 3 ms, 멈춘 뒤 큐가 비기까지 8 ms 안쪽 (원본 방식과의 비교는 5.9절) |
 
-`lifeRuleIsUnchanged`는 특정 줄이 아니라 생사 규칙이 그대로인지를 지킨다. 위 결함은 모두 색에만 영향을 주므로 이 테스트는 통과했다.
+**확인하지 않은 것:** `colorPolicy`의 `volatile`은 스레드 사이에 값이 보이는지를 재현할 수 없어 JUnit으로 테스트하지는 않았다.
 
-### 6.5 요구사항과 테스트
+**측정 환경:** Windows 11, JDK 21에서 실제 게임 창을 띄워 쟀다.
 
-| ID | JUnit 테스트 | 실제 창 확인 (6.6절) |
-| --- | --- | --- |
-| FR-1 | `ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor` | 시계를 멈춘 채 메뉴를 고르면 바로 초록 |
-| FR-2 | `singleColorBringsBackTheOriginalRed` | 메뉴를 고르면 바로 빨강 |
-| FR-3 | `liveCellsStayRedWhenNoColorPolicyIsChosen`, `stillLifeStaysRedWhileCyclingIsOff` | |
-| FR-4 | `survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver`, `ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor` | |
-| FR-5 | `cyclingPolicyStepsEveryTenGenerationsAndWrapsAround`, `fixedPolicyReturnsTheSameColorForEveryAge`, `stillLifeChangesColorEveryTenGenerationsAndWrapsAround` | |
-| FR-6 | `stillLifeCyclesThroughColorsWhenNothingElseChanges`, `cyclingTickRequestsRepaintEvenWhenNothingChanges` | 블록이 10틱 파랑, 20틱 초록, 30틱 빨강 |
-| FR-7 | `cellRevivedByClickStartsAtAgeZero`, `cellClickedAfterClearStartsRed`, `storeThenLoadKeepsCellsAndRestartsColor`, `captureCopiesOnlyLivingCellsRegardlessOfColorAndAge`, `dragAndUndoPreserveTheAgeColorsOfExistingCells` | |
-| FR-8 | `placementAndUndoPreserveExistingCellAge`, `dragAndUndoPreserveTheAgeColorsOfExistingCells` | |
-| FR-9 | `survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver`, `cellClickedAfterClearStartsRed` | |
-| NFR-1 | `lifeRuleIsUnchanged` | |
-| NFR-2 | `tickWithCyclingOffRepaintsOnlyWhenCellsChange`, 기존 `ResidentTest`·`NeighborhoodTest`·`UniverseStoreTest` | |
-| NFR-3 | `storeThenLoadKeepsCellsAndRestartsColor`, `UniverseStoreTest` | |
-| NFR-4 | `cyclingTickRequestsRepaintEvenWhenNothingChanges` (판 전체를 `repaint()`로 요청하는지) | Fast·Medium 연속 실행 중 이벤트 큐 대기 최대 3 ms |
-| NFR-5 | `CellColorPolicyTest`, `CellAgeColorTest`, `DefaultCellColorTest` (Universe 창을 쓰지 않음) | |
-| NFR-6 | (검토) 5.5절의 색 비교 | |
-| NFR-7 | `policiesRejectInvalidArguments`, `cyclingPolicyKeepsItsOwnCopyOfTheColors`, `setColorPolicyRejectsNullAndKeepsThePreviousPolicy` | |
-| NFR-8 | (구조) 4.1절의 역할 표와 3.4절의 클래스 다이어그램: 색은 `CellColorPolicy`로만 묻는다 | |
+### 6.5 테스트 코드 예시
 
-### 6.6 JUnit으로 확인할 수 없는 것과 실제 창 확인
+6.3절의 테스트 중 두 개를 골라 싣는다. 하나는 이 기능의 핵심 동작을, 다른 하나는 6.2절에서 설명한 테스트 방법을 가장 잘 보여 준다.
 
-창이 없는 테스트에서는 `repaint()`가 화면에 그리지 않고, 테스트는 색을 읽을 때 직접 `paint()`를 부른다. 시계도 대신 넣으므로 Go 메뉴가 생기지 않는다. 그래서 아래는 실제 게임 창을 띄워 확인했다. 화면 픽셀은 `paint()`를 부르지 않고 `java.awt.Robot`으로 읽었고, 확인할 부분을 지운 대조 사본도 함께 돌려 이 방법이 차이를 잡아내는지 봤다.
+**예시 1. 멈춘 패턴의 색 순환** (이 기능의 핵심 동작)
 
-| 확인 | 결과 | 대조 사본 |
-| --- | --- | --- |
-| 색 순환 중 판 전체 다시 그리기 | 블록이 9틱 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강 | 다시 그리기 요청을 지우면 계속 빨강 |
-| 메뉴를 고른 순간의 다시 그리기 | 25틱 뒤 시계를 멈춘 채 Cycle by Generation을 고르면 바로 초록, Single Color를 고르면 바로 빨강 | `useColorPolicy()`의 `repaint()`를 지우면 빨강에 머묾 |
-| 메뉴 순서 | Grid, Go, Color | |
-| 연속 실행 지연 | Fast·Medium으로 6초 동안 돌리며 0.1초마다 이벤트 큐 대기를 잼. 색 순환을 켜든 끄든 최대 3 ms, 멈춘 뒤 큐가 비기까지 8 ms 안쪽 | PR #8 코드는 마지막 1초에 4.5\~20.5초 |
-
-`colorPolicy`의 `volatile`은 스레드 사이에 값이 보이는지를 재현할 수 없어 테스트하지 않았다.
-
-측정 환경: Windows 11(1920×1080, 배율 100%), 실행 JDK 21.0.12, 테스트 JDK 17, Gradle 9.5.1, JUnit Jupiter 6.0.3, Mockito 5.23.0. 실제 창 확인은 2026-11-12(색, 메뉴)와 2026-11-17(merge 뒤 코드), 지연 측정은 2026-11-15와 2026-11-17에 했다. 5.1절의 판 100개 실험은 2026-11-11에 창을 띄우지 않고 Universe의 틱 처리 순서를 그대로 따라 판을 돌렸다(64×64 전체 30%, 24×24 35%, 10×10 40%, 4×4 50% 크기의 무작위 무늬를 25개씩).
-
-### 6.7 테스트 코드 예시
-
-멈춘 블록이 10세대마다 색을 바꾸고 30세대에 처음 색으로 돌아오는지 보는 테스트다. 색이 바뀌는 경계(9와 10)를 함께 확인한다.
+멈춘 블록이 10세대마다 색을 바꾸고 30세대에 처음 색으로 돌아오는지 보는 테스트다(FR-5). 생사가 바뀌지 않아도 나이를 먹어 색이 바뀐다는, 이 기능에서 가장 눈에 띄는 동작이다. 색이 바뀌는 경계(9와 10)를 함께 확인한다.
 
 ```java
 @Test
@@ -930,7 +928,9 @@ void stillLifeChangesColorEveryTenGenerationsAndWrapsAround() {
 }
 ```
 
-간격이 1인 규칙으로 나이를 직접 읽는 테스트다. 살아남은 칸, 새로 태어난 칸, 죽었다 다시 태어난 칸의 나이를 구분한다.
+**예시 2. 나이 계산 규칙** (6.2절에서 설명한 테스트 방법)
+
+간격이 1인 규칙으로 나이를 직접 읽는 테스트다(FR-4). 6.2절처럼 게임 코드에 나이를 읽는 메서드를 두지 않고, 그려진 색만으로 살아남은 칸, 새로 태어난 칸, 죽었다 다시 태어난 칸의 나이를 구분한다.
 
 ```java
 @Test
@@ -951,48 +951,14 @@ void survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver() {
 }
 ```
 
-판을 이미지에 그려 셀 가운데 픽셀을 읽는 도우미다. 게임이 쓰는 `redraw()`를 그대로 쓴다.
-
-```java
-private Color colorAt(int x, int y) {
-    BufferedImage image = new BufferedImage(BOARD, BOARD, BufferedImage.TYPE_INT_RGB);
-    Graphics2D g = image.createGraphics();
-    board.redraw(g, new Rectangle(0, 0, BOARD, BOARD), true);
-    g.dispose();
-    return new Color(image.getRGB(x * CELL + 4, y * CELL + 4));
-}
-```
-
-## 7. GitHub 작업 기록
-
-- [PR #8](https://github.com/mckimR1972/DP_team_project/pull/8) `feature/color-gen` → `dev`, 2026-11-16 병합 (`6db01c9`)
-- [PR #11](https://github.com/mckimR1972/DP_team_project/pull/11) `fix/color-gen-redraw-lag` → `dev`, 2026-11-17 병합 (`0da5a52`)
-
-기능을 한 번에 넣지 않고 조각마다 테스트와 함께 커밋했다. 어느 조각까지 넣어도 빌드와 테스트가 통과하고, Color 메뉴를 넣기 전까지 화면은 원본과 같았다.
-
-| 커밋 | 날짜 | 내용 |
-| --- | --- | --- |
-| `5ca3e3c` | 11-11 | 테스트 클래스마다 JVM 분리 (`forkEvery = 1`) |
-| `169d3bd` | 11-11 | README에 게임 실행 방법 추가 |
-| `86cc212` | 11-11 | 색 규칙 Strategy 타입 3개와 `CellColorPolicyTest` |
-| `630eb50` | 11-12 | Resident에 셀 나이와 공유 색 규칙 (`CellAgeColorTest`, `DefaultCellColorTest`) |
-| `3eb9237` | 11-12 | Universe가 매 틱 나이를 늘리고 색 순환 때 판 전체를 다시 그림 (`UniverseColorTest`) |
-| `806dc0e` | 11-12 | Color 메뉴 (메뉴 테스트) |
-| `c4c0f0b` | 11-12 | README 정리 |
-| `37d667f`, `ba5e84c` | 11-15 | 화면 갱신 지연 문제와 해결 방안 문서 |
-| `c75d6bd` | 11-16 | 주석 한글화와 정리 |
-| `62504a5` | 11-17 | 색 순환 중 판 전체를 `repaint()`로 다시 그림, 다시 그리기 요청 테스트 |
-| `e2ebb08` | 11-17 | dev(#9 병합 뒤) merge. `Universe.java`는 dev 쪽을 씀 |
-| `c1f741d` | 11-17 | 지연 기록을 #9 병합 뒤 상태에 맞게 고침 |
-| `bb62da0` | 11-17 | README를 기존 구조로 정리하고 캡처·템플릿 안내를 docs로 옮김 |
-| `867a196` | 11-17 | `colorPolicy` 주석을 Swing 타이머로 바뀐 시계에 맞게 고침 |
-
-## 8. 실행 방법
+## 7. Life Game 실행 방법
 
 ```
-./gradlew compileJava
+./gradlew classes
 java -cp build/classes/java/main com.holub.life.Life
 ```
+
+Windows PowerShell에서는 `./gradlew` 대신 `.\gradlew.bat`을 쓴다.
 
 1. 판을 클릭해 2×2 블록을 몇 개 놓는다.
 2. Color > Cycle by Generation을 고른다.
