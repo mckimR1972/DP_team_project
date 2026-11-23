@@ -65,6 +65,7 @@ class FreezingTools {
   - anchor : Point
   - selection : Rectangle
   - duration : JSpinner
+  - entries : DefaultListModel<FreezingRegion>
   ~ beginSelection()
   ~ cancel()
   ~ reset()
@@ -140,9 +141,10 @@ Universe ..> FreezingManager : <<create>>,\nbeforeTransition()\nafterGeneration(
 Universe ..> PatternTools : setPlacementGuard(\narea -> overlapsFrozen(area))
 
 FreezingTools --> "1" FreezingManager : - manager\naddListener(this::refresh)
-FreezingTools ..> FreezingRegion : 활성 목록 표시
+FreezingTools --> "0..*" FreezingRegion : - entries\n활성 목록 표시
 FreezingTools ..> Clock : stop()
 FreezingManager "1" o--> "0..*" FreezingRegion : - regions
+FreezingManager ..> FreezingRegion : <<create>>
 FreezingManager --> "1" Cell : - board
 
 FreezingRegion --> "1" FreezingState : - state
@@ -169,8 +171,8 @@ note right of FreezingTools
   화면 담당
   Select Region E, Set Duration E의
   입력을 받아 manager에 넘긴다.
-  beforeSelect는 Universe가 넘긴
-  "패턴 편집 종료"다
+  beforeSelect는 Universe가 넘긴 Runnable로
+  패턴 편집 종료와 되돌리기 이력 비움을 한다
 end note
 note right of FreezingManager
   Install Freezing E : install()
