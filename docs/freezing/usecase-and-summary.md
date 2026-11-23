@@ -12,7 +12,7 @@
 원본: [diagram/usecase-freezing.puml](diagram/usecase-freezing.puml)
 
 - Advance Generation은 원본에서 한 세대를 계산하고 확정하는 부분이다. Run / Halt Game과 Step One Generation이 모두 포함하므로 Auto Release E는 이 공통 부분의 확장 지점 “세대 확정 후”에 붙였다(색 순환 문서의 유스케이스 그림과 같은 구조). PR #7 본문의 그림에서는 Run / Halt Game에 직접 붙어 있었다.
-- Select Region E와 Set Duration E는 설치할 때마다 반드시 거치므로 «include»다. Auto Release E는 남은 세대가 0이 된 세대에만 일어나므로 «extend»다.
+- Select Region E와 Set Duration E는 사용자가 그것만으로 끝내는 목표가 아니라 설치의 하위 목표다. 설치할 때마다 반드시 거치고, 영역 선택은 따로 취소할 수 있어 흐름이 길기 때문에 «include»로 나눠 명세했다. Auto Release E는 남은 세대가 0이 된 세대에만 일어나므로 «extend»다.
 - Edit Cells, Clear Board, Store / Load Board는 Freezing이 동작을 제한하거나 초기화되는 기존 유스케이스지만 «include»나 «extend» 관계가 아니어서 그림에 넣지 않았다. 영향은 아래 UC-FZ-01의 “다른 유스케이스에 주는 영향”과 UC-FZ-04에 적었다.
 
 | ID | 기능 이름 | 액터 | 기존 유스케이스와의 관계 |
