@@ -5,31 +5,32 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd tick (원본 dev c49ca39)
+mainframe sd advanceGeneration() (원본)
 
 participant ":Clock" as C
 participant ":Universe" as U
 participant "outermostCell : Neighborhood" as N
 participant ":Resident" as R
 
-[o-> C : 시간 이벤트
+[o-> C : tick()
 C -> U : tick()
 U -> N : figureNextState(DUMMY × 8)
-loop 활성 블록의 칸마다
+loop 계산할 블록의 칸마다
   N -> R : figureNextState(이웃 8칸)
+  note right of R : 활성 블록, 또는 맞닿은 가장자리가\n바뀐 이웃 블록만 계산한다
 end
-N --> U : willChange
+N -->> U : willChange = figureNextState(DUMMY × 8): boolean
 
 opt willChange
   U -> N : transition()
   loop 모든 블록의 칸마다
     N -> R : transition()
-    R -> R : amAlive = willBeAlive
-    R --> N : changed
+    note right of R : amAlive = willBeAlive
+    R -->> N : changed = transition(): boolean
   end
-  N --> U : changed
+  N -->> U : changed = transition(): boolean
   opt changed
-    U -> U : refreshNow()
+    U ->> U : refreshNow()
   end
 end
 @enduml

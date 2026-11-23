@@ -16,35 +16,36 @@ interface Cell <<interface>> {
   + redraw()
   + userClicked()
   + transfer()
-  + create()
+  + clear()
 }
 
 class Neighborhood {
-  - gridSize
+  + figureNextState()
   + transition()
   + redraw()
 }
 
 class Resident {
   - {static} LIVE_COLOR
+  - {static} DEAD_COLOR
   - amAlive
   - willBeAlive
+  + figureNextState()
   + transition()
   + redraw()
   + userClicked()
   + transfer()
+  + clear()
 }
 
 class Universe {
-  - {static} theInstance
-  + {static} instance()
+  - Universe()
   + paint()
   - refreshNow()
 }
 
 class Clock {
-  + {static} instance()
-  + addClockListener()
+  + tick()
 }
 
 Cell <|.. Neighborhood

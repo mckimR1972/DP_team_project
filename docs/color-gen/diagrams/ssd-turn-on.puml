@@ -14,13 +14,13 @@ note over User, System : 게임이 돌고 있을 때도, 멈춰 있을 때도 �
 
 User -> System : turnOnColorCycling()
 alt 색 순환이 꺼져 있었음
-  System --> User : 셀마다 나이에 맞는 색
+  System -->> User : 셀마다 나이에 맞는 색
 else 이미 켜져 있었음
-  System --> User : 색은 그대로
+  System -->> User : 색은 그대로
 end
 
 loop 게임이 실행 중
-  System --> User : 다음 세대의 생사와 셀마다 나이에 맞는 색
+  System -->> User : 다음 세대의 생사와 셀마다 나이에 맞는 색
   note right : 세대 간격마다\n시스템이 보여 준다
 end
 @enduml

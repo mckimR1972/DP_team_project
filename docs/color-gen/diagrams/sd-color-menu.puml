@@ -5,36 +5,36 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd Color > Cycle by Generation
+mainframe sd turnOnColorCycling()
 
 actor "사용자" as User
 participant "item : JMenuItem" as M
-participant "listener : ActionListener" as L
 participant ":Universe" as U
 participant "Resident" as RC
 participant "outermostCell : Neighborhood" as N
 participant ":Resident" as R
 
-User -> M : 클릭
-M -> L : actionPerformed(e)
+User -> M : click()
+note over User, M : 시스템 연산 turnOnColorCycling():\nColor > Cycle by Generation 선택
+M -> U : actionPerformed(e)
+note right of U : 메뉴 리스너는 Universe 안의\n익명 객체라 Universe로 합쳐 그렸다
 create participant "policy : CyclingColorPolicy" as P
-L -> P : <<create>>\n(10, 빨강, 파랑, 초록)
-L -> U : useColorPolicy(policy)
+U -->> P : new(10, 빨강, 파랑, 초록)
+U -> U : useColorPolicy(policy)
 U -> RC : setColorPolicy(policy)
 note left of RC : static 메서드라\n클래스에 보낸다
-RC -> RC : colorPolicy = policy
+note right of RC : colorPolicy = policy
 U -> U : notifyBoardChanged(COLOR_POLICY_CHANGED)
-U -> U : repaint()
+U ->> U : repaint()
 
-== 이벤트 큐에서 차례가 오면 ==
-
+note over U, R : 이벤트 큐에서 차례가 오면 Swing이 판을 그린다
 [o-> U : paintComponent(g)
 U -> N : redraw(g, 판, true)
 loop 모든 블록의 칸마다
   N -> R : redraw(g, 칸, true)
   opt amAlive
     R -> P : colorOf(age)
-    P --> R : color
+    P -->> R : color = colorOf(age): Color
   end
 end
 @enduml

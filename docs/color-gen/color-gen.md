@@ -135,7 +135,7 @@ FR-7과 FR-8은 이 기능의 유스케이스가 아니라, 셀을 살리거나 
 | NFR-5 | 색 규칙과 나이 계산은 게임 창 없이 테스트할 수 있다 | 모델(셀, 블록, 색 규칙)만으로 도는 테스트가 있다 |
 | NFR-6 | 세 색이 서로, 그리고 판의 다른 색과 구분된다 | 판 색상과 구분되면서 서로 다른 색상 |
 | NFR-7 | 색 규칙 객체는 만들 때 잘못된 값을 거부하고, 만든 뒤에는 바뀌지 않는다 | 간격 0 이하, 색 2개 미만, 빈 값(null)은 객체를 만들 때 예외로 거부한다 |
-| NFR-8 | 새 색 규칙을 더할 때 셀의 나이 세기와 그리기 코드를 고치지 않는다 | `CellColorPolicy` 구현 클래스 하나와 Color 메뉴 항목 한 줄만 더한다. `Resident`는 처음 값으로 `FixedColorPolicy`를 하나 만들 뿐 색은 `CellColorPolicy` 인터페이스로만 묻고, 틱 처리도 `changesWithAge()`로만 다시 그릴 범위를 정한다(4.1절) |
+| NFR-8 | 새 색 규칙을 더할 때 셀의 나이 세기와 그리기 코드를 고치지 않는다 | `CellColorPolicy` 구현 클래스 하나와 Color 메뉴 항목 한 줄만 더한다. `Resident`는 처음 값으로 `FixedColorPolicy`를 하나 만들 뿐 색은 `CellColorPolicy` 인터페이스로만 묻고, 틱 처리도 `changesWithAge()`로만 다시 그릴지를 정한다(4.1절) |
 
 ### 1.5 기존 기능에 미치는 영향
 
@@ -164,7 +164,7 @@ FR-7과 FR-8은 이 기능의 유스케이스가 아니라, 셀을 살리거나 
 | --- | --- | --- |
 | 필드 | `amAlive`, `willBeAlive` | 셀마다 `age`(연속으로 살아남은 세대 수)를 더했다. 모든 셀이 함께 쓰는 static `colorPolicy`를 더했고, 처음 값은 원본 빨강 한 가지 색(`FixedColorPolicy(LIVE_COLOR)`)이다<br>이유: 색을 나이로 정하려면 셀마다 나이가 있어야 한다. 색 규칙은 판 전체에 하나라서 모든 셀이 참조 하나를 함께 쓴다(5.3절) |
 | `LIVE_COLOR` | Resident 안에서만 쓰는 상수(`private`) | `private`을 떼어 같은 패키지 안에서 쓸 수 있게 했다. 값(빨강)은 그대로다<br>이유: Color 메뉴가 같은 빨강을 쓰게 해서, 처음 값과 Single Color, 순환의 첫 색이 어긋나지 않게 한다(5.8절) |
-| 새 메서드 | | `setColorPolicy()`: 규칙을 바꾼다. null은 거부한다<br>`colorChangesWithAge()`: 지금 규칙이 나이에 따라 색이 바뀌는지 알려 준다<br>둘 다 같은 패키지 안에서만 쓴다<br>이유: Color 메뉴가 규칙을 바꾸고, Universe가 구체 규칙을 몰라도 다시 그릴 범위를 정하게 한다(5.6절) |
+| 새 메서드 | | `setColorPolicy()`: 규칙을 바꾼다. null은 거부한다<br>`colorChangesWithAge()`: 지금 규칙이 나이에 따라 색이 바뀌는지 알려 준다<br>둘 다 같은 패키지 안에서만 쓴다<br>이유: Color 메뉴가 규칙을 바꾸고, Universe가 구체 규칙을 몰라도 다시 그릴지를 정하게 한다(5.6절) |
 | `transition()` | 다음 생사로 바꾸고, 생사가 바뀌었는지 돌려준다 | 바꾸기 전에 나이를 정한다. 전후 모두 살아 있으면 1을 더하고, 그 밖에는 0이다. 돌려주는 값은 원본과 같다<br>이유: 세대를 넘길 때 모든 셀에 한 번씩 불린다. 다음 상태 계산(`figureNextState()`)은 멈춘 블록을 건너뛰어 그곳에서는 멈춘 셀의 나이를 셀 수 없다(5.1절) |
 | `redraw()` | 살아 있으면 `LIVE_COLOR`, 죽었으면 죽은 칸 색 | 살아 있으면 `colorPolicy.colorOf(age)`, 죽었으면 죽은 칸 색<br>이유: 색을 정하는 방법을 규칙 객체에 맡겨, 규칙이 늘어도 Resident를 고치지 않는다(4.1절) |
 | `userClicked()` | 생사를 뒤집는다 | 뒤집은 뒤 나이를 0으로 둔다<br>이유: 클릭으로 살린 셀은 막 생긴 셀이다. 죽인 셀의 나이는 쓰지 않으므로 조건 없이 0으로 둔다(5.7절) |
@@ -296,15 +296,15 @@ CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. �
 
 #### 3.3.1 한 세대가 진행되는 순서
 
-원본과 지금의 틱 처리를 시퀀스 다이어그램으로 비교한다. Neighborhood는 블록 안의 블록을 거쳐 Resident까지 내려가지만, 그림에서는 이 Composite 재귀를 "칸마다" loop 하나로 줄였다. 지금 그림의 `FreezingManager`도 영역마다 상태 객체에 묻는 단계를 줄여, 고정된 칸마다 `holdNextState()`를 부르는 loop로 그렸다.
+시스템 연산 `advanceGeneration()`(3.2절 CO3)이 객체 사이에서 어떻게 처리되는지 원본과 지금을 비교한다. 필드에 값을 넣는 것은 메시지가 아니라서 해당 객체 옆 노트로 적었고, `refreshNow()`와 `repaint()`는 다시 그리기 요청만 넣고 바로 돌아오므로 비동기 메시지(열린 화살촉)로 그렸다. 시계 리스너와 메뉴 리스너는 Universe 안의 익명 객체라 그림에서는 `:Universe`로 합쳐 그렸다. Neighborhood는 블록 안의 블록을 거쳐 Resident까지 내려가지만, 그림에서는 이 Composite 재귀를 "칸마다" loop 하나로 줄였다. 지금 그림의 `FreezingManager`도 영역마다 상태 객체에 묻는 단계를 줄여, 고정된 칸마다 `holdNextState()`를 부르는 loop로 그렸다.
 
 ![원본 틱 처리 시퀀스 다이어그램](diagrams/sd-tick-before.png)
 
 ![지금 틱 처리 시퀀스 다이어그램](diagrams/sd-tick-after.png)
 
-1. 시계(Swing 타이머)가 Universe의 틱 리스너를 부른다.
+1. Swing 타이머가 `Clock.tick()`을 부르고, 시계가 Universe의 틱 리스너를 부른다.
 2. 캡처·배치 편집 중이거나 Freezing 영역을 고르는 중이면 여기서 끝난다.
-3. `outermostCell.figureNextState()`: 블록마다, 셀마다 다음 생사를 계산한다. 활성 상태가 아닌 블록은 원본처럼 건너뛴다. 이어서 확정 전의 판을 복사해 둔다(통계 기능).
+3. `outermostCell.figureNextState()`: 블록마다, 셀마다 다음 생사를 계산한다. 원본처럼 활성 블록과, 맞닿은 가장자리가 바뀐 이웃 블록만 계산하고 나머지 블록은 건너뛴다. 이어서 확정 전의 판을 복사해 둔다(통계 기능).
 4. `freezing.beforeTransition()`: 고정된 영역의 칸마다 다음 생사를 고정한 순간의 상태로 되돌린다(`holdNextState()`, Freezing 기능).
 5. `outermostCell.transition()`: 모든 블록, 모든 셀이 다음 생사를 확정한다. 이때 각 Resident가 나이를 정하고, 4에서 고정된 칸은 나이를 세지 않는다. 확정이 도는 동안 그리기는 원본의 `readingPermitted` 장치로 막힌다.
 6. 세대 수를 1 늘리고 `freezing.afterGeneration()`이 각 영역의 남은 세대를 줄인다. 0이 된 영역은 고정이 풀린다(Freezing 기능).
@@ -312,20 +312,28 @@ CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. �
 8. `Resident.colorChangesWithAge()`가 true면, 또는 바뀐 셀이 있으면 `repaint()`를 요청한다.
 9. 이벤트 큐에서 차례가 오면 Swing이 `paintComponent()`를 부른다. `outermostCell.redraw(g, 판, true)`가 블록을 거쳐 각 Resident의 `redraw()`를 부르고, 살아 있는 셀은 `colorPolicy.colorOf(age)`의 색으로 칠해진다.
 
-이 기능이 원본과 다르게 만든 곳은 5(바뀌는 셀이 없어도 확정)와 8(색 순환 중에는 바뀐 셀이 없어도 다시 그림)이다.
+이 기능이 원본과 다르게 만든 곳은 5(바뀌는 셀이 없어도 확정), 8(색 순환 중에는 바뀐 셀이 없어도 다시 그림), 9(바뀐 블록만 직접 그리던 것을 판 전체 `repaint()` 요청으로 바꿈, 5.9절)이다. 1의 Swing 타이머, 2, 3의 판 복사, 4, 6, 7은 다른 기능이 바꾸거나 더한 것이다.
 
 #### 3.3.2 Color 메뉴를 고를 때
 
+시스템 연산 `turnOnColorCycling()`(3.2절 CO1)의 상호작용이다. `turnOffColorCycling()`(CO2)은 만드는 객체가 `FixedColorPolicy`라는 것만 다르다.
+
 ![Color 메뉴 시퀀스 다이어그램](diagrams/sd-color-menu.png)
 
-1. 메뉴 항목의 `ActionListener`가 규칙 객체를 만든다. Single Color는 `new FixedColorPolicy(Resident.LIVE_COLOR)`, Cycle by Generation은 `new CyclingColorPolicy(10, 빨강, 파랑, 초록)`이다. 그림은 Cycle by Generation이고, Single Color도 만드는 객체만 다르다.
+1. 메뉴 항목을 고르면 Universe 안의 메뉴 리스너가 규칙 객체를 만든다. Single Color는 `new FixedColorPolicy(Resident.LIVE_COLOR)`, Cycle by Generation은 `new CyclingColorPolicy(10, 빨강, 파랑, 초록)`이다.
 2. `useColorPolicy()`가 `Resident.setColorPolicy()`로 static 참조를 바꾼다. 셀의 나이는 바뀌지 않는다. 이어서 `COLOR_POLICY_CHANGED` 이벤트로 통계 기능에 알린다.
-3. `repaint()`로 판 전체를 다시 그린다. 시계가 멈춰 있어도 새 규칙의 색이 바로 보인다.
-4. 다음 틱부터 Universe는 `colorChangesWithAge()`로 새 규칙에 물어 다시 그릴 범위를 정한다. 메뉴는 규칙만 바꾸고, 다시 그리는 방식을 따로 바꾸지 않는다.
+3. `repaint()`로 판 전체를 다시 그리도록 요청한다. 시계가 멈춰 있어도 새 규칙의 색이 바로 보인다.
+4. 다음 틱부터 Universe는 `colorChangesWithAge()`로 새 규칙에 물어 다시 그릴지를 정한다. 메뉴는 규칙만 바꾸고, 다시 그리는 방식을 따로 바꾸지 않는다.
 
 ### 3.4 클래스 다이어그램
 
-3.3절의 시퀀스 다이어그램에 나온 클래스와 관계를 모았다. 색 기능을 붙이기 전(원본)과 지금의 클래스 다이어그램이다. 이 기능과 관계있는 클래스만 그렸다. 구조를 보이려는 그림이라 멤버는 가시성과 이름만 적고 타입과 파라미터는 생략했다. 바뀐 멤버의 자세한 내용은 2장에 있다. 각 클래스가 Strategy 패턴의 어느 역할인지는 아래 표와 4.1절에 있다.
+색 기능을 붙이기 전(원본)과 지금의 클래스 다이어그램이다. 3.3절 시퀀스 다이어그램의 클래스 중 Freezing 관리자와 메뉴 항목을 뺀 것과 상위 타입 `Cell`, 그리고 `FixedColorPolicy`를 그렸다. 멤버는 색 순환 기능과 관련된 것만 빠짐없이 적었고, 원본 그림에는 그중 원본에도 있던 것을 적었다. 관련 멤버는 다음 셋 중 하나에 드는 것이다.
+
+- 이 기능이 더하거나 바꾼 멤버
+- 셀의 생사·나이·색을 담거나 바꾸거나, 그 값으로 색을 정하는 멤버
+- 3.3절 시퀀스 다이어그램이 부르는 메서드
+
+멤버는 가시성과 이름만 적었다. 바뀐 내용은 2장에, 패턴 역할은 아래 표와 4.1절에 있다.
 
 ![바꾸기 전 클래스 다이어그램](diagrams/class-before.png)
 
@@ -335,14 +343,17 @@ CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. �
 - `LIVE_COLOR`는 Color 메뉴도 쓰므로 private(`-`)에서 package(`~`)로 바뀌었다.
 - `Cell.colorAt()`은 통계 기능이 더한 메서드다. 같은 `colorPolicy.colorOf(age)`로 색을 받으므로 함께 그렸다.
 - `holdNextState()`와 `heldThisGeneration`은 Freezing 기능이 더한 멤버다. 고정된 칸의 나이 계산을 막으므로 함께 그렸다(2.1절).
-- Universe의 `paint()`가 `paintComponent()`로 바뀐 것은 캡처·템플릿 기능의 변경이다.
+- Universe의 `paint()`가 `paintComponent()`로 바뀐 것은 캡처·템플릿 기능의 변경이다. 그래서 원본 그림에는 `paint()`를 적었다.
+- Universe의 `liveCells()`는 사운드 기능이, `notifyBoardChanged()`는 통계 기능이 더한 메서드다. 틱 처리와 Color 메뉴(3.3절)가 부르므로 함께 그렸다.
+- 틱 리스너와 Color 메뉴의 리스너는 Universe 생성자 안의 익명 객체라 Universe의 메서드로는 나오지 않는다. 그래서 생성자 `Universe()`를 적었다. `repaint()`는 JPanel에서 물려받은 메서드라 적지 않았다.
+- Neighborhood는 셀의 생사·나이·색을 직접 갖지 않으므로, 3.3절의 시퀀스 다이어그램이 부르는 메서드만 적었다.
 
 | 클래스 | 원본에서의 역할 | 이 기능에서 바뀐 역할 |
 | --- | --- | --- |
 | `Cell` (인터페이스) | Composite의 Component | 바뀌지 않음 |
 | `Neighborhood` | Composite. 8×8 칸을 가진 블록. 판은 블록 8×8개 | 바뀌지 않음 |
 | `Resident` | Composite의 Leaf. 셀 하나. 판을 만들 때 프로토타입으로 `create()`된다 | Strategy의 Context. 나이를 세고, static `colorPolicy`에 색을 묻는다 |
-| `Universe` | Singleton. 판을 그리고 시계 틱을 받는다 | Strategy의 Client. Color 메뉴에서 규칙을 만들어 바꿔 끼우고, 틱마다 다시 그릴 범위를 정한다 |
+| `Universe` | Singleton. 판을 그리고 시계 틱을 받는다 | Strategy의 Client. Color 메뉴에서 규칙을 만들어 바꿔 끼우고, 틱마다 다시 그릴지를 정한다 |
 | `CellColorPolicy` | (없음) | Strategy |
 | `FixedColorPolicy`, `CyclingColorPolicy` | (없음) | ConcreteStrategy |
 
@@ -399,7 +410,7 @@ Color 메뉴로 고른 색 규칙을 상태로 보면 아래와 같다. 두 상�
 - 바뀌는 부분(색 규칙)과 바뀌지 않는 부분(생사 규칙, 그리기 위치 계산)을 분리했다(2강 13쪽, 10강 10쪽).
 - Strategy는 알고리즘을 쓰는 쪽과 독립적으로 바꿀 수 있게 하고, 상속 대신 구성과 위임을 쓴다(2강 38쪽). 메뉴에서 규칙을 고르는 동작이 "규칙 객체를 바꾼다"로 그대로 옮겨진다.
 - 색 규칙이 늘거나 바뀌어도 Resident를 고치지 않는다. Resident는 생사 규칙, 그리기, 저장을 이미 맡고 있고, 다른 확장 기능도 함께 고치는 파일이다.
-- `changesWithAge()`도 Strategy에 두었다. Universe의 틱 처리가 구체 규칙 클래스를 몰라도 다시 그릴 범위를 정할 수 있다.
+- `changesWithAge()`도 Strategy에 두었다. Universe의 틱 처리가 구체 규칙 클래스를 몰라도 다시 그릴지를 정할 수 있다.
 - 색 규칙만 따로 단위 테스트할 수 있다(`CellColorPolicyTest`).
 
 교과서의 Strategy와 다른 점은 Context가 객체 하나가 아니라 클래스의 static 참조라는 것이다. 판 전체에 규칙이 하나뿐이기 때문이며, 이렇게 고른 이유는 5.3절에 있다.
@@ -636,7 +647,7 @@ Command 인터페이스와 메뉴에 거는 방법은 원본(Swing의 `ActionLis
 | C (선택) | 빨강, 파랑 `#0072B2`, 초록 `#009E73` | 빨강 → 파랑 → 초록 구성을 그대로 두고 농도만 바꿔, 판의 다른 색과도 서로도 뚜렷하게 구분된다 |
 | D | 빨강, 파랑 `#0072B2`, 검정 `#000000` | 초록이 검정으로 바뀌어 구성이 달라지고, 검정은 타 버린 셀처럼 읽힐 수 있다 |
 
-### 5.6 다시 그릴 범위를 정하는 값
+### 5.6 다시 그릴지를 정하는 값
 
 "매 틱 판 전체를 다시 그리는가"를 Universe가 필드로 따로 저장하는 방법과, 매 틱 `Resident.colorChangesWithAge()`로 현재 규칙에 묻는 방법을 비교했다. 묻는 쪽을 택했다.
 
