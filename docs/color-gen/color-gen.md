@@ -250,13 +250,47 @@ Freezing 기능은 고정된 칸의 다음 생사를 `holdNextState()`로 고정
 
 3.1절의 시스템 연산마다 연산 계약을 적었다. 사후 조건은 모델 객체의 상태 변화만 적는다. 화면을 다시 그리는 것은 객체 상태의 변화가 아니므로 넣지 않았다.
 
-| 연산 | Cross References | Preconditions | Postconditions |
-| --- | --- | --- | --- |
-| `turnOnColorCycling()` | Turn On Color Cycling(E) | 없음 | `CyclingColorPolicy` 인스턴스 cp가 생성되었다. cp.period가 10, cp.colors가 \[빨강, 파랑, 초록\]이 되었다. `Resident.colorPolicy`가 이전 규칙과의 연관을 끊고 cp와 연관되었다. 모든 Resident의 `age`는 바뀌지 않았다 |
-| `turnOffColorCycling()` | Turn Off Color Cycling(E) | 없음 | `FixedColorPolicy` 인스턴스 fp가 생성되었다. fp.color가 `Resident.LIVE_COLOR`가 되었다. `Resident.colorPolicy`가 이전 규칙과의 연관을 끊고 fp와 연관되었다. 모든 Resident의 `age`는 바뀌지 않았다 |
-| `advanceGeneration()` | Run / Halt Game, Step One Generation, Advance Generation, Count Cell Age(E), Recolor Cells by Age(E) | 캡처·배치 편집 중이 아니다. Freezing 영역을 고르는 중이 아니다 | Freezing으로 고정되지 않은 모든 Resident r의 r.amAlive가 이번 세대에 계산된 다음 생사가 되었다. 그중 세대 전후 모두 살아 있는 r은 r.age가 이전 r.age + 1이 되었고, 그 밖의 r은 r.age가 0이 되었다. 생사가 바뀐 셀이 없는 세대에도 이 나이 변화가 일어났다. 고정된 Resident는 amAlive와 age가 바뀌지 않았다 |
+**CO1: turnOnColorCycling()**
 
-`advanceGeneration()`은 사용자가 직접 부르는 연산이 아니라, 속도를 고른 뒤 시스템이 세대 간격마다 일으키거나 Go > Tick이 한 번 일으키는 연산이다. 원본의 세대 진행은 바뀔 셀이 없으면 확정하지 않았다. 원본에는 나이가 없어서 그래도 상태가 같았지만, 이 기능에서는 멈춘 패턴도 나이를 먹어야 하므로 "생사가 바뀐 셀이 없는 세대에도"라는 사후 조건이 생겼다. 고정된 Resident에 대한 마지막 사후 조건은 Freezing 기능이 더한 것이다. 클릭(Edit Cells)과 Load(Store / Load Board)에도 "그 셀의 `age`가 0이 되었다"는 사후 조건이 하나씩 더해졌다.
+- Operation: `turnOnColorCycling()`
+- Cross References: Turn On Color Cycling(E)
+- Preconditions:
+  - Resident가 색 규칙 하나와 연관되어 있다(모든 셀이 함께 쓰는 연관). 프로그램을 켠 직후에는 원본 빨강의 `FixedColorPolicy`다
+  - 살아 있는 Resident마다 `age`가 세어져 있다. 색 순환이 꺼져 있던 동안에도 세대마다 셌다
+- Postconditions:
+  - `CyclingColorPolicy` 인스턴스 cp가 생성되었다 (인스턴스 생성)
+  - cp.period가 10이 되었다 (속성 변경)
+  - cp.colors가 \[빨강, 파랑, 초록\]이 되었다 (속성 변경)
+  - Resident와 이전 색 규칙의 연관이 끊어졌다 (연관 해제)
+  - Resident가 cp와 연관되었다. 모든 셀이 함께 쓰는 연관이다 (연관 형성)
+
+**CO2: turnOffColorCycling()**
+
+- Operation: `turnOffColorCycling()`
+- Cross References: Turn Off Color Cycling(E)
+- Preconditions:
+  - Resident가 색 규칙 하나와 연관되어 있다(모든 셀이 함께 쓰는 연관)
+- Postconditions:
+  - `FixedColorPolicy` 인스턴스 fp가 생성되었다 (인스턴스 생성)
+  - fp.color가 `Resident.LIVE_COLOR`(빨강)가 되었다 (속성 변경)
+  - Resident와 이전 색 규칙의 연관이 끊어졌다 (연관 해제)
+  - Resident가 fp와 연관되었다. 모든 셀이 함께 쓰는 연관이다 (연관 형성)
+
+CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. 그래서 켜는 순간 각 셀이 살아온 세대 수에 맞는 색이 바로 나온다.
+
+**CO3: advanceGeneration()**
+
+- Operation: `advanceGeneration()`
+- Cross References: Run / Halt Game, Step One Generation, Advance Generation, Count Cell Age(E), Recolor Cells by Age(E)
+- Preconditions:
+  - 캡처·배치 편집 중이 아니다
+  - Freezing 영역을 고르는 중이 아니다
+- Postconditions:
+  - Freezing으로 고정되지 않은 모든 Resident r의 r.amAlive가 이번 세대에 계산된 다음 생사가 되었다 (속성 변경)
+  - 그중 세대 전후 모두 살아 있는 r의 r.age가 이전 r.age + 1이 되었다. 생사가 바뀐 셀이 없는 세대에도 그렇다 (속성 변경)
+  - 그 밖의 r의 r.age가 0이 되었다 (속성 변경)
+
+`advanceGeneration()`은 사용자가 직접 부르는 연산이 아니라, 속도를 고른 뒤 시스템이 세대 간격마다 일으키거나 Go > Tick이 한 번 일으키는 연산이다. 원본의 세대 진행은 바뀔 셀이 없으면 확정하지 않았다. 원본에는 나이가 없어서 그래도 상태가 같았지만, 이 기능에서는 멈춘 패턴도 나이를 먹어야 하므로 "생사가 바뀐 셀이 없는 세대에도"라는 사후 조건이 생겼다. 사후 조건에서 Freezing으로 고정된 Resident를 빼는 조건은 Freezing 기능이 더한 것이다. 고정된 Resident는 amAlive와 age가 고정한 순간의 값 그대로다. 셀을 살리거나 죽이는 다른 유스케이스의 연산에도 "생사가 바뀐 셀의 `age`가 0이 되었다"는 사후 조건이 하나씩 더해졌다. 클릭(Edit Cells), 드래그 그리기(Draw Cells by Dragging(E)), 템플릿 배치와 되돌리기(Place Template(E), Undo Placement(E)), Load(Store / Load Board)가 여기에 해당한다. 생사가 바뀌지 않은 다른 셀의 나이는 그대로다(FR-7, FR-8).
 
 ### 3.3 시퀀스 다이어그램
 
