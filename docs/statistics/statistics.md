@@ -82,163 +82,291 @@ public enum Kind {
 <a id="changes"></a>
 ## 2. 기존 코드에서 변경된 부분
 
-<a id="events"></a>
-### 2.1 기본 통계와 공통 이벤트 구현
+통계 기능은 기존 게임판 처리에 완료 알림을 연결하고, 수집한 상태의 집계와 화면 표시를 별도 클래스로 추가했다. 아래에서 **원본**은 기능 확장 전 Holub 코드를 뜻한다. 다른 팀 기능에서 추가한 메서드를 사용하는 경우에는 해당 절에서 출처와 재사용 범위를 밝힌다.
 
-#### 이벤트의 입력 계약
+### 2.1 Universe: 작업 완료 상태 수집과 통계 알림
+
+원본 Universe는 게임판을 진행하고 화면을 갱신했지만, 통계를 위한 세대 번호와 작업 완료 알림은 제공하지 않았다. 통계 기능에서는 **완료 상태를 이벤트로 구성하고 구독자에게 전달하는 경로**를 추가했다. 핵심은 이벤트를 만드는 `createBoardChangeEvent()`와 이를 발행하는 `notifyBoardChanged()`다.
+
+**세대 번호와 알림 시점 추가**
+
+게임판 전체의 세대 번호를 저장하는 `long generation` 필드를 추가하고, 정상 전이가 끝날 때 1씩 증가시키도록 했다. 아래는 현재 tick에서 세대 번호를 증가시키고 완료 알림을 보내는 부분이다. 프리즈 후처리는 알림이 기존 작업을 모두 마친 뒤 발생한다는 순서만 나타낸다.
 
 ```java
-BoardChangeEvent(Kind kind, long generation, int boardSize,
-                boolean[][] aliveCells, List<Point> births,
-                List<Point> deaths, List<Color> aliveColors)
+generation++;
+freezing.afterGeneration();
+notifyBoardChanged(BoardChangeEvent.Kind.GENERATION, before);
 ```
 
-| 조회 메서드 | 의미 |
-| --- | --- |
-| `kind()` | `INITIAL`, `GENERATION`, `EDIT`, `TEMPLATE`, `TEMPLATE_UNDO`, `CLEAR`, `LOAD`, `COLOR_POLICY_CHANGED`. |
-| `generation()`·`boardSize()` | 완료 시점 세대 번호와 정사각형 판 한 변의 셀 수. 기본 판은 64×64다. |
-| `copyAliveCells()` | 완료 상태의 `boolean[행][열]`. 현재 생존 수와 사운드 재생선의 입력이다. |
-| `copyBirths()`·`copyDeaths()` | 한 세대 전후의 탄생·사망 `List<Point>`. `Point.x=열`, `Point.y=행`이다. |
-| `aliveColors()` | 살아 있는 셀들의 표시 색 `List<Color>`. 좌표별 조회용이 아닌 색상 집계용이며, 길이는 생존 수와 같다. |
+색상 기능에서 이미 정상 세대마다 전이하도록 바꾼 흐름을 활용하므로, 생존 배치가 같아도 세대 번호와 통계는 갱신된다. 통계 알림도 `transition()`의 변화 여부 반환값으로 제한하지 않는다. Clear·Load 성공 시에는 generation을 0으로 되돌린다.
 
-배열의 각 행과 좌표 목록의 Point까지 생성·조회 시 복사한다. 색 목록은 `List.copyOf()`로 보관한다. 생성자는 크기·세대·좌표 범위·중복·탄생/사망과 완료 상태의 일치·색 목록 길이 등을 검사한다. `GENERATION`은 세대 번호가 1 이상이어야 하며, 다른 종류의 탄생·사망 목록은 비어 있어야 한다.
+전이 전 배열인 `before`는 사운드 기능의 `before = liveCells()` 방식을 재사용하며, 통합 시 매 정상 세대 확보하도록 연결했다. `liveCells()`와 그 안에서 사용하는 `Cell.isAliveAt()` 역시 사운드에서 추가한 메서드다. 통계는 이 조회 경로를 이용해 완료 시점의 상태도 수집한다.
 
-#### 작업별 발행 시점
-
-| 완료 작업 | 이벤트와 세대 번호 | 통계의 탄생·사망 표시 |
-| --- | --- | --- |
-| 새 리스너 등록 | 새 구독자에게만 `INITIAL`, 현재 번호 | `—` |
-| 자동 진행·단일 진행 | 프리즈 고정 처리와 `transition()` 완료, 세대 증가·프리즈 만료 처리 후 `GENERATION` | 최종 상태의 실제 탄생·사망 수. 고정된 셀은 변화량에 포함되지 않으며, 변화가 없으면 `0 / 0` |
-| 클릭·일반 드래그 | 실제 변경이 있는 마우스 이벤트 처리 후 `EDIT`, 유지 | `—` |
-| 템플릿 배치·Undo | 기존 완료 신호에서 `TEMPLATE`·`TEMPLATE_UNDO`, 유지 | `—` |
-| Clear·Load 성공 | 판 초기화·복원 및 프리즈 영역 제거 후 `CLEAR`·`LOAD`, 0 | `—` |
-| Color 메뉴 정책 변경 | `COLOR_POLICY_CHANGED`, 유지 | 같은 세대의 직전 Summary에 있던 표시 유지 |
-| 프리즈 설치·수동 해제 자체 | 셀 상태를 바꾸지 않으므로 공통 보드 이벤트 발행 없음 | 유지 |
-| 캡처·프리즈 영역 선택 자체, 무변경·차단된 편집, Load 취소/읽기 실패, Store | 발행 없음 | 유지 |
-
-공개 `notifyBoardChanged(kind)`는 **이미 끝난 편집·복원의 알림**이다. 보드를 변경하거나 세대를 진행시키지 않으며, 이전 상태 없이 `GENERATION`을 호출하면 예외를 발생시킨다. 정상 세대는 tick 안에서 이전 상태를 확보한 뒤 비공개 `notifyBoardChanged(GENERATION, before)`로 발행한다.
-
-등록은 중복을 막고 즉시 INITIAL을 보낸다. 발행 중에는 리스너 목록의 복사본을 사용하므로 구독 변경은 다음 전체 발행부터 반영된다. Observer는 콜백에서 게임판을 다시 수정하지 않는 계약을 따른다.
-
-#### 집계 책임과 계산식
-
-Universe는 세대 전후 상태를 한 번 비교하여 탄생·사망 좌표를 만든다. Statistics는 다음 계산을 담당한다.
-
-| 통계 | 계산 |
-| --- | --- |
-| 현재 세대 | 이벤트의 `generation()` |
-| 생존 셀 수 | 완료 배열의 `true` 개수 |
-| 생존 비율 | 생존 수 ÷ `(boardSize × boardSize)` × 100 |
-| 이번 세대 탄생·사망 | `GENERATION`의 탄생·사망 목록 크기 |
-| 색상별 개수·비율 | 같은 색을 묶은 개수, 해당 개수 ÷ 전체 생존 수 × 100 |
-
-Summary의 `hasGenerationDelta=false`일 때 births/deaths의 0은 내부 자리표시 값이며, 화면은 `—`로 표시한다. 편집·템플릿 배치 수를 자연적인 세대 탄생 수에 섞지 않는다. 정책만 바꾸면 생사와 세대가 그대로이므로 같은 세대의 직전 변화량을 유지한다. 이때 보관하는 것은 **최근 Summary 하나**이며 이전 보드나 Undo 이력이 아니다.
-
-#### Swing Timer와 EDT
-
-통계는 진행 후 보드를 읽어 UI까지 갱신하므로, 도중에 클릭·세대 변경이 끼어들지 않도록 보드 변경 → 상태 수집 → 발행 → 화면 갱신을 EDT에서 순차 실행한다. 초기 통계 구현에서 Clock을 Swing Timer로 변경했고, dev 병합 때에는 dev도 이미 Swing Timer를 사용하고 있어 그 구현을 유지했다.
-
-현재 Single Step 메뉴는 자동 타이머를 먼저 멈춘 뒤 `tick()`을 한 번 호출한다. 이 수정은 프리즈 병합 전의 별도 변경 `d6555b8`이며, 실행 중 단일 진행 후 추가 세대가 발생하지 않는 회귀 테스트가 추가됐다.
-
-EDT는 모든 작업 스레드를 자동으로 정렬하는 기능이 아니다. 현재 게임의 UI 입력과 Clock 콜백을 같은 스레드에서 처리하는 방식이다. MIDI 예약 실행기는 별도로 동작하며, 실제 보드 대신 이벤트에서 받은 독립 스냅샷을 읽는다. 오래 걸리는 작업을 EDT에 추가하면 화면이 멈출 수 있으므로 이 실행 경계를 유지해야 한다.
+**notifyBoardChanged(): 완료 이벤트를 구독자에게 전달**
 
 <a id="integration"></a>
-### 2.2 기존 기능과의 통합 및 충돌 해결
+기존 사운드 전용 `GenerationListener`·`publishChanges()` 경로를 공통 BoardChangeListener 구독으로 통합했다. Universe는 통계나 사운드의 구체 클래스를 호출하지 않고, 등록된 리스너에 동일한 BoardChangeEvent를 전달한다.
 
-통계 구현 당시에는 `4021231`에 **당시 dev `a480113`**를 병합하여 `4a49d0a`에서 충돌을 해결했고, 이후 `8eb1dfe`에서 사운드와 통계의 구독 경로를 통합했다. 아래 충돌 표는 이 과거 병합을 설명한다.
+```java
+private void notifyBoardChanged(BoardChangeEvent.Kind kind, boolean[][] before) {
+    requireEventDispatchThread();
+    Objects.requireNonNull(kind, "kind");
+    if (boardListeners.isEmpty()) return;
 
-#### dev 병합에서 해결한 실제 충돌
+    BoardChangeEvent event = createBoardChangeEvent(kind, before);
+    for (BoardChangeListener listener : boardListeners.toArray(new BoardChangeListener[0])) {
+        listener.onBoardChanged(event);
+    }
+}
+```
 
-병합 양쪽 부모와 공통 조상을 비교하면 충돌 파일은 다음 7개다. 모든 충돌이 기능 차이는 아니며, 주석·import가 겹친 경우도 포함한다.
+`boardListeners`는 추가한 리스너 집합이다. 알릴 대상이 있으면 이벤트를 한 번 구성하고 모든 구독자에게 전달한다. 전달 중 등록·해제에 영향을 받지 않도록 리스너 목록의 복사본을 순회한다. 구독 관리와 외부 작업의 완료 연결을 위해 다음 메서드를 추가했다.
 
-| 파일 | 충돌한 내용 | 해결한 방식 |
-| --- | --- | --- |
-| `Universe.java` | 통계의 `this::advanceOneGeneration` 연결·알림과 dev의 익명 tick 본문·색상·패턴 편집·사운드·드래그 처리가 겹쳤다. | **dev의 tick 본문을 유지하고 advanceOneGeneration은 제거**했다. 편집 중 진행 차단, 매 세대 transition, 색상별 화면 갱신을 유지하면서 세대 증가와 통계 알림을 추가했다. 편집·복원 경로도 완료 후 통계 알림이 나가도록 연결했다. |
-| `Life.java` | 통계 전용 탭 배치와 dev의 패턴 도구를 EAST에 직접 붙이는 코드가 겹쳤다. | `createSidebar()`에서 실제 패턴 패널과 통계를 한 JTabbedPane에 넣고 `createContent()`로 배치했다. `SoundEffects.install()`·EDT 초기화·통계 연결/해제를 함께 유지했다. |
-| `Clock.java` | 양쪽 모두 Swing Timer였으나 타이머 재사용·초기 지연·EDT 밖 tick 처리 방식이 달랐다. | dev 구현을 유지했다. 실행 시 기존 타이머를 중지하고 새 타이머를 만들며, EDT 밖 tick은 `invokeLater()`로 넘긴다. 통계 쪽의 EDT 밖 호출 예외 기대도 이 동작에 맞췄다. |
-| `Neighborhood.java` | LOAD 후 활성화 코드에 dev의 `oneLastRefreshRequired=true`가 추가되어 있었다. | `amActive=true`, `activeEdges.add(Direction.ALL)`, 마지막 화면 갱신 플래그를 함께 유지했다. 복원 후 경계 셀 재계산과 표시를 모두 보장하려는 처리다. |
-| `Cell.java` | 양쪽에서 같은 `isAliveAt(row, column)`을 추가했지만 설명 주석이 달랐다. | 기존 dev 선언 하나로 정리했다. 통계용 조회를 중복 추가하지 않았다. |
-| `NeighborhoodTest.java` | 중첩 셀 조회 테스트가 양쪽에 있고 주석이 달랐다. | dev 테스트를 유지하여 행·열이 뒤바뀌지 않는 조회를 계속 검증했다. |
-| `UniverseStoreTest.java` | 통계 쪽 테스트 초기화와 dev의 드래그·생존 배열·재생선 검사에 필요한 import가 겹쳤다. | 새 검사들을 보존하고 초기화·Clear·Store를 `LifeTestSupport`로 통일했다. UI 조작/그리기는 EDT에서 수행하고 실제 Clock·저장 경로를 사용하도록 정리했다. |
+| 메서드 | 입력·처리·결과 |
+|---|---|
+| `addBoardChangeListener()` | 리스너를 집합에 등록하고 새 구독자에게만 현재 상태의 INITIAL을 즉시 전달한다. 중복 등록이면 다시 전달하지 않는다. 게임을 진행하기 전에도 통계 화면을 채울 수 있다. |
+| `removeBoardChangeListener()` | 전달받은 리스너를 집합에서 제거하여 이후 발행에서 제외한다. 이미 없는 리스너를 해제해도 문제없다. Life의 창 해제 처리에서 사용한다. |
+| `notifyBoardChanged(kind)` | 편집·복원 등 이전 상태가 필요 없는 작업의 완료를 알리는 공개 메서드다. 비공개형에 before=null을 전달한다. 판을 변경하거나 세대를 진행시키는 명령은 아니며, 실제 전이 전 배열이 필요한 GENERATION은 거부한다. |
+| `notifyBoardChanged(kind, before)` | 세대 진행에서는 실제 전이 전 배열을 받는 비공개 발행 경로다. 이벤트 구성 후 각 리스너의 onBoardChanged를 호출하며, 공개형도 내부적으로 이 경로를 사용한다. |
 
-통계 브랜치를 병합할 당시 연결한 세부 경로는 다음과 같다. 이후 프리즈 적용으로 달라진 경로는 아래 프리즈 통합 절에서 설명한다.
+등록·해제·발행은 `requireEventDispatchThread()`로 EDT 실행 여부를 검사한다. 상태 수집부터 화면 갱신까지 같은 실행 흐름에서 처리하는 이유는 4.4절에서 설명한다.
 
-| 경로 | 통계 연결 후 동작 |
-| --- | --- |
-| `Clock.Listener.tick()` | 패턴 편집 중이면 반환 → Undo 이력 무효화 → 다음 상태 계산 → 매 세대 transition → 세대 증가·알림 → 기존 조건으로 다시 그리기. 생존 상태가 같은 블록도 나이가 증가한다. |
-| 일반 드래그의 `setCell()` | 기존 셀 변경 처리를 유지하고 반환형을 `void`에서 `boolean`으로 바꿨다. 실제 변경 여부를 모아 마우스 처리 후 EDIT를 보내고 무변경 알림은 생략한다. 보드 밖 누르기도 제외했다. |
-| 템플릿 배치·Undo | PatternTools가 이미 내보내던 `TEMPLATE`·`TEMPLATE_UNDO` PropertyChange를 Universe에서 구독한다. 템플릿 드래그는 완료 신호에서 한 번 알리고, 캡처 선택 자체는 보드 변경으로 세지 않는다. |
-| 패턴 탭을 떠날 때 | `Life.createSidebar()` → `Universe.finishPatternEditing()` → 기존 `PatternTools.cancel()`로 숨겨진 편집을 끝낸다. 일반 실행 상태에서는 불필요하게 Clock을 멈추지 않는다. |
-| `doLoad()` | 통계 쪽의 “파일 읽기를 끝낸 뒤 보드 교체”를 유지했다. 성공 시 dev의 편집 취소·Undo 무효화도 수행하고 복원 후 세대 0·LOAD를 발행한다. 취소·읽기 실패 시 기존 판과 통계를 유지한다. |
-| Clear·Store·그리기 | Clear는 활성 편집 취소·이력 무효화·판 지우기 후 세대 0·CLEAR를 발행한다. Store는 상태 변경 알림이 없다. 셀·패턴 오버레이·사운드 재생선의 기존 그리기를 함께 유지했다. |
+**createBoardChangeEvent(): 완료 상태와 통계 입력 구성**
 
-이 병합 커밋에서는 사운드의 GenerationListener와 통계의 BoardChangeListener를 일단 함께 유지했다. 그 다음 변경이 아래 공통 이벤트 전환이다.
+이 메서드는 **작업 후 생존 배열인 after를 수집하고**, 종류·세대 번호·판 크기·탄생 및 사망 좌표·생존 셀의 색을 BoardChangeEvent에 담도록 추가했다. after는 notifyBoardChanged 본문이 아니라, 그 안에서 호출하는 createBoardChangeEvent에서 만든다.
 
-#### 공통 이벤트 전환의 변경 전후
+기존 사운드의 publishChanges는 전이 후 각 셀을 isAliveAt으로 직접 조회하며 before와 비교했다. 별도의 after 배열은 없었고 탄생·사망 좌표만 전달했다. 통계는 현재 생존 수와 색상 분포도 필요하므로, **완료 판을 배열로 확보해 비교와 이벤트 전달에 함께 사용**하도록 변경했다.
 
-| 위치 | 병합 직후 `4a49d0a` | 공통 이벤트 전환 `8eb1dfe` 이후 |
-| --- | --- | --- |
-| Universe의 구독·발행 | 사운드는 `GenerationListener`·`addGenerationListener()`·`generationPublisher`·`publishChanges(before)`, 통계는 BoardChangeListener. | 사운드 전용 항목을 제거하고 `addBoardChangeListener()`·`removeBoardChangeListener()`·`notifyBoardChanged()`로 통일. |
-| 세대 전 상태 수집 | 사운드는 `figureNextState()`의 변화 예상 결과에 따라 before를 수집하고 변화가 있을 때 발행했다. | 매 정상 세대 transition 직전에 `liveCells()`로 before를 확보하고, 완료 후 `notifyBoardChanged(GENERATION, before)`를 호출한다. |
-| 현재 상태 자료구조 | 사운드는 `boolean[][]`·`List<Point>`, 통계 이벤트는 BitSet. | 현재 판은 `boolean[][]`, 탄생·사망은 `List<Point>`로 공유한다. `captureAliveCells()`의 BitSet 수집 경로를 제거했다. |
-| 탄생·사망 계산 | 사운드 발행부와 Statistics가 각각 상태를 비교했다. | `Universe.createBoardChangeEvent(kind, before)`가 진행 전후를 한 번 비교한다. Statistics는 전달받은 목록의 크기를 집계한다. |
-| Statistics의 이전 상태 | 이전 BitSet·판 크기·세대 번호를 저장하고 연속 세대인지 확인했다. | 이전 판 비교 필드를 제거했다. 완성된 이벤트 자체에 변화량이 있으므로 첫 GENERATION 수신도 집계할 수 있다. |
-| 이벤트 내용 | 통계용 현재 상태만 전달했다. | 완료 배열과 탄생·사망 좌표를 같은 이벤트에 담는다. 이후 색상 확장에서 생존 색 목록을 추가했다. |
-| SoundEffects의 구독·수신 | GenerationListener로 등록하고 generationChanged()로 수신. | BoardChangeListener로 등록하고 onBoardChanged(event)에서 종류와 변화 목록을 확인한 뒤 기존 음 생성 처리를 호출. |
-| 재생선의 상태 조회 | 실제 게임판을 liveCells()로 직접 조회. | INITIAL 수신 후 재생선을 예약하고, 모든 완료 이벤트의 복사 배열을 latestCells에 보관해 재생선과 전멸 판단에 사용. |
+```java
+private BoardChangeEvent createBoardChangeEvent(BoardChangeEvent.Kind kind, boolean[][] before) {
+    boolean[][] after = liveCells();
+    List<Point> births = new ArrayList<>();
+    List<Point> deaths = new ArrayList<>();
+    List<Color> aliveColors = new ArrayList<>();
+    for (int row = 0; row < after.length; row++) {
+        for (int column = 0; column < after.length; column++) {
+            if (after[row][column]) aliveColors.add(outermostCell.colorAt(row, column));
+            if (kind == BoardChangeEvent.Kind.GENERATION) {
+                if (after[row][column] && !before[row][column]) births.add(new Point(column, row));
+                else if (!after[row][column] && before[row][column]) deaths.add(new Point(column, row));
+            }
+        }
+    }
+    return new BoardChangeEvent(kind, generation, after.length, after,
+            births, deaths, aliveColors);
+}
+```
 
-현재 세대 진행 진입점은 여전히 **Universe 생성자에서 등록한 익명 tick 본문**이다. 공통 이벤트 전환을 위해 advanceOneGeneration을 다시 도입하지 않았다.
+`liveCells()`가 완료 상태를 담은 새 배열을 반환하고 after가 이를 보관한다. GENERATION이면 before와 after의 같은 위치를 비교해 탄생·사망 좌표를 만든다. 배열은 `[행][열]`, Point는 `(열, 행)` 순서다. 비세대 작업은 전후 비교를 하지 않으므로 before가 없어도 되고 변화 좌표 목록은 비어 있다.
 
-[SoundEffects](../../src/com/holub/life/sound/SoundEffects.java)의 연결은 공통 이벤트 계약에 맞췄다. 모든 이벤트로 재생선용 상태를 갱신하고, GENERATION이며 탄생·사망이 있을 때만 기존 음 생성 처리를 호출한다. 사운드가 Off인 동안에도 최신 상태를 받으며, 기존 음 선택·반복 감쇠·재생 예약 로직은 유지했다. 이벤트 수신 시 복사 배열의 참조를 volatile 필드에 저장하고 사운드 스레드는 그 배열을 읽는다. 저장 후 배열 원소는 수정하지 않는다.
+현재 살아 있는 위치에서는 `colorAt()`으로 표시 색을 읽어 `aliveColors`에 하나씩 담는다. 색 조회의 추가는 2.2절에서 설명한다. **이벤트에는 after와 비교 결과를 전달하고 before는 전달하지 않는다.** Statistics는 이 입력으로 생존 수·비율·변화량·색별 분포를 집계한다. createBoardChangeEvent는 데이터를 구성하고, 구독자 호출은 notifyBoardChanged가 담당한다.
 
-프리즈 병합에서는 Statistics·StatisticsPanel·BoardChangeEvent·BoardChangeListener를 수정하지 않았다. Universe가 고정 처리를 끝낸 상태를 기존 GENERATION으로 전달하므로, 고정된 생존 셀도 생존 수에 포함되고 탄생·사망은 실제 변화만 집계한다. 프리즈 자체의 구현과 검증은 [FREEZING.md](../FREEZING.md)를 참고한다.
+**편집·복원에도 같은 완료 알림 연결**
 
-<a id="colors"></a>
-### 2.3 색상별 통계 확장
+세대 진행 외에도 기존 작업이 끝난 지점에서 공개 notifyBoardChanged를 호출하도록 연결했다. 클릭·일반 드래그는 실제 변경이 있을 때 EDIT를 발행하고, 템플릿의 기존 배치·Undo 완료 신호는 TEMPLATE·TEMPLATE_UNDO로 전달한다. Clear·Load는 초기화·복원이 성공한 뒤 알리며, 색상 정책 교체 후에는 COLOR_POLICY_CHANGED를 발행한다.
 
-#### 기존 색상 결정 방식
+Load 취소·읽기 실패는 완료 이벤트를 보내지 않는다. Store는 판을 변경하지 않으므로 통계 알림을 추가하지 않았다. 이처럼 동일한 발행 경로를 사용하여 정지 중 편집·복원도 다음 세대를 기다리지 않고 통계에 반영한다. 작업별 표시 결과는 1.3절에 정리했다.
 
-Resident는 생존 여부와 `age`를 가지고, 공유 `CellColorPolicy`에 `colorOf(age)`를 요청하여 그린다. 새로 태어난 셀의 나이는 0이며, 계속 살아남은 셀은 transition에서 나이가 증가한다. 현재 통합 코드에서는 프리즈로 고정된 셀만 나이 증가를 건너뛰고, 해제 후에는 멈춘 나이부터 이어서 증가한다.
+### 2.2 Cell 계층: 통계에 필요한 색상 조회 추가
 
-기본 순환 정책은 셀의 나이를 기준으로 10세대마다 **빨강 → 파랑(`#0072B2`) → 초록(`#009E73`)**을 반복한다. 나이 0~9는 빨강, 10~19는 파랑, 20~29는 초록, 30~39는 다시 빨강이다. FixedColorPolicy는 나이와 무관하게 지정 색을 반환한다. 통계는 이 규칙을 복제하거나 나이를 색으로 다시 환산하지 않고 **현재 정책이 반환한 색**을 집계한다.
+**표시 색을 외부에서 조회하는 메서드 추가**
 
-#### 추가·확장한 메서드와 데이터
+통계 추가 전에는 Resident가 화면을 그릴 때 표시 색을 구했지만, 외부에서 특정 위치의 색을 읽을 메서드는 없었다. 색상별 통계를 위해 Cell 계층에 `colorAt(row, column)`을 추가하고, 기존 색 결정 호출을 재사용하도록 구현했다.
 
-| 위치 | 변경 전 | 현재 구현 |
-| --- | --- | --- |
-| `Cell.colorAt(row, column)` | 색을 외부에서 조회하는 공통 메서드 없음. | 표시 색 조회 계약 추가. 죽은 셀과 DUMMY는 null. |
-| `Resident.colorAt()` | redraw 안에서 정책으로 색을 결정했다. | 살아 있으면 같은 `colorPolicy.colorOf(age)`를 반환한다. 조회로 나이를 늘리거나 정책을 바꾸지 않는다. |
-| `Neighborhood.colorAt()` | 생존 조회만 제공했다. | 행·열을 하위 셀의 좌표로 변환해 재귀 위임한다. 통계는 중첩 구조를 알 필요가 없다. |
-| `Universe.createBoardChangeEvent()` | 완료 배열과 탄생·사망 목록 구성. | 완료 배열에서 살아 있는 위치만 `outermostCell.colorAt()`으로 읽어 `List<Color>`를 추가한다. |
-| `BoardChangeEvent` | 생성자 6개 인자, 색 데이터 없음. | 마지막 인자로 `List<Color>`와 `aliveColors()` 추가. null·생존 수와 다른 길이를 거부하고 목록을 보호한다. |
-| `Universe.useColorPolicy()` | 정책 교체 후 repaint. | 정책 교체 후 `COLOR_POLICY_CHANGED` 발행 추가. 세대·나이는 유지한다. |
-| `Statistics.calculate()`·Summary | 기본 통계만 집계. | 같은 Color 값별 개수와 생존 수 대비 비율을 계산하고 불변 `List<ColorCount>`로 전달한다. |
-| `StatisticsPanel.showStatistics()` | 기본 통계만 표시. | 색 견본·이름·개수·비율 행을 함께 갱신한다. |
+```java
+// 통계 추가 전: 기존 색상 기능이 redraw()에서 사용하던 코드
+g.setColor(amAlive ? colorPolicy.colorOf(age) : DEAD_COLOR);
 
-예를 들어 4×4 판에 살아 있는 셀이 4개이고 빨강 2개·파랑 1개·초록 1개라면, 생존 비율은 **25%**, 색 비율은 **50%·25%·25%**다. 두 비율의 분모가 다르다. 빈 판은 색 목록이 비어 있으므로 0으로 나누지 않는다.
+// 통계에서 추가한 Cell의 조회 계약
+Color colorAt(int row, int column);
 
-색 목록에 좌표는 필요하지 않다. 통계는 색의 분포만 사용하며, 셀의 위치는 기존 생존 배열로 전달된다. 같은 RGB 값으로 만들어진 별도 Color 객체도 같은 색으로 묶는다. 사운드는 색 데이터를 읽지 않고 기존 GENERATION 필터를 사용하므로 이 확장에서 사운드 소스 수정은 없다.
+// 통계에서 추가한 Resident의 조회 구현
+public Color colorAt(int row, int column) {
+    assert row == 0 && column == 0;
+    return amAlive ? colorPolicy.colorOf(age) : null;
+}
+```
 
-색상 통계 작업(`4d6a9ac`)에서는 기존 색상 정책을 재사용하고 조회·이벤트 전달·집계·표시를 추가했다. 이후 프리즈 담당자가 Resident의 나이 갱신 조건을 확장했으며, 통계는 같은 `colorAt()` 조회 결과를 계속 사용한다.
+기존 redraw의 색 지정은 유지한다. 새 colorAt도 같은 `colorPolicy.colorOf(age)`를 사용하므로, 통계가 읽는 색과 화면에 그리는 색이 일치한다. 정책과 나이 처리는 색상 기능의 구현을 재사용하고, 통계에서는 조회 계약과 각 Cell의 구현을 추가했다.
+
+| 클래스 | 추가·변경한 메서드와 동작 |
+|---|---|
+| `Cell` | `colorAt(row, column)`을 선언했다. 해당 위치의 표시 색을 반환하며 죽은 셀은 null로 표현한다. Cell.DUMMY의 구현도 null을 반환한다. |
+| `Neighborhood` | colorAt을 구현했다. 하위 셀 한 변의 크기로 행·열을 나눈 몫은 하위 셀 선택에, 나머지는 그 셀 내부의 좌표에 사용하여 조회를 위임한다. 좌표 변환은 기존 isAliveAt 방식을 활용한다. |
+| `Resident` | colorAt을 구현했다. 단일 셀이므로 지역 좌표 (0,0)을 확인하고 생존 중이면 정책의 색을, 죽어 있으면 null을 반환한다. 조회 과정에서 나이·생존 상태를 변경하지 않는다. |
+
+Universe는 2.1절의 이벤트 구성에서 **살아 있는 위치에만 colorAt을 호출**하고 결과를 `List<Color> aliveColors`에 담는다. 빨강·빨강·파랑인 세 셀이 있으면 색 목록도 세 항목이며, 색별 개수·비율은 Statistics에서 계산한다. 따라서 색 결정 규칙을 통계에 복제하거나 셀마다 별도 색 필드를 추가할 필요가 없다.
+
+**색상 정책 교체 후 통계 갱신 연결**
+
+기존 `Universe.useColorPolicy()`는 정책을 교체하고 게임판을 다시 그렸다. 여기에 COLOR_POLICY_CHANGED 알림을 추가하여, 게임이 정지해 있을 때 정책을 바꾸어도 통계가 현재 표시 색을 다시 집계하도록 했다.
+
+```java
+// 통계 연결 전
+private void useColorPolicy(CellColorPolicy policy) {
+    Resident.setColorPolicy(policy);
+    repaint();
+}
+
+// 통계 연결 후
+private void useColorPolicy(CellColorPolicy policy) {
+    Resident.setColorPolicy(policy);
+    notifyBoardChanged(BoardChangeEvent.Kind.COLOR_POLICY_CHANGED);
+    repaint();
+}
+```
+
+추가한 호출은 정책 교체 이후의 색을 이벤트에 담도록 한다. 세대 번호를 늘리거나 게임판을 전이시키지는 않는다. 같은 세대의 탄생·사망 표시를 유지하는 처리는 2.5절의 Statistics가 담당한다.
 
 <a id="panel"></a>
-### 2.4 통계 패널 구현과 화면 연결
+### 2.3 Life: 통계 연결과 탭 배치
 
-Life가 `new Statistics(panel::showStatistics)`를 만들고 Universe에 등록한다. INITIAL을 즉시 받으므로 게임을 진행하기 전에도 화면에 현재 상태가 나타난다. 탭이 숨겨져 있어도 통계는 갱신하며, `Life.dispose()`에서 통계 리스너를 해제한다.
+원본 `Life`는 창 중앙에 Universe를 직접 붙였으며 통계를 생성하거나 연결하는 코드는 없었다. 통계 확장에서는 **패널 생성 → 탭 배치 → 집계 객체 연결**을 창 초기화에 추가했다. 기존 도구 화면과 함께 사용할 수 있도록 통계 패널을 공용 탭에 넣되, 통계의 생성과 구독은 Life에서 한 번 수행하도록 했다.
 
-공용 JTabbedPane은 Life가 소유하고, 현재 탭 순서는 **패턴 캡처 → 통계 → Freezing**이다. 탭 전환 시 숨겨지는 패턴 편집이나 프리즈 영역 선택을 종료하며, 설치된 프리즈 영역과 통계 구독은 유지한다. `createContent()`는 세 탭을 추가한 뒤 전체 선호 폭과 보드 높이 512px를 기준으로 중앙 보드·오른쪽 탭을 배치한다.
+```java
+// 원본 창 구성 중 게임판을 붙이는 부분
+getContentPane().setLayout(new BorderLayout());
+getContentPane().add(Universe.instance(), BorderLayout.CENTER);
 
-| 표시 항목 | 현재 규격 |
-| --- | --- |
-| 패널 | 선호 크기 258×512, 내부 여백 14px. 전체 사이드바 폭은 공용 탭의 선호 크기를 반영한다. |
-| 제목·항목·값·설명 | 제목 16pt 굵게, 항목 13pt, 값 14pt 굵게, 안내 12pt. |
-| 행과 간격 | 기본 통계·색상 행에 공통 `statisticRow()` 적용. 행 높이 22px, 행 사이 6px. 제목·구분선 주변도 공통 간격으로 정리했다. |
-| 구역 | 기본 생존 통계 / 이번 세대 탄생·사망 / 색상 통계 사이에 구분선. 변화량 안내는 두 줄로 표시한다. |
-| 숫자 | 비율은 소수 둘째 자리, 비교 대상이 없는 변화량은 `—`. |
-| 색상 행 | 현재 존재하는 색만 빨강 → 파랑 → 초록 순서로 표시하고, 다른 색은 뒤에 RGB 순으로 배치한다. 개수 변화로 순서가 바뀌지 않는다. 사라진 색은 제거한다. |
-| 추가 색·빈 판 | 기본 3색을 넘으면 색 목록 영역만 세로 스크롤한다. 임의 색은 색상값으로 표시하며 빈 판에는 생존 셀이 없다는 안내를 표시한다. |
+// 현재 창 구성 중 통계 생성·배치·연결 부분
+universe = Universe.instance();
+StatisticsPanel statisticsPanel = new StatisticsPanel();
+JTabbedPane tabs = createSidebar(universe, statisticsPanel);
+setContentPane(createContent(universe, tabs));
+statistics = connectStatistics(universe, statisticsPanel);
+```
 
-계산 결과의 색 목록 순서와 UI 순서를 분리했다. Statistics는 색별로 집계하고, 패널이 표시 순서·이름·폰트·간격을 결정한다. 운영체제의 기본 Swing 스타일은 유지한다.
+새 `createSidebar()`에서 `tabs.addTab("통계", statisticsPanel)`로 패널을 추가하고, `createContent()`에서 게임판 오른쪽에 탭을 배치한다. 실제 통계 구독은 새로 추가한 `connectStatistics()`에서 수행한다.
+
+```java
+Statistics statistics = new Statistics(panel::showStatistics);
+universe.addBoardChangeListener(statistics);
+return statistics;
+```
+
+`panel::showStatistics`는 집계 결과가 준비되면 실행할 동작이다. Statistics는 이를 Java 표준 인터페이스인 `Consumer<Summary>`로 받아 저장하고, `accept(summary)`로 실행한다. 이때 `panel.showStatistics(summary)`가 호출된다. 따라서 Statistics가 패널 클래스를 직접 생성하거나 참조할 필요가 없다.
+
+| 메서드 | 입력·처리·결과 |
+|---|---|
+| `createSidebar()` | Universe와 통계 패널을 받아 공용 JTabbedPane에 통계 탭을 추가한다. 다른 도구 패널은 기존 제공 메서드로 가져오고, 기존 탭 전환 처리와 함께 구성한다. |
+| `createContent()` | Universe를 BorderLayout.CENTER에, 전달받은 탭을 EAST에 배치한다. 모든 탭을 추가한 뒤 필요한 너비를 계산하고 높이를 게임판에 맞춘다. 탭의 내용·선택·리스너는 유지한다. |
+| `connectStatistics()` | 패널 표시 콜백과 연결한 Statistics를 생성해 Universe에 등록하고 반환한다. 등록 중 INITIAL이 전달되어 창을 열기 전에 최초 통계가 계산된다. |
+| `dispose()` | 통계 리스너를 해제한 뒤 기존 JFrame의 창 해제 처리를 호출하도록 확장했다. 연결한 Statistics는 Life의 필드에 보관해 해제할 때 사용한다. |
+
+Life는 연결한 Statistics를 필드에 보관해 창 해제 시 같은 객체를 구독에서 제거한다. 탭 전환은 구독과 분리되어 있으므로 통계 탭이 숨겨져 있어도 집계와 표시 값은 최신 상태로 유지된다.
+
+### 2.4 BoardChangeListener·BoardChangeEvent: 공통 알림 계약 추가
+
+통계가 게임판 완료 상태를 받을 수 있도록 **수신 인터페이스인 BoardChangeListener와 전달 객체인 BoardChangeEvent**를 새로 정의했다. 이 계약을 통해 Universe는 Statistics의 계산 메서드를 직접 알지 않아도 완료 상태를 전달할 수 있다. 현재는 사운드도 같은 계약을 구독한다.
+
+```java
+@FunctionalInterface
+public interface BoardChangeListener {
+    void onBoardChanged(BoardChangeEvent event);
+}
+```
+
+Universe가 `onBoardChanged(event)`를 호출하면 Statistics가 전달된 데이터를 집계한다. BoardChangeEvent의 생성자는 작업 종류·세대 번호·판 크기·생존 배열·변화 좌표·색 목록을 받아 검사하고 보관한다. 전달 객체의 필드와 조회 메서드는 다음과 같다.
+
+| 필드 | 담는 내용과 조회 방법 |
+|---|---|
+| `kind` | 작업 종류를 `kind()`로 읽는다. 종류별 의미와 표시 결과는 1.3절에 정의했다. |
+| `generation` | 완료 시점의 게임판 세대 번호를 `generation()`으로 읽는다. 이벤트나 Statistics가 이 값을 독립적으로 증가시키지는 않는다. |
+| `boardSize` | 판 한 변의 셀 수를 `boardSize()`로 읽는다. 기본 판은 64이며 전체 칸 수는 64×64다. 픽셀 크기가 아니다. |
+| `aliveCells` | 완료 후 생존 배열을 `copyAliveCells()`로 받는다. 배열은 `[행][열]` 순서이며 Statistics가 생존 수를 세는 입력이다. |
+| `births`·`deaths` | GENERATION의 탄생·사망 좌표를 `copyBirths()`·`copyDeaths()`로 받는다. Statistics는 각 목록의 크기로 이번 세대의 변화량을 구한다. 비세대 이벤트에서는 빈 목록이다. |
+| `aliveColors` | `aliveColors()`로 생존 셀의 색 목록을 받는다. 같은 색도 셀 수만큼 반복되며, 좌표·나이나 색별 집계 결과는 포함하지 않는다. |
+
+생성자는 판 크기와 배열 모양, 좌표 범위·중복, 이벤트 종류에 맞는 변화 목록, 생존 수와 색 목록 길이의 일치를 검사한다. 전달 데이터가 잘못된 상태로 집계에 사용되지 않도록 생성 시점에 검증한다.
+
+배열과 좌표는 저장할 때 복사하며, `copyAliveCells()`·`copyBirths()`·`copyDeaths()`에서도 복사본을 반환한다. `aliveColors()`는 수정 불가능한 목록을 반환한다. 따라서 호출자가 조회 결과를 수정해도 이벤트가 보관한 완료 상태는 유지된다. 상세 조건과 복사 범위는 3.5절에 정리했다.
+
+### 2.5 Statistics: 이벤트를 통계 결과로 변환
+
+원본에는 생존 수·변화량·색상 분포를 계산해 전달하는 통계 객체가 없었다. 이를 위해 **이벤트를 입력으로 받아 Summary를 만드는 Statistics**를 추가했다. Universe가 전달한 완료 상태를 집계하고 결과 콜백을 호출하므로, 계산을 검증할 때 실제 게임판이나 Swing 화면을 생성할 필요가 없다.
+
+BoardChangeListener를 구현한 수신 메서드는 다음과 같다.
+
+```java
+public void onBoardChanged(BoardChangeEvent event) {
+    Objects.requireNonNull(event, "event");
+    Summary summary = calculate(event);
+    currentSummary = summary;
+    onUpdated.accept(summary);
+}
+```
+
+`calculate()`는 전달받은 배열에서 생존 셀을 세고, 세대 이벤트에 담긴 좌표 목록의 크기로 탄생·사망 수를 구한다. 기본 집계 부분은 다음과 같다.
+
+```java
+int livingCells = 0;
+for (boolean[] row : event.copyAliveCells()) {
+    for (boolean alive : row) if (alive) livingCells++;
+}
+double totalCells = (double) event.boardSize() * event.boardSize();
+boolean hasGenerationDelta = event.kind() == BoardChangeEvent.Kind.GENERATION;
+int births = hasGenerationDelta ? event.copyBirths().size() : 0;
+int deaths = hasGenerationDelta ? event.copyDeaths().size() : 0;
+```
+
+생존 비율은 `livingCells * 100.0 / totalCells`로 계산해 결과에 담는다. 색 목록은 같은 색 값끼리 묶어 개수를 구하고, 전체 생존 수를 분모로 색별 비율을 계산한다. 실제 게임판 재조회나 전후 비교 없이 이벤트 하나에 담긴 완료 상태와 변화 좌표를 사용한다.
+
+| 메서드·필드 | 입력·처리·결과 |
+|---|---|
+| `onBoardChanged()` | 받은 이벤트를 calculate에 전달하고, 반환된 Summary를 저장한 뒤 결과 콜백을 실행한다. 콜백에서 current를 조회해도 같은 최신 결과를 볼 수 있도록 저장을 먼저 한다. |
+| `calculate()` | 이벤트의 생존 배열·판 크기·변화 좌표·색 목록을 읽어 기본 통계와 색상별 통계를 계산하고 Summary를 반환한다. 이벤트 종류에 따라 세대 변화량의 유효 여부도 정한다. |
+| `currentSummary` | 가장 최근의 집계 결과 하나를 보관한다. 색상 정책만 바뀐 경우 직전 세대 변화량을 유지하는 데도 사용한다. 게임판 배열이나 Undo 이력을 보관하지 않는다. |
+| `current()` | 최근 결과를 Optional로 반환한다. 첫 이벤트를 받기 전에는 비어 있다. 테스트나 결과 조회에서 패널을 거치지 않고 계산값을 확인할 수 있다. |
+| `onUpdated` | 생성자로 받은 Consumer 콜백을 보관하는 필드다. Life는 패널의 showStatistics를 연결하고, 계산 테스트는 결과 수집 동작을 연결한다. `accept(summary)`가 준비된 집계 결과를 전달한다. |
+
+계산 결과는 Statistics 내부의 `Summary`와 `ColorCount` record에 담는다. 별도 최상위 클래스 파일이 아니라 집계 결과를 구성하는 내부 타입이다.
+
+| 결과 값 | 의미와 화면에서의 사용 |
+|---|---|
+| `generation` | 이벤트에서 받은 세대 번호다. 패널의 현재 세대에 표시한다. |
+| `livingCells`·`livingRatio` | 현재 생존 수와 전체 칸 수 대비 백분율이다. livingRatio는 0~1 값이 아니라 0~100 값이다. |
+| `births`·`deaths` | 이벤트 좌표 목록의 크기를 계산한 정수다. 이벤트에서는 위치 목록이지만 Summary에서는 표시할 개수다. |
+| `hasGenerationDelta` | 탄생·사망을 유효한 세대 변화량으로 표시할지 나타낸다. true일 때 0은 측정된 변화량이고, false일 때 내부 값 0은 패널에서 `—`로 표시한다. |
+| `colorCounts` | 색상별 ColorCount 목록이다. 각 항목의 `color`는 색, `cells`는 그 색의 생존 수, `ratio`는 전체 생존 수 대비 백분율이다. |
+
+예를 들어 이벤트의 색 목록이 `[빨강, 빨강, 파랑]`이면 결과에는 빨강 2개·약 66.67%, 파랑 1개·약 33.33%를 담는다. **BoardChangeEvent는 완료 상태를, Summary는 그 상태를 집계한 결과를 전달한다.**
+
+같은 세대의 COLOR_POLICY_CHANGED는 새 생사 변화가 아니므로, 기존 currentSummary가 있으면 탄생·사망 수와 hasGenerationDelta를 유지하고 색상 결과를 다시 계산한다. 기존 결과가 없거나 세대 번호가 다르면 이 보존 규칙을 적용하지 않는다. 색상 빈도를 계산하는 코드는 3.4절에서 설명한다.
+
+### 2.6 StatisticsPanel: 계산 결과를 통계 화면에 표시
+
+원본 화면에는 통계를 수치로 표시하는 영역이 없었다. 이를 위해 **Summary의 값을 통계 탭에 표시하는 StatisticsPanel**을 추가했다. 기본 통계 레이블과 색상별 행을 만들고, 갱신 시에는 계산이 끝난 값을 받아 표시 형식만 적용한다.
+
+화면 갱신의 진입점인 `showStatistics()`는 다음과 같다.
+
+```java
+public void showStatistics(Statistics.Summary summary) {
+    requireEventDispatchThread();
+    Objects.requireNonNull(summary, "summary");
+    generation.setText(Long.toString(summary.generation()));
+    livingCells.setText(Integer.toString(summary.livingCells()));
+    livingRatio.setText(formatPercentage(summary.livingRatio()));
+    births.setText(summary.hasGenerationDelta()
+            ? Integer.toString(summary.births()) : UNAVAILABLE);
+    deaths.setText(summary.hasGenerationDelta()
+            ? Integer.toString(summary.deaths()) : UNAVAILABLE);
+    showColors(summary);
+}
+```
+
+탄생·사망은 숫자가 0인지보다 **유효한 세대 변화량인지**를 먼저 확인한다. 측정된 변화가 없으면 0으로 표시하고, 비교할 수 없는 결과는 UNAVAILABLE에 저장한 `—`로 표시한다. 패널이 보드나 이벤트를 다시 읽지 않고 Summary만으로 표시를 결정하도록 구현했다.
+
+| 메서드 | 입력·처리·결과 |
+|---|---|
+| `showStatistics()` | Summary를 받아 세대·생존 수·생존 비율을 표시하고, 탄생·사망은 유효 여부에 따라 숫자 또는 `—`로 바꾼다. 마지막으로 showColors를 호출한다. |
+| `showColors()` | 이전 색상 행을 지우고 ColorCount 목록으로 색 견본·이름·개수·비율을 구성한다. 빈 목록이면 생존 셀이 없다는 안내로 바꾸며, 행 구성이 끝나면 레이아웃과 화면을 갱신한다. |
+| `colorOrder()`·`colorName()` | 기본 색을 빨강→파랑→초록 순서와 한글 이름으로 표시한다. 그 밖의 색은 색상값 순서로 뒤에 놓고 16진수 색상값을 이름으로 사용한다. 실제 셀의 색을 결정하는 메서드는 아니다. |
+| `formatPercentage()` | 이미 백분율인 값을 소수 둘째 자리의 문자열로 만든다. Locale.ROOT를 사용하여 실행 환경에 관계없이 같은 숫자 형식을 유지한다. |
+| `statisticRow()` | 항목 이름·값 컴포넌트를 받아 좌우로 배치하고 행 높이와 정렬을 맞춘다. 기본 통계와 색상 행에 같은 배치 규칙을 사용한다. |
+
+생성자는 세로 BoxLayout 안에 기본 통계·세대 변화량·색상 분포 영역을 구성한다. `statisticRow()`와 공통 간격·글꼴 상수로 기본 통계와 색상 행의 형식을 맞추고, 구분선으로 영역을 나눴다. 색상 목록은 세 행 높이의 스크롤 영역으로 구성해 색이 늘어도 패널 전체 높이가 계속 커지지 않도록 했다.
+
+공용 탭에 넣을 수 있도록 선호 크기를 258×512로 정하고 최종 배치는 Life에 맡겼다. 생성자와 showStatistics는 EDT 실행 여부를 검사하여 Swing 컴포넌트의 생성·갱신 조건을 유지한다.
 
 <a id="structure"></a>
 ## 3. 구조와 동작
