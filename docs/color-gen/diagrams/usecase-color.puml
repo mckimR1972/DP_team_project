@@ -32,7 +32,7 @@ On ...> Recolor : <<include>>
 Run ..> Advance : <<include>>
 Step ..> Advance : <<include>>
 Advance <.. Recolor : <<extend>>
-note on link
+note top on link
   condition: {색 순환이 켜져 있음}
   extension point: 세대 확정 후
 end note
