@@ -43,7 +43,7 @@
 |---|---|---|
 | 생성음 | 새로 생긴 셀을 화음으로 낸다 (최대 5음) | 마림바, 실로폰, 하프, 피아노 |
 | 1. 코드 진행 | C → Am → F → G. 끄면 C로 고정 | |
-| 2. 스트럼 | 화음을 왼쪽 음부터 25ms 간격으로 친다. 끄면 동시에 | |
+| 2. 스트럼 | 화음을 왼쪽 음부터 25ms 간격으로 친다. 끄면 간격 없이 친다(작은 흔들림이 켜져 있으면 음마다 0~15ms 차이는 남는다) | |
 | 3. 소멸 타악기 | 셀이 사라지면 60ms 뒤에 친다. 많이 사라질수록 세게 | 쉐이커, 하이햇, 카바사, 탬버린 |
 | 4. 저음 패드 | 현재 코드의 저음을 계속 낸다. 산 셀이 많을수록 크게, 빈 판이면 꺼짐 | 웜 패드, 스트링, 합창, 오르간 |
 | 5. 대량 생성 악기 | 한 세대에 12개 이상 생기면 한 옥타브 위 소리를 겹친다 | 비브라폰, 글로켄슈필, 첼레스타, 튜블러 벨 |
@@ -111,14 +111,14 @@ public boolean isAliveAt(int row, int column)
 }
 ```
 
-`Cell.DUMMY`는 항상 `false`를 돌려준다. 인터페이스에 메서드가 하나 늘었으므로 앞으로 `Cell`을 새로 구현하는 클래스는 이것도 구현해야 한다. 이 메서드는 나중에 드래그 그리기와 캡처·템플릿 기능(`PatternCells`)에서도 셀 상태를 읽는 데 쓰이고 있다.
+`Cell.DUMMY`는 항상 `false`를 돌려준다. 인터페이스에 메서드가 하나 늘었으므로 앞으로 `Cell`을 새로 구현하는 클래스는 이것도 구현해야 한다. 이 메서드는 나중에 드래그 그리기, 캡처·템플릿 기능(`PatternCells`), Freezing 영역의 상태 저장(`FreezingRegion`)에서도 셀 상태를 읽는 데 쓰이고 있다.
 
 ### 2.3 Life: 사운드 붙이기
 
-`Life` 생성자에 한 줄을 추가했다.
+`Life` 생성자에 한 줄을 추가했다. `universe`는 `Universe.instance()`다.
 
 ```java
-SoundEffects.install( Universe.instance() );
+SoundEffects.install(universe);
 ```
 
 게임 쪽에서 사운드 패키지를 아는 곳은 여기뿐이다. 이 줄과 import를 지우면 소리만 빠지고 나머지 게임은 그대로다. `install()`은 신시사이저를 열고, `Universe`에 리스너로 등록해 `INITIAL` 이벤트로 현재 판을 받은 다음, 재생선 실행을 예약하고 `Sound` 메뉴를 단다.
@@ -129,11 +129,11 @@ SoundEffects.install( Universe.instance() );
 |---|---|---|
 | `SoundEffects` | `BoardChangeListener` 구현. 재생 예약, MIDI 채널 제어, 재생선 진행, `Sound` 메뉴 등록 | 둘 다 사용 |
 | `NoteMapper` | 셀 좌표를 음(높이, 좌우, 세기)으로 바꾼다. 화음 선택, 재생선 음, 패드 음, 흔들림 계산 | 없음 |
-| `RepeatTracker` | 최근 8세대의 변화를 기억해 두고, 같은 변화가 다시 오면 볼륨(gain)을 1/12씩 줄인다 | 없음 |
+| `RepeatTracker` | 변화가 있었던 세대를 최근 8개까지 기억해 두고, 같은 변화가 다시 오면 볼륨(gain)을 1/12씩 줄인다 | 없음 |
 | `SoundSettings` | 기능별 on/off와 선택한 악기를 들고 있다 | 없음 |
 | `SoundSettingsDialog` | 설정 창. 항목마다 체크박스와 악기 선택 상자 | Swing |
 
-`SoundEffects`만 `public`이고 나머지는 패키지 안에서만 보인다. 의존 방향은 `sound` → `life` 한쪽뿐이라서 `Universe`는 사운드 패키지를 import하지 않는다.
+`SoundEffects`만 `public`이고 나머지는 패키지 안에서만 보인다. `Universe`와 `Cell` 계층은 사운드 패키지를 import하지 않는다. 게임 쪽에서 사운드를 아는 곳은 프로그램 시작점인 `Life`의 `install()` 한 줄뿐이다.
 
 ## 3. 구조와 동작
 
@@ -227,7 +227,7 @@ private void play( MidiChannel channel, NoteMapper.Note note,
 }
 ```
 
-큐 하나를 스레드 하나가 순서대로 처리하는 모양이라 수업에서 본 Active Object와 구조가 비슷하다. 이 구조 덕분에 동기화도 단순해졌다. `MidiChannel`, 재생선 위치(`step`), 지금 누르고 있는 패드 음(`padNotes`)은 스케줄러 스레드에서만 만지기 때문에 잠금이 필요 없다. 설정 창에서 악기를 바꿀 때도 이벤트 스레드가 채널을 직접 건드리지 않고 `noteScheduler.execute(this::applyInstruments)`로 명령을 넣는다. 두 스레드가 같이 쓰는 객체는 `SoundSettings` 하나뿐이라 여기만 `synchronized`로 막았고, 메뉴에서 바꾸는 `enabled`, 코드 위치 `chord`, 이벤트로 받은 판 `latestCells`는 `volatile`로 두었다.
+큐 하나를 스레드 하나가 순서대로 처리하는 모양이라 수업에서 본 Active Object와 구조가 비슷하다. 이 구조 덕분에 동기화도 단순해졌다. 설치할 때 생성자에서 악기를 처음 정하는 한 번을 빼면, `MidiChannel`, 재생선 위치(`step`), 지금 누르고 있는 패드 음(`padNotes`)은 스케줄러 스레드에서만 만지기 때문에 잠금이 필요 없다. 설정 창에서 악기를 바꿀 때도 이벤트 스레드가 채널을 직접 건드리지 않고 `noteScheduler.execute(this::applyInstruments)`로 명령을 넣는다. 두 스레드가 같이 쓰는 객체는 `SoundSettings` 하나뿐이라 여기만 `synchronized`로 막았고, 메뉴에서 바꾸는 `enabled`, 코드 위치 `chord`, 이벤트로 받은 판 `latestCells`는 `volatile`로 두었다.
 
 Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리를 되돌릴 일이 없으니 undo나 이력은 필요 없었고, 명령마다 클래스를 만들면 파일만 늘어난다고 판단했다.
 
@@ -264,7 +264,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | `Universe`가 `SoundEffects`를 직접 호출 | 가장 간단하다 | 게임 로직이 사운드에 의존한다. 다른 기능을 붙일 때마다 `Universe`를 고쳐야 한다 |
 | `SoundEffects`가 `Clock`을 직접 구독 | `Universe`를 안 고쳐도 된다 | `Publisher.subscribe()`가 새 구독자를 목록 맨 앞에 넣는다. 나중에 등록한 사운드가 `Universe`보다 먼저 불려서 바뀌기 전의 판을 보게 된다. 무엇이 바뀌었는지도 사운드 쪽에서 계산해야 한다 |
 | `Resident`가 상태가 바뀔 때 알림 | 바뀐 셀을 정확히 안다 | `Resident`는 자기 좌표를 모른다. 좌표를 넣으려면 셀 생성 구조를 다 바꿔야 하고, 셀마다 호출이 생긴다 |
-| `Universe`가 비교한 결과를 발행 | 비교 코드가 한 곳에 있고, 리스너 추가가 쉽다 | 틱마다 판 전체를 한 번 더 읽는다 |
+| `Universe`가 비교한 결과를 발행 | 비교 코드가 한 곳에 있고, 리스너 추가가 쉽다 | 틱마다 판 전체를 전이 전과 후에 한 번씩 읽는다 |
 
 마지막 방법을 골랐다. 판을 더 읽는 비용은 64×64 배열 두 번 정도라 화면을 다시 그리는 것보다 훨씬 작았다. 이 결정은 이후 통계와 함께 쓰는 공통 이벤트(#10)로 그대로 넓혀졌다. 비교는 여전히 `Universe`에서 한 번만 하고, 리스너는 결과만 받는다.
 
@@ -320,7 +320,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 ./gradlew test
 ```
 
-현재 `dev`(`838182c`) 기준으로 전체 384개 테스트가 모두 통과한다. 이 중 사운드와 관련된 테스트는 다음과 같다.
+`dev`(`838182c`) 기준으로 전체 384개 테스트가 모두 통과한다. 소스가 같은 지금의 `dev`(`cfba2ed`)에서도 2026-11-24에 다시 돌려 모두 통과했다. 이 중 사운드와 관련된 테스트는 다음과 같다.
 
 | 테스트 클래스 | 개수 | 비고 |
 |---|---|---|
@@ -334,6 +334,8 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | `FreezingSoundIntegrationTest` | 3 | Freezing 기능을 합칠 때(#7) 추가. 고정된 셀과 소리 |
 
 사운드 작업(#3)에서 추가한 테스트는 32개다. 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. PR #3의 커밋은 하나씩 따로 빌드하고 테스트를 돌려서, 중간 커밋에서도 실패가 없게 했다. 이후 다른 기능을 합치면서 `SoundEffects`를 실제로 실행하는 통합 테스트 20개가 더해졌다.
+
+아래 캡처는 모두 2026-11-24 18:59(KST)에 `docs/sound-spec`(`c51e59b`, 소스·테스트는 `dev` `cfba2ed`와 같음)에서 `./gradlew test --rerun`으로 돌린 결과다. 화면 맨 위에도 실행 날짜와 커밋을 적었다.
 
 ![전체 테스트 결과](evidence/test-all.png)
 
@@ -357,7 +359,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 | 확인하려는 것 | 테스트 | 확인 내용 |
 |---|---|---|
-| 불협화음이 나지 않는다 | `everyPitchIsInCMajor` | 코드 4개 × 64행 전부에서 C장조 밖의 음이 없다 |
+| 고른 음이 C장조 음계를 벗어나지 않는다 | `everyPitchIsInCMajor` | 셀 하나씩, 코드 4개 × 64행에서 고른 음이 모두 C장조 7음 안에 있다 |
 | 판의 위치가 소리에 반영된다 | `higherOnTheBoardNeverSoundsLower` (코드 4개) | 위쪽 행이 아래 행보다 낮은 음을 내지 않는다 |
 | | `columnSetsStereoPosition` | 맨 왼쪽 열은 pan 0, 맨 오른쪽 열은 127 |
 | | `notesAreOrderedLeftToRightForStrumming` | 스트럼을 위해 음이 왼쪽부터 정렬된다 |
@@ -377,14 +379,14 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | | `timingJitterStaysSmall` | 지연이 0~15ms 안이다 |
 | 반복 페이드와 마무리 | `RepeatTrackerTest` 3개 | 새로운 변화는 볼륨 1.0 유지, 두 상태를 오가는 진동자는 결국 0, 조용해진 뒤 새 변화가 오면 바로 1.0 |
 | | `scalingLowersLoudnessOnly` | 볼륨을 줄여도 음 높이와 좌우는 그대로 |
-| | `endingChordIsAboveThePadOfTheSameChord` | 마무리 화음은 같은 코드 패드보다 두 옥타브 위 |
+| | `endingChordIsAboveThePadOfTheSameChord` | 마무리 화음은 3음이고, 첫 음이 같은 코드 패드의 첫 음보다 두 옥타브 위다 (F 코드로 확인) |
 | 설정 | `SoundSettingsTest` 3개 | 처음엔 모두 켜짐 + 첫 번째 악기, 스트럼을 꺼도 재생선은 그대로, 악기를 바꾸면 리스너가 딱 한 번 불림 |
 | 게임 쪽 변경 | `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 2단계로 중첩된 판에서 클릭한 (3, 2)만 살아 있고, 행과 열을 바꾼 (2, 3)은 `false` |
 | | `UniverseStoreTest.liveCellsSnapshotIsIndexedByRowThenColumn` | 스냅샷이 `[행][열]` 순서다 |
 | 실제 세대와 연결 (통합) | `realBlinkerUpdatesStatisticsAndSchedulesBirthAndDeathSoundsOnce` | 블링커를 그리는 동안은 예약이 없고, 한 틱 뒤 생성 화음과 타악기 한 번이 예약된다 |
 | | `stableAndEmptyGenerationsNeverScheduleGenerationSounds` | 블록만 있는 판과 빈 판은 틱을 진행해도 조용하다 |
 | | `nonGenerationEventUpdatesSweepWithoutGenerationSounds` (작업 종류 7개) | 편집, Clear, Load, 템플릿, 색 변경 등은 세대 소리 없이 재생선 판만 바꾼다 |
-| 예약 시간 (통합) | `birthStrumNoteLengthsAndPercussionDelayRemainUnchanged` | 스트럼 25ms, 음 길이 220ms, 타악기 60ms로 예약된다 |
+| 예약 시간 (통합) | `birthStrumNoteLengthsAndPercussionDelayRemainUnchanged` | 둘째 음은 스트럼 25ms에 흔들림 0~15ms를 더한 25~40ms에, 음 길이는 220ms, 타악기는 60ms에 예약된다 |
 | | `extinctionPlaysOneEndingAndLaterEmptyTicksStaySilent` | 전멸한 틱에 마무리 화음 3음이 한 번만 예약되고 그 뒤 빈 판은 조용하다 |
 | 켜고 끄기와 스레드 (통합) | `disabledSoundStillReceivesEditsForTheNextSweep` | Off 동안 편집한 판을 On 뒤 재생선이 연주한다 |
 | | `initialSnapshotIsReadyBeforeTheFirstScheduledSweep` | 재생선 첫 스텝 전에 `INITIAL` 이벤트로 판을 받아 둔다 |
@@ -394,7 +396,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 ### 6.4 테스트 코드 예시
 
-불협화음이 나지 않는지 보는 테스트다. 코드 4개와 64행을 모두 돌면서 나오는 음이 C장조 7음 안에 있는지 확인한다. 실패하면 어느 코드의 몇 번째 행인지 메시지로 나온다.
+고른 음이 C장조 음계를 벗어나지 않는지 보는 테스트다. 여러 셀이 함께 생겨도 덜 부딪히게 하려고 5음을 C장조 안에서 고른 설계가 지켜지는지 본다. 코드 4개와 64행을 모두 돌면서 나오는 음이 C장조 7음 안에 있는지 확인한다. 실패하면 어느 코드의 몇 번째 행인지 메시지로 나온다.
 
 ```java
 @Test

@@ -18,7 +18,7 @@
 
 바뀐 부분은 두 곳이다.
 
-- Observer: `Universe`(Subject)가 `BoardChangeListener`(Observer) 목록을 갖고, 판이 바뀔 때마다 `BoardChangeEvent`를 만들어 보낸다. `SoundEffects`와 `Statistics`가 ConcreteObserver다. `Universe`는 사운드 패키지를 import하지 않고, 의존은 `sound` → `life` 한 방향이다.
+- Observer: `Universe`(Subject)가 `BoardChangeListener`(Observer) 목록을 갖고, 판이 바뀔 때마다 `BoardChangeEvent`를 만들어 보낸다. `SoundEffects`와 `Statistics`가 ConcreteObserver다. `Universe`는 사운드 패키지를 import하지 않는다. 게임 쪽에서 사운드를 아는 곳은 시작점인 `Life`가 `install()`을 부르는 한 곳뿐이다.
 - Composite 확장: `Cell`(Component)에 `isAliveAt(row, column)`을 추가하고 `Neighborhood`(Composite)와 `Resident`(Leaf)가 구현했다.
 
 `SoundEffects`에서 `Universe`로 가는 연관은 재생선을 판 위에 그리기(`setPlayhead`) 위한 것이다. 판의 상태는 `Universe`에 묻지 않고 이벤트로만 받는다.
@@ -59,7 +59,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 ![설정 변경 시퀀스 다이어그램](diagram/sd-settings.png)
 
-설정 창은 이벤트 스레드에서 동작하지만 `MidiChannel`은 사운드 스레드에서만 만지기로 정했다. 그래서 악기를 바꾸면 채널을 바로 바꾸지 않고 `applyInstruments`를 명령으로 만들어 스케줄러에 넣는다. 체크박스는 `SoundSettings`의 값만 바꾸고, 다음 소리를 낼 때 그 값을 읽는다.
+설정 창은 이벤트 스레드에서 동작하지만, 설치할 때 악기를 처음 정하는 한 번(2.1)을 빼면 `MidiChannel`은 사운드 스레드에서만 만지기로 정했다. 그래서 악기를 바꾸면 채널을 바로 바꾸지 않고 `applyInstruments`를 명령으로 만들어 스케줄러에 넣는다. 체크박스는 `SoundSettings`의 값만 바꾸고, 다음 소리를 낼 때 그 값을 읽는다.
 
 ## 3. 상태 다이어그램
 
@@ -73,7 +73,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 ![반복 페이드 상태 다이어그램](diagram/state-fade.png)
 
-`RepeatTracker`의 상태와 그에 따른 세대 소리의 크기(gain)다. 최근 8세대 안에 같은 변화가 있었으면 반복으로 보고 `repeats`를 늘린다. 12번이 되면 무음이 되고, 새로운 변화가 오면 바로 원래 크기로 돌아간다. 설정에서 반복 페이드를 끄면 `RepeatTracker`를 거치지 않고, 다시 켜면 끄기 전 상태에서 이어 간다(얕은 이력 H).
+`RepeatTracker`의 상태와 그에 따른 세대 소리의 크기(gain)다. 최근 기록한 8개의 세대 변화 안에 같은 변화가 있었으면 반복으로 보고 `repeats`를 늘린다. 12번이 되면 무음이 되고, 새로운 변화가 오면 바로 원래 크기로 돌아간다. 설정에서 반복 페이드를 끄면 `RepeatTracker`를 거치지 않고, 다시 켜면 끄기 전 상태에서 이어 간다(얕은 이력 H).
 
 ### 3.3 코드 진행
 

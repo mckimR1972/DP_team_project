@@ -24,7 +24,7 @@ state "반복 페이드 켜짐" as FadeOn {
 
   [*] --> Full
   Full --> Full : 세대 변화 [새 변화]
-  Full --> Fading : 세대 변화 [최근 8세대에 같은 변화]\n/ repeats = 1
+  Full --> Fading : 세대 변화 [최근 기록한 8개에 같은 변화]\n/ repeats = 1
   Fading --> Fading : 세대 변화 [같은 변화, repeats < 11]\n/ repeats++
   Fading --> Silent : 세대 변화 [같은 변화, repeats == 11]\n/ repeats = 12
   Silent --> Silent : 세대 변화 [같은 변화] / repeats++
@@ -40,7 +40,8 @@ FadeOff --> Hist : 설정에서 6번 항목 켜기
 
 note bottom of FadeOn
   "같은 변화": births와 deaths로 만든 값이
-  최근 8세대의 값 중에 있다 (진동자, 주기 8 이하).
+  최근 기록한 세대 변화 8개의 값 중에 있다 (진동자, 주기 8 이하).
+  변화가 없는 세대, 소리나 이 항목이 꺼져 있던 세대는 기록하지 않는다.
   어느 상태에서든 판이 전멸한 세대에는
   상태 전이와 함께 마무리 화음을 한 번 낸다 (playEnding()).
   재생선과 패드는 이 상태와 상관없이 계속 난다.

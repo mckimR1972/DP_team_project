@@ -133,6 +133,7 @@ Runnable ..> MidiChannel : 실행할 때 호출
 
 note bottom of ScheduledExecutorService
   단일 스레드(sound-notes).
+  설치할 때 악기를 처음 정하는 것을 빼면
   MidiChannel, step, padNotes는
   이 스레드에서만 만진다.
 end note
