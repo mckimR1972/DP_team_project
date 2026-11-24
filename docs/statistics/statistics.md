@@ -371,99 +371,81 @@ public void showStatistics(Statistics.Summary summary) {
 <a id="structure"></a>
 ## 3. 구조와 동작
 
-`Universe`가 Subject이며, `Statistics`는 `BoardChangeListener`를 구현해 완료 이벤트를 받는다. 이벤트 객체는 데이터를 전달하고, Statistics가 집계하며, StatisticsPanel이 결과를 표시한다.
+### 3.1 클래스 다이어그램
 
-아래 표와 다이어그램은 **통계 기능의 구현과 연결에 필요한 범위**를 보여준다. Life·Clock·Cell 등 기존 클래스도 연결 관계를 설명하기 위해 포함한다. 다른 Observer와의 공통 이벤트 연결은 [기존 기능과의 통합](#integration)에서 설명한다.
+통계 연결, 이벤트 전달, 집계 결과의 보관·표시에 필요한 클래스와 주요 멤버를 나타낸다. 연결선의 영어 표시는 참조의 용도나 호출하는 작업을 뜻한다.
 
-### 클래스와 주요 메서드
+![통계 기능 클래스 다이어그램](diagrams/statistics-classes.png)
 
-| 클래스 | 책임과 주요 메서드 |
+[PNG 이미지](diagrams/statistics-classes.png)
+
+**Life는 통계를 연결하고, Universe는 구독자를 관리한다.** Life의 `connectStatistics()`는 Statistics를 생성한 뒤 `universe.addBoardChangeListener(statistics)`를 호출한다. 등록 메서드 자체는 Universe에 정의되어 있다. Life는 Universe와 Statistics의 참조를 필드에 보관하며, `dispose()`에서 `universe.removeBoardChangeListener(statistics)`를 호출해 등록을 해제한다. 따라서 Life → Universe의 `register / unregister`는 Life가 Universe의 등록·해제 메서드를 사용한다는 의미다.
+
+Universe는 `boardListeners`에 `BoardChangeListener` 타입으로 구독자를 보관하고, 이벤트가 준비되면 `onBoardChanged(event)`를 호출한다. Statistics는 이 인터페이스를 구현한다. Universe → BoardChangeListener는 구독자 참조를 보관하는 연관 관계이고, Statistics → BoardChangeListener의 점선과 빈 삼각형은 인터페이스 구현 관계다. Universe는 `outermostCell`을 통해 상태와 색을 읽어 BoardChangeEvent를 만들고, Statistics는 전달받은 이벤트를 집계한다.
+
+`Statistics.Summary`와 `Statistics.ColorCount`는 모두 Statistics 안에 선언한 record다. Statistics는 가장 최근 Summary를 `currentSummary`에 보관한다. Summary의 `colorCounts`는 색상별 결과인 ColorCount의 목록이며, 각 항목에는 `color()`·`cells()`·`ratio()`로 조회하는 색·생존 셀 수·비율이 들어 있다. 목록은 빈 판에서 비어 있을 수 있으므로 ColorCount 쪽 다중성을 `0..*`로 표시했다.
+
+Life는 StatisticsPanel도 생성하고 `panel::showStatistics`를 Statistics의 `Consumer<Summary>` 콜백으로 연결한다. Statistics는 패널의 구체 타입을 참조하지 않고 `onUpdated.accept(summary)`로 결과를 전달한다. 따라서 Statistics → StatisticsPanel의 직접 의존 관계 대신, Life의 패널 생성·콜백 연결과 StatisticsPanel의 Summary 사용 관계를 표시했다.
+
+실선 화살표는 필드에 보관하는 참조 관계를, 일반 점선 화살표는 객체 생성이나 메서드 인자·결과 사용에 따른 의존 관계를 나타낸다. `connectStatistics()`의 밑줄은 static 메서드임을 나타낸다.
+
+### 3.2 게임 시작 시 통계 연결
+
+2.3절의 connectStatistics 호출부터 최초 화면 표시까지는 다음 순서로 실행된다.
+
+1. Life가 패널의 표시 콜백과 연결한 Statistics를 만들고 Universe에 등록한다.
+2. Universe가 등록된 Statistics에 현재 상태의 INITIAL을 전달한다.
+3. Statistics가 집계 결과를 저장하고 콜백을 실행하여 패널을 갱신한다.
+
+등록 과정에서 이 호출이 끝나므로 게임을 한 세대도 진행하지 않은 상태에서도 창에 통계가 표시된다. 탭을 다시 열 때마다 구독을 새로 연결하지는 않는다.
+
+### 3.3 세대 진행 후 통계 갱신
+
+Clock이 진행 시점을 알리면 기존 익명 리스너의 `tick()`이 게임판을 전이시킨다. 아래는 편집 모드가 아닌 정상 세대 진행의 핵심 경로다. 프리즈의 내부 위임과 다른 Observer의 수신은 생략하되, 전후 상태를 수집하는 위치는 현재 코드 순서에 맞췄다.
+
+![세대 진행 후 통계 갱신 시퀀스 다이어그램](diagrams/statistics-sequence.png)
+
+[PNG 이미지](diagrams/statistics-sequence.png)
+
+`transition()`은 정상 세대마다 호출한다. 생존 배치가 같은 안정 패턴도 셀 나이·색은 바뀔 수 있으므로 통계 알림을 생사 변화가 있는 경우에만 제한하지 않는다. 프리즈가 적용되면 고정까지 반영된 최종 상태를 비교하며, 화면 다시 그리기는 기존 조건을 따른다.
+
+수신 후에는 2.5절의 `onBoardChanged()`가 집계 결과를 저장하고 표시 콜백을 호출한다. Universe의 알림부터 패널 갱신까지 같은 호출 흐름에서 완료되며, 계산과 표시 사이에는 Summary를 전달한다.
+
+<a id="colors"></a>
+### 3.4 색상별 집계와 정책 변경 반영
+
+2.2절에서 설명한 색상 조회를 이용해 **기존 정책 → colorAt() → 이벤트의 aliveColors → Statistics → 패널** 순서로 결과를 전달한다. Universe는 색을 수집하고, Statistics는 아래 코드로 같은 색의 빈도와 비율을 계산한다.
+
+```java
+Map<Color, Integer> counts = new TreeMap<>(Comparator.comparingInt(Color::getRGB));
+for (Color color : event.aliveColors()) counts.merge(color, 1, Integer::sum);
+List<ColorCount> colorCounts = new ArrayList<>();
+for (Map.Entry<Color, Integer> entry : counts.entrySet()) {
+    colorCounts.add(new ColorCount(entry.getKey(), entry.getValue(),
+            entry.getValue() * 100.0 / livingCells));
+}
+```
+
+`counts`는 색을 키로 하고 개수를 값으로 저장하는 Map이다. `merge(color, 1, Integer::sum)`은 처음 본 색이면 1을 넣고 이미 있으면 기존 개수에 1을 더한다. 같은 색상값으로 생성한 별도 Color 객체도 하나의 항목으로 묶인다. 빈 판은 counts도 비어 있으므로 나눗셈을 수행하는 반복문에 들어가지 않는다.
+
+정지 중 정책 변경도 같은 경로로 반영한다. 예를 들어 0세대에 배치한 2×2 블록이 프리즈 없이 10세대까지 살아남은 뒤 순환 색에서 단색으로 바꾸면, 파랑 4개·100%가 빨강 4개·100%로 바뀐다. 세대 번호 10과 직전 세대의 탄생·사망 0 표시는 유지된다. 이는 2.5절의 currentSummary 보존 규칙을 적용한 결과다.
+
+<a id="events"></a>
+### 3.5 이벤트와 집계 결과의 데이터 계약
+
+2.4절의 이벤트와 2.5절의 집계 결과가 서로 모순되지 않도록 생성 시 다음 조건을 검사하고, 전달 후에는 외부 변경으로부터 보호한다.
+
+| 검사 대상 | 지켜야 하는 조건 |
 | --- | --- |
-| [BoardChangeListener](../../src/com/holub/life/BoardChangeListener.java) | `onBoardChanged(event)`로 완료 상태를 수신하는 공통 인터페이스. |
-| [BoardChangeEvent](../../src/com/holub/life/BoardChangeEvent.java) | 작업 종류·세대·판 크기·생존 배열·탄생/사망 좌표·생존 셀 색을 보관한다. 배열·좌표는 방어적 복사로 보호한다. |
-| [Universe](../../src/com/holub/life/Universe.java) | `addBoardChangeListener()`·`removeBoardChangeListener()`로 구독 관리. `liveCells()`로 상태 수집, `createBoardChangeEvent(kind, before)`로 이벤트 구성, `notifyBoardChanged()`로 발행한다. 기존 익명 `Clock.Listener.tick()` 안에서 세대를 진행한다. |
-| [Statistics](../../src/com/holub/life/Statistics.java) | `onBoardChanged()` → `calculate()`로 집계하고 콜백에 결과를 전달한다. `current()`는 최근 결과를 `Optional<Summary>`로 반환한다. 이전 게임판은 보관하지 않는다. |
-| `Statistics.Summary`·`Statistics.ColorCount` | Statistics 안의 record. Summary는 기본 통계와 `List<ColorCount>`를, ColorCount는 색·개수·백분율을 담는다. 결과 목록은 수정할 수 없다. |
-| [StatisticsPanel](../../src/com/holub/life/StatisticsPanel.java) | `showStatistics(summary)`로 값·색상 행을 표시한다. 게임판 조회, 이벤트 구독, 통계 계산을 하지 않는다. |
-| [Life](../../src/com/holub/life/Life.java) | `createSidebar()`로 공용 탭, `createContent()`로 창 배치를 구성한다. `connectStatistics()`에서 계산과 화면을 연결하고, `dispose()`에서 통계 구독을 해제한다. |
-| [Clock](../../src/com/holub/life/Clock.java)·[Cell](../../src/com/holub/life/Cell.java) 계층 | Clock은 Swing Timer로 진행 시점을 알린다. Cell의 `isAliveAt(row, column)`·`colorAt(row, column)`으로 생존·색을 조회한다. |
+| 판 크기 | 양수 크기의 정사각형이고 모든 행의 길이가 boardSize와 일치해야 한다. 전체 칸 수가 정수 범위를 넘는 크기도 거부한다. |
+| 변화 좌표 | 판 안의 중복 없는 좌표여야 한다. 탄생 위치는 완료 후 살아 있고 사망 위치는 죽어 있어야 한다. |
+| 이벤트 종류 | GENERATION의 번호는 1 이상이다. 그 외 종류에는 탄생·사망 목록을 넣지 않는다. 모든 번호는 음수가 아니어야 한다. |
+| 생존 색 | 길이가 완료 판의 생존 수와 같아야 하며 null 목록·색은 허용하지 않는다. |
+| 결과 목록 | Summary의 색별 결과 목록은 외부에서 변경할 수 없도록 보관한다. |
 
-`new Statistics(panel::showStatistics)`의 콜백 타입은 **JDK의 `java.util.function.Consumer<Summary>`**다. 별도로 만든 인터페이스가 아니며, Statistics는 구체적인 StatisticsPanel 타입에 의존하지 않는다.
+이벤트는 생성 시 배열의 각 행과 좌표의 Point까지 복사한다. `copyAliveCells()`·`copyBirths()`·`copyDeaths()`도 복사본을 반환하므로 한 구독자가 받은 값을 수정해도 다른 구독자의 입력은 바뀌지 않는다. 색 목록은 `List.copyOf()`로 보호한다.
 
-### 클래스 다이어그램
-
-```mermaid
-classDiagram
-    class BoardChangeListener {
-        <<interface>>
-        +onBoardChanged(event)
-    }
-    class Universe {
-        -long generation
-        +addBoardChangeListener(listener)
-        +removeBoardChangeListener(listener)
-        +notifyBoardChanged(kind)
-        +liveCells()
-        -createBoardChangeEvent(kind, before)
-    }
-    class BoardChangeEvent {
-        +kind()
-        +generation()
-        +boardSize()
-        +copyAliveCells()
-        +copyBirths()
-        +copyDeaths()
-        +aliveColors()
-    }
-    class Statistics {
-        +onBoardChanged(event)
-        +current()
-        -calculate(event)
-    }
-    class StatisticsPanel {
-        +showStatistics(summary)
-    }
-    BoardChangeListener <|.. Statistics
-    Universe o-- BoardChangeListener : notifyBoardChanged
-    Universe --> Cell : isAliveAt / colorAt
-    Universe ..> BoardChangeEvent : createBoardChangeEvent
-    Statistics ..> BoardChangeEvent : read
-    Statistics ..> Summary : calculate
-    StatisticsPanel ..> Summary : showStatistics
-    Clock ..> Universe : Clock.Listener.tick
-    Life ..> Universe : instance
-    Life ..> Statistics : connectStatistics
-    Life ..> StatisticsPanel : bind callback
-```
-
-Clock의 화살표는 Universe 안에서 등록한 익명 `Clock.Listener`를 간략히 표시한 것이다. Universe가 Clock.Listener를 직접 구현하는 구조는 아니다. `Summary`는 `Statistics.Summary`를 가리킨다.
-
-### 세대 진행 시퀀스
-
-아래는 패턴 편집·프리즈 영역 선택이 끝나고, 활성 프리즈 영역이 있는 상태에서 한 세대를 진행하는 경로다. 보드 진행·이벤트 전달·통계 화면 갱신은 EDT에서 순서대로 실행된다. 프리즈 내부의 영역·State 객체 위임과 다른 Observer의 수신 흐름은 생략했다.
-
-```mermaid
-sequenceDiagram
-    participant C as Clock
-    participant U as Universe / Clock.Listener
-    participant B as outermostCell
-    participant F as FreezingManager
-    participant S as Statistics
-    participant P as StatisticsPanel
-    C->>U: tick()
-    U->>B: figureNextState(...)
-    U->>U: before = liveCells()
-    U->>F: beforeTransition(outermostCell)
-    F->>B: holdNextState(location, alive)
-    U->>B: transition()
-    U->>U: generation++
-    U->>F: afterGeneration()
-    U->>U: createBoardChangeEvent(GENERATION, before)
-    U->>S: onBoardChanged(event)
-    S->>S: calculate(event)
-    S->>P: onUpdated.accept(summary)
-    U->>U: refreshNow() when needed
-```
+좌표와 완료 상태의 일치 여부는 이벤트가 검사하지만, 실제 전이 전 상태와의 차이를 계산하는 책임은 Universe에 있다. 이 이벤트는 작업 완료 결과의 전달 객체이며 복원을 실행하는 객체가 아니다.
 
 <a id="decisions"></a>
 ## 4. 설계 패턴과 설계 결정
