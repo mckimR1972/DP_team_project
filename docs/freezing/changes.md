@@ -2,7 +2,7 @@
 
 - 코드 기준: dev `838182c` (PR #7 병합 후). “기존”은 Freezing을 합치기 직전의 dev `d215c7a`(PR #16까지)이고, 원본 Holub 코드와 다른 점은 따로 적었다.
 - 확인 방법: `git diff d215c7a 838182c -- src`
-- 관련 문서: [유스케이스 명세와 요약](freezing.md#usecase), [설계 결정](design.md), [다이어그램](diagram/), [통합 기록과 테스트](freezing.md)
+- 관련 문서: [유스케이스 명세](freezing.md#usecase), [설계 패턴과 설계 결정](freezing.md#4-설계-패턴과-설계-결정), [다이어그램](diagram/), [기능 명세와 테스트](freezing.md)
 
 ## 1. 한눈에 보기
 
