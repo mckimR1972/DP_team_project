@@ -2,19 +2,19 @@
 
 사운드 이펙트 기능의 클래스, 시퀀스, 상태 다이어그램과 시스템 연산의 연산 계약이다. 기준 코드는 `dev`(`838182c`)이고, 유스케이스와 요구사항은 [sound-effects-spec.md](sound-effects-spec.md), 설계 결정과 테스트는 [sound-effects.md](sound-effects.md)에 있다.
 
-그림 원본(`.puml`)과 PNG는 [`docs/diagrams/sound/`](diagrams/sound/)에 있다.
+그림 원본(`.puml`)과 PNG는 [`docs/sound-effects/diagram/`](diagram/)에 있다. 유스케이스 다이어그램(`usecase.png`)은 기능 명세 2장에서 쓴다.
 
 ## 1. 클래스 다이어그램
 
 ### 1.1 사운드를 붙이기 전
 
-![사운드를 붙이기 전 클래스 다이어그램](diagrams/sound/class-before.png)
+![사운드를 붙이기 전 클래스 다이어그램](diagram/class-before.png)
 
 원본에서 `Universe`는 `Clock.Listener`로 틱을 받아 `transition()`을 하고 다시 그리기만 한다. 어떤 셀이 생기고 사라졌는지 밖에 알리는 통로가 없고, `Cell`에는 좌표 하나의 생사를 묻는 연산도 없다. 사운드를 붙이려면 이 두 가지가 필요했다.
 
 ### 1.2 사운드를 붙인 뒤: 게임과 사운드의 연결
 
-![게임과 사운드의 연결 클래스 다이어그램](diagrams/sound/class-after.png)
+![게임과 사운드의 연결 클래스 다이어그램](diagram/class-after.png)
 
 바뀐 부분은 두 곳이다.
 
@@ -25,7 +25,7 @@
 
 ### 1.3 사운드 패키지 상세
 
-![사운드 패키지 클래스 다이어그램](diagrams/sound/class-sound.png)
+![사운드 패키지 클래스 다이어그램](diagram/class-sound.png)
 
 `SoundEffects`가 음 고르기(`NoteMapper`), 반복 판단(`RepeatTracker`), 설정 값(`SoundSettings`)을 각각 하나씩 갖고 일을 맡긴다. 이 셋은 MIDI와 Swing을 모르기 때문에 단위 테스트를 바로 할 수 있다.
 
@@ -37,13 +37,13 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 ### 2.1 사운드 설치
 
-![사운드 설치 시퀀스 다이어그램](diagrams/sound/sd-install.png)
+![사운드 설치 시퀀스 다이어그램](diagram/sd-install.png)
 
 순서가 중요한 곳은 리스너 등록과 재생선 예약이다. `addBoardChangeListener()`는 등록하는 순간 현재 판을 담은 `INITIAL` 이벤트를 보내 준다. 이걸 먼저 받은 다음에 재생선을 예약하기 때문에, 첫 `playStep()`이 실행될 때 `latestCells`가 이미 채워져 있다. 신시사이저를 열 수 없으면 리스너도 메뉴도 등록하지 않고 끝나서 게임은 소리 없이 그대로 돈다.
 
 ### 2.2 세대 소리
 
-![세대 소리 시퀀스 다이어그램](diagrams/sound/sd-generation.png)
+![세대 소리 시퀀스 다이어그램](diagram/sd-generation.png)
 
 윗부분은 Swing 이벤트 스레드에서 한 틱 안에 일어나는 일이다. `SoundEffects`는 소리를 직접 내지 않고 명령을 예약만 하고 바로 돌아오므로, `Universe`는 소리 때문에 기다리지 않고 `refreshNow()`로 넘어간다. 실제 `noteOn`, `noteOff`는 아랫부분처럼 sound-notes 스레드가 예약한 시간에 실행한다.
 
@@ -51,13 +51,13 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 ### 2.3 재생선 한 스텝
 
-![재생선 시퀀스 다이어그램](diagrams/sound/sd-sweep.png)
+![재생선 시퀀스 다이어그램](diagram/sd-sweep.png)
 
 150ms마다 sound-notes 스레드에서 실행된다. 판은 `latestCells`(마지막 이벤트의 복사본)에서 읽고 `Universe`의 셀은 건드리지 않는다. 그래서 이벤트 스레드가 셀을 바꾸는 중에도 두 스레드가 같은 `Cell` 트리를 동시에 읽지 않는다. 16스텝이 지나면 `chord`가 바뀌어 다음 코드로 넘어간다.
 
 ### 2.4 설정 창에서 악기 바꾸기
 
-![설정 변경 시퀀스 다이어그램](diagrams/sound/sd-settings.png)
+![설정 변경 시퀀스 다이어그램](diagram/sd-settings.png)
 
 설정 창은 이벤트 스레드에서 동작하지만 `MidiChannel`은 사운드 스레드에서만 만지기로 정했다. 그래서 악기를 바꾸면 채널을 바로 바꾸지 않고 `applyInstruments`를 명령으로 만들어 스케줄러에 넣는다. 체크박스는 `SoundSettings`의 값만 바꾸고, 다음 소리를 낼 때 그 값을 읽는다.
 
@@ -65,19 +65,19 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 ### 3.1 사운드 켜짐과 꺼짐
 
-![사운드 켜짐과 꺼짐 상태 다이어그램](diagrams/sound/state-sound.png)
+![사운드 켜짐과 꺼짐 상태 다이어그램](diagram/state-sound.png)
 
 `SoundEffects` 객체의 상태다. 꺼져 있어도 이벤트는 계속 받아 `latestCells`를 바꿔 두기 때문에, 다시 켜면 그 사이에 편집한 판을 바로 연주한다. 꺼진 동안에는 `playStep`이 패드를 끄고 재생선을 지운 뒤 바로 끝나므로 재생선 위치와 코드는 그대로 멈춰 있다.
 
 ### 3.2 반복 페이드
 
-![반복 페이드 상태 다이어그램](diagrams/sound/state-fade.png)
+![반복 페이드 상태 다이어그램](diagram/state-fade.png)
 
 `RepeatTracker`의 상태와 그에 따른 세대 소리의 크기(gain)다. 최근 8세대 안에 같은 변화가 있었으면 반복으로 보고 `repeats`를 늘린다. 12번이 되면 무음이 되고, 새로운 변화가 오면 바로 원래 크기로 돌아간다. 설정에서 반복 페이드를 끄면 `RepeatTracker`를 거치지 않고, 다시 켜면 끄기 전 상태에서 이어 간다(얕은 이력 H).
 
 ### 3.3 코드 진행
 
-![코드 진행 상태 다이어그램](diagrams/sound/state-chord.png)
+![코드 진행 상태 다이어그램](diagram/state-chord.png)
 
 재생선이 한 바퀴(16스텝) 돌 때마다 C → Am → F → G 순서로 바뀐다. 상태마다 생성음과 재생선이 고르는 5음, 패드 음이 달라진다. 설정에서 코드 진행을 끄면 `chord` 값은 계속 바뀌지만 소리는 C로 고정된다.
 
@@ -87,7 +87,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 게임을 블랙박스(`:LifeGame`)로 보고, 사용자가 소리를 듣고 설정을 바꾼 뒤 껐다 켜는 시나리오를 그렸다. 시계의 틱과 재생선 타이머는 시스템 밖에서 오는 시간 이벤트로 표시했다.
 
-![시스템 시퀀스 다이어그램](diagrams/sound/ssd.png)
+![시스템 시퀀스 다이어그램](diagram/ssd.png)
 
 ### 4.2 시스템 연산
 
@@ -183,8 +183,8 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 ## 5. 다시 그리기
 
-PlantUML 1.2026.10 JAR(팀 공용 버전, SHA-256은 [캡처 도식 안내](capture/diagrams/README.md)와 같음)로 로컬에서 그렸다. 클래스·상태 다이어그램은 `!pragma layout smetana`를 써서 Graphviz 없이 그려진다. 저장소 루트에서 실행한다.
+PlantUML 1.2026.10 JAR(팀 공용 버전, SHA-256은 [캡처 도식 안내](../capture/diagrams/README.md)와 같음)로 로컬에서 그렸다. 클래스·상태·유스케이스 다이어그램은 `!pragma layout smetana`를 써서 Graphviz 없이 그려진다. 저장소 루트에서 실행한다.
 
 ```powershell
-java -Djava.awt.headless=true -jar C:\tools\plantuml-1.2026.10.jar -tpng -charset UTF-8 docs/diagrams/sound/*.puml
+java -Djava.awt.headless=true -jar C:\tools\plantuml-1.2026.10.jar -tpng -charset UTF-8 docs/sound-effects/diagram/*.puml
 ```

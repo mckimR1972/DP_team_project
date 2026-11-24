@@ -18,39 +18,7 @@
 
 확장한 유스케이스는 이름 끝에 `E`를 붙였다. 기존 유스케이스 이름은 팀 전체 유스케이스 그림과 같게 맞췄고, 유스케이스별 상세 흐름은 [sound-effects-spec.md](sound-effects-spec.md) 2장에 있다.
 
-```mermaid
-flowchart LR
-    user(("사용자"))
-
-    subgraph 기존 기능
-        edit([Edit Cells])
-        run([Run / Halt Game])
-        step([Step One Generation])
-        clear([Clear Board])
-        file([Store / Load Board])
-        adv(["Advance Generation<br/>확장점: 세대 확정 후"])
-    end
-
-    subgraph 확장 기능
-        gen([Hear Generation Sound E])
-        sweep([Hear Board Sweep E])
-        toggle([Toggle Sound E])
-        config([Configure Sound E])
-    end
-
-    user --- edit
-    user --- run
-    user --- step
-    user --- clear
-    user --- file
-    user --- sweep
-    user --- toggle
-    user --- config
-
-    run -. "«include»" .-> adv
-    step -. "«include»" .-> adv
-    gen -. "«extend»<br/>조건: 소리가 켜져 있음" .-> adv
-```
+![사운드 이펙트 유스케이스 다이어그램](diagram/usecase.png)
 
 | 유스케이스 | 내용 |
 |---|---|
@@ -171,140 +139,17 @@ SoundEffects.install( Universe.instance() );
 
 ### 3.1 클래스 다이어그램
 
-```mermaid
-classDiagram
-    direction LR
+게임 쪽 연결과 사운드 패키지 안쪽을 나눠 그렸다.
 
-    class Cell {
-        <<interface>>
-        +isAlive() boolean
-        +isAliveAt(row, column) boolean
-        +transition() boolean
-    }
-    class Neighborhood {
-        -grid Cell[][]
-        +isAliveAt(row, column) boolean
-    }
-    class Resident {
-        -amAlive boolean
-        +isAliveAt(row, column) boolean
-    }
-    Cell <|.. Neighborhood
-    Cell <|.. Resident
-    Neighborhood o-- "*" Cell : grid
+![게임과 사운드의 연결 클래스 다이어그램](diagram/class-after.png)
 
-    class Universe {
-        -outermostCell Cell
-        -boardListeners Set~BoardChangeListener~
-        -generation long
-        +addBoardChangeListener(listener)
-        +removeBoardChangeListener(listener)
-        +liveCells() boolean[][]
-        +widthInCells() int
-        +setPlayhead(column)
-        -notifyBoardChanged(kind, before)
-    }
-    class BoardChangeListener {
-        <<interface>>
-        +onBoardChanged(event)
-    }
-    class BoardChangeEvent {
-        +kind() Kind
-        +generation() long
-        +copyAliveCells() boolean[][]
-        +copyBirths() List~Point~
-        +copyDeaths() List~Point~
-    }
-    class Statistics
-    Universe --> Cell : outermostCell
-    Universe o-- "*" BoardChangeListener : boardListeners
-    Universe ..> BoardChangeEvent : 만들어 보냄
-    BoardChangeListener <|.. Statistics
-
-    class SoundEffects {
-        -latestCells boolean[][]
-        -enabled boolean
-        -chord int
-        +install(Universe)$
-        +onBoardChanged(event)
-        -generationChanged(births, deaths)
-        -playStep()
-        -play(channel, note, delayMs, lengthMs)
-    }
-    class NoteMapper {
-        +notesFor(births, width, chord) List~Note~
-        +sweepNotesFor(cells, first, columns, chord, accented) List~Note~
-        +padNotesFor(chord) int[]
-        +humanized(notes) List~Note~
-    }
-    class RepeatTracker {
-        +gainFor(births, deaths) double
-    }
-    class SoundSettings {
-        +isOn(Feature) boolean
-        +setOn(Feature, boolean)
-        +instrumentOf(Feature) Instrument
-        +setInstrument(Feature, Instrument)
-        +onInstrumentChange(Runnable)
-    }
-    class SoundSettingsDialog
-    class ScheduledExecutorService {
-        <<interface>>
-        +schedule(Runnable, delay, unit)
-        +scheduleAtFixedRate(Runnable, ...)
-    }
-    class MidiChannel {
-        <<interface>>
-        +noteOn(pitch, velocity)
-        +noteOff(pitch)
-    }
-
-    BoardChangeListener <|.. SoundEffects
-    SoundEffects ..> BoardChangeEvent : 판 복사본, 변화 목록
-    SoundEffects --> Universe : 재생선 표시
-    SoundEffects --> NoteMapper
-    SoundEffects --> RepeatTracker
-    SoundEffects --> SoundSettings
-    SoundEffects --> ScheduledExecutorService : 명령 예약
-    SoundEffects --> MidiChannel
-    SoundSettingsDialog --> SoundSettings : 값 변경
-```
+![사운드 패키지 클래스 다이어그램](diagram/class-sound.png)
 
 ### 3.2 세대 사운드가 나는 과정
 
-클럭 틱은 Swing 이벤트 스레드에서 처리된다. `SoundEffects`는 이 스레드에서 이벤트를 받지만 소리를 직접 내지 않고, "언제 무엇을 할지"만 스케줄러에 넣은 뒤 바로 돌아온다. 같은 이벤트를 `Statistics`도 받는데 그림에서는 생략했다.
+클럭 틱은 Swing 이벤트 스레드에서 처리된다. `SoundEffects`는 이 스레드에서 이벤트를 받지만 소리를 직접 내지 않고, "언제 무엇을 할지"만 스케줄러에 넣은 뒤 바로 돌아온다. 같은 이벤트를 `Statistics`도 받지만 그림에는 노트로만 적었다.
 
-```mermaid
-sequenceDiagram
-    participant Clock
-    participant U as Universe
-    participant S as SoundEffects
-    participant R as RepeatTracker
-    participant N as NoteMapper
-    participant Q as Scheduler<br/>(sound-notes 스레드)
-    participant M as MidiChannel
-
-    Clock->>U: tick()
-    U->>U: before = liveCells()
-    U->>U: outermostCell.transition()
-    U->>U: generation++
-    U->>U: event = BoardChangeEvent(GENERATION, before와 비교한 births, deaths)
-    U->>S: onBoardChanged(event)
-    S->>S: latestCells = event.copyAliveCells()
-    Note over S: births와 deaths가 모두 비어 있으면 여기서 끝
-    S->>S: generationChanged(births, deaths)
-    S->>R: gainFor(births, deaths)
-    R-->>S: gain (1.0 ~ 0.0)
-    S->>N: notesFor(births, width, chord)
-    N-->>S: 최대 5음
-    S->>Q: schedule(noteOn 명령, 스트럼 간격)
-    S->>Q: schedule(noteOff 명령, +220ms)
-    S-->>U: 바로 반환
-    U->>U: refreshNow()
-    Note over Q,M: 예약한 시간이 되면
-    Q->>M: noteOn(pitch, velocity)
-    Q->>M: noteOff(pitch)
-```
+![세대 소리 시퀀스 다이어그램](diagram/sd-generation.png)
 
 ### 3.3 재생선
 
@@ -312,30 +157,13 @@ sequenceDiagram
 
 판은 `Universe`에 직접 묻지 않고, 마지막으로 받은 이벤트의 복사본(`latestCells`)을 읽는다. 이벤트는 세대 진행뿐 아니라 편집, Clear, Load, 템플릿 때도 오기 때문에 게임이 멈춰 있어도 바뀐 판이 다음 스텝에 반영된다. `latestCells`는 `volatile` 참조이고, 이벤트가 올 때마다 새 배열로 통째로 바뀌며 한번 넣은 배열은 고치지 않는다. 그래서 스케줄러 스레드는 한 스텝 동안 처음 읽은 배열 하나를 안전하게 쓸 수 있다.
 
-```mermaid
-sequenceDiagram
-    participant Q as Scheduler<br/>(150ms 고정 주기)
-    participant S as SoundEffects
-    participant U as Universe
-    participant N as NoteMapper
-    participant M as MidiChannel
-
-    loop 16스텝 = 한 바퀴 (약 2.4초)
-        Q->>S: playStep()
-        S->>S: cells = latestCells
-        S->>U: setPlayhead(firstColumn)
-        S->>N: sweepNotesFor(4열 구간, chord, 강세 여부)
-        S->>Q: schedule(noteOn / noteOff 명령)
-        S->>M: 패드 음 유지, 세기 조절
-    end
-    S->>S: 한 바퀴마다 chord + 1 (C → Am → F → G)
-```
+![재생선 시퀀스 다이어그램](diagram/sd-sweep.png)
 
 ### 3.4 반복 페이드
 
 진동자처럼 같은 변화가 계속 반복되면 세대 소리가 점점 작아진다. `RepeatTracker`는 births와 deaths로 만든 해시값을 최근 8개까지 기억해 두고, 새 값이 그 안에 있으면 반복으로 본다. 재생선과 패드는 이 상태와 관계없이 계속 나기 때문에 진동자만 남은 판도 완전히 조용해지지는 않는다.
 
-![반복 페이드 상태 다이어그램](diagrams/sound/state-fade.png)
+![반복 페이드 상태 다이어그램](diagram/state-fade.png)
 
 판이 전멸한 세대의 마무리 화음은 상태가 아니라 그 세대에 한 번 하는 동작이라서, 상태 다이어그램에서는 상태로 두지 않고 노트로 적었다. 나머지 UML은 [sound-uml.md](sound-uml.md)에 있다.
 
@@ -515,9 +343,9 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 ![SoundSettingsTest 결과](evidence/test-soundsettings.png)
 
-![SoundEffectsIntegrationTest 결과](sound-effects/test-soundeffects-integration.png)
+![SoundEffectsIntegrationTest 결과](evidence/test-soundeffects-integration.png)
 
-![FreezingSoundIntegrationTest 결과](sound-effects/test-freezing-sound.png)
+![FreezingSoundIntegrationTest 결과](evidence/test-freezing-sound.png)
 
 ### 6.2 화면과 MIDI 없이 테스트하기
 

@@ -36,35 +36,9 @@
 | 추가 | Toggle Sound E | 사용자와 직접 연관 |
 | 추가 | Configure Sound E | 사용자와 직접 연관 |
 
-```mermaid
-flowchart LR
-    user(("사용자"))
+![사운드 이펙트 유스케이스 다이어그램](diagram/usecase.png)
 
-    subgraph 기존 기능
-        edit([Edit Cells])
-        run([Run / Halt Game])
-        step([Step One Generation])
-        adv(["Advance Generation<br/>확장점: 세대 확정 후"])
-    end
-
-    subgraph 사운드 추가 기능
-        gen([Hear Generation Sound E])
-        sweep([Hear Board Sweep E])
-        toggle([Toggle Sound E])
-        config([Configure Sound E])
-    end
-
-    user --- edit
-    user --- run
-    user --- step
-    user --- sweep
-    user --- toggle
-    user --- config
-
-    run -. "«include»" .-> adv
-    step -. "«include»" .-> adv
-    gen -. "«extend»<br/>조건: 소리가 켜져 있음" .-> adv
-```
+그림 원본은 [diagram/usecase.puml](diagram/usecase.puml)이다.
 
 ### 2.2 유스케이스 명세
 
