@@ -605,7 +605,7 @@ PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, relo
 | `src/.../Life.java` | Freezing 탭 (+3) |
 | `test/.../FreezingModelTest.java`, `FreezingIntegrationTest.java`, `FreezingSoundIntegrationTest.java` | 새 파일 |
 | `test/.../MergedFeaturesIntegrationTest.java` | 탭 개수 단언 (+2 / -1) |
-| `docs/freezing/FREEZING.md`, `docs/freezing/evidence/freezing-tab.png`, `docs/freezing/evidence/freezing-template-guard.png` | 문서와 그림 |
+| `docs/freezing/freezing.md`, `docs/freezing/evidence/freezing-tab.png`, `docs/freezing/evidence/freezing-template-guard.png` | 문서와 그림 |
 | `README.md`, `docs/README.md` | 문서 목차에 Freezing 추가 |
 
 다른 기능의 클래스(`PatternTools`, `BoardEditor`, `PlacePatternCommand`, `Statistics`, `StatisticsPanel`, `BoardChangeEvent`, `SoundEffects`, `CellColorPolicy`와 구현들, `Clock`)는 `dev`와 한 글자도 다르지 않다.
