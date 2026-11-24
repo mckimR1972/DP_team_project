@@ -9,7 +9,7 @@
 | 캡처 드래그 구현 이력 | [capture-drag-design.md](capture/capture-drag-design.md) | PR #13 당시의 설계·시험 병합 기록 |
 | 세대별 색상 | [color-gen/color-gen.md](color-gen/color-gen.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
 | 세대별 색상 구현 이력 | [color-gen/feature-color-gen-changes.md](color-gen/feature-color-gen-changes.md) | 커밋 단위 변경 이유·대안·검증 |
-| 화면 갱신 지연 | [color-gen-redraw-lag.md](color-gen/color-gen-redraw-lag.md) | 원인 분석과 대안 비교 |
+| 화면 갱신 지연 | [color-gen.md 4.9절](color-gen/color-gen.md#49-판-전체를-다시-그리는-방법-화면-갱신-지연) | 원인 분석과 대안 비교 |
 | 기본 오류 | [fix-life-game-changes.md](fixes/fix-life-game-changes.md) | 기존 코드 오류 수정과 회귀 검사 |
 | 사운드 이펙트 | [sound-effects.md](sound-effects/sound-effects.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
 | 단일 진행 오류 | [fix-single-step-halt.md](fixes/fix-single-step-halt.md) | 실행 중 Tick이 멈추지 않던 원본 오류의 원인, 수정, 테스트 |
