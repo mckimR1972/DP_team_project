@@ -33,7 +33,7 @@ Single Color를 고르면 원본처럼 모두 빨강으로 돌아간다. 처음�
 
 - Advance Generation은 원본에서 한 세대를 계산하고 확정하는 부분이다. Run / Halt Game(Go 메뉴의 속도 선택)과 Step One Generation(Go > Tick)이 모두 이것을 «include»한다. 나이 세기와 색 다시 그리기는 이 공통 부분에 붙으므로, Run과 Step에 따로 그리지 않았다.
 - Count Cell Age(E)는 «include»다. 나이는 색 순환을 켜든 끄든 매 세대 조건 없이 세고, 세대를 확정하는 단계 안에서 함께 계산되기 때문이다. 나이를 세려고 원본의 세대 진행에서 바꾼 것은 한 가지다. 바뀌는 셀이 없는 세대에도 세대를 확정하게 한 것이다(2.2절). 세대 진행의 결과(생사)는 원본 그대로다.
-- Recolor Cells by Age(E)는 «extend»다. 색 순환이 켜져 있으면 확장 지점 "세대 확정 후"에서, 생사가 바뀐 셀이 없는 세대에도 판 전체를 다시 그린다. 꺼져 있으면 이 유스케이스는 일어나지 않고, Advance Generation은 원본처럼 셀이 바뀐 세대에만 다시 그린다.
+- Recolor Cells by Age(E)는 «extend»다. 색 순환이 켜져 있으면 확장 지점 "세대 확정 후"에서 판 전체를 다시 그린다. 생사가 바뀐 셀이 없어 원래는 다시 그리지 않는 세대에도 그리고, 생사가 바뀐 세대에는 원래 하던 다시 그리기와 합쳐 한 번만 그린다. 꺼져 있으면 이 유스케이스는 일어나지 않고, Advance Generation은 원본처럼 셀이 바뀐 세대에만 다시 그린다.
 - Recolor Cells by Age(E)는 Turn On Color Cycling(E)가 «include»하기도 한다. 켜는 순간 한 번 다시 그리는 것도 같은 동작이기 때문이다.
 
 각 명세는 유스케이스 이름, 범위, 수준, 주 행위자, 사전 조건, 메인 성공 시나리오, 대체 시나리오, 연관 요구사항 순서로 적었다.
@@ -276,19 +276,18 @@ Color 메뉴는 원본 메뉴의 Command 구조를 그대로 따른다.
 - 반환은 화면 모습이 아니라 사용자가 받는 정보로 적었다.
 - 세대를 넘기는 시계는 게임 안에 있으므로 입력으로 그리지 않았다. 속도를 고른 뒤 세대 간격마다 다음 세대를 보여 주는 부분은 시스템에서 사용자로 가는 출력만 loop로 그렸다.
 - 켜기와 끄기는 이미 그 상태였을 때(대체 시나리오 2a)를 alt로 나누고, 그 뒤 게임이 돌면 세대마다 어떤 색을 받는지까지 그렸다.
-- Run / Halt Game에서 halt()는 세대 진행을 끝내는 입력이라 loop 안의 break로 그렸다.
 
 ![Turn On Color Cycling(E)의 시스템 시퀀스 다이어그램](diagrams/ssd-turn-on.png)
 
 ![Turn Off Color Cycling(E)의 시스템 시퀀스 다이어그램](diagrams/ssd-turn-off.png)
 
-![색 순환이 켜져 있을 때 Run / Halt Game의 시스템 시퀀스 다이어그램](diagrams/ssd-run-halt.png)
+![색 순환이 켜져 있을 때 Step One Generation의 시스템 시퀀스 다이어그램](diagrams/ssd-step.png)
 
 | 시스템 연산 | 실제 입력 | 이 기능과의 관계 |
 | --- | --- | --- |
 | `turnOnColorCycling()` | Color > Cycle by Generation | 새로 생김 |
 | `turnOffColorCycling()` | Color > Single Color | 새로 생김 |
-| `advanceGeneration()` | Go 메뉴에서 속도를 고른 뒤 세대 간격마다, 또는 Go > Tick (Single Step) | 원본에 있던 연산(Advance Generation)이고 사후 조건이 바뀜 |
+| `stepOneGeneration()` | Go > Tick (Single Step) | 원본에 있던 연산이고 사후 조건이 바뀜 |
 
 ### 3.2 연산 계약
 
@@ -322,23 +321,22 @@ Color 메뉴는 원본 메뉴의 Command 구조를 그대로 따른다.
 
 CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. 그래서 켜는 순간 각 셀이 살아온 세대 수에 맞는 색이 바로 나온다.
 
-**CO3: advanceGeneration()**
+**CO3: stepOneGeneration()**
 
-- Operation: `advanceGeneration()`
-- Cross References: Run / Halt Game, Step One Generation, Advance Generation, Count Cell Age(E), Recolor Cells by Age(E)
+- Operation: `stepOneGeneration()`
+- Cross References: Step One Generation, Advance Generation, Count Cell Age(E), Recolor Cells by Age(E)
 - Preconditions:
   - 캡처·배치 편집 중이 아니다
   - Freezing 영역을 고르는 중이 아니다
 - Postconditions:
-  - Freezing으로 고정되지 않은 모든 Resident r의 r.amAlive가 이번 세대에 계산된 다음 생사가 되었다 (속성 변경)
+  - 시계(Clock)가 돌고 있었다면 멈췄다 (속성 변경)
+  - Freezing 영역 밖의 모든 Resident r의 r.amAlive가 Life 규칙에 따른 다음 세대의 생사가 되었다 (속성 변경)
   - 그중 세대 전후 모두 살아 있는 r의 r.age가 이전 r.age + 1이 되었다. 생사가 바뀐 셀이 없는 세대에도 그렇다 (속성 변경)
-  - 그 밖의 r의 r.age가 0이 되었다 (속성 변경)
-
-`advanceGeneration()`은 사용자가 직접 부르는 연산이 아니라, 속도를 고른 뒤 시스템이 세대 간격마다 일으키거나 Go > Tick이 한 번 일으키는 연산이다.
+  - Freezing 영역 밖의 나머지 r의 r.age가 0이 되었다 (속성 변경)
 
 원본의 세대 진행은 바뀔 셀이 없으면 확정하지 않았다. 원본에는 나이가 없어서 그래도 상태가 같았지만, 이 기능에서는 멈춘 패턴도 나이를 먹어야 하므로 "생사가 바뀐 셀이 없는 세대에도"라는 사후 조건이 생겼다.
 
-사후 조건에서 Freezing으로 고정된 Resident를 빼는 조건은 Freezing 기능이 더한 것이다. 고정된 Resident는 amAlive와 age가 고정한 순간의 값 그대로다.
+사후 조건에서 Freezing 영역 안의 Resident를 빼는 조건은 Freezing 기능이 더한 것이다. Freezing 영역 안의 Resident는 amAlive와 age가 Freezing을 건 순간의 값 그대로다. 다른 기능이 더한 상태 변화(세대 수, Freezing 영역의 남은 세대, 템플릿 되돌리기 기록)는 색 기능과 관계가 없어 적지 않았다.
 
 셀을 살리거나 죽이는 다른 유스케이스의 연산에도 "생사가 바뀐 셀의 `age`가 0이 되었다"는 사후 조건이 하나씩 더해졌다. 해당하는 유스케이스는 다음과 같다.
 
@@ -347,32 +345,34 @@ CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. �
 - 템플릿 배치와 되돌리기: Place Template(E), Undo Placement(E)
 - Load: Store / Load Board
 
-생사가 바뀌지 않은 다른 셀의 나이는 그대로다(FR-7, FR-8).
+클릭, 드래그, 템플릿 배치와 되돌리기에서는 생사가 바뀌지 않은 다른 셀의 나이는 그대로다(FR-7, FR-8). Load는 판 전체를 파일대로 바꾸므로 불러온 셀의 나이가 모두 0이 된다.
 
 ### 3.3 시퀀스 다이어그램
 
 #### 3.3.1 한 세대가 진행되는 순서
 
-시스템 연산 `advanceGeneration()`(3.2절 CO3)이 객체 사이에서 어떻게 처리되는지 원본과 지금을 비교한다. 그림에서 정한 표기는 다음과 같다.
+한 세대가 진행될 때(Go > Tick, 또는 속도를 고른 뒤 시계가 세대 간격마다) 객체 사이에서 어떻게 처리되는지 원본과 지금을 비교한다. 사후 조건은 3.2절 CO3과 같다. 그림에서 정한 표기는 다음과 같다.
 
 - 필드에 값을 넣는 것은 메시지가 아니라서 해당 객체 옆 노트로 적었다.
 - `refreshNow()`와 `repaint()`는 다시 그리기 요청만 넣고 바로 돌아오므로 비동기 메시지(열린 화살촉)로 그렸다.
 - 시계 리스너와 메뉴 리스너는 Universe 안의 익명 객체라 `:Universe`로 합쳐 그렸다.
 - Neighborhood는 블록 안의 블록을 거쳐 Resident까지 내려가지만, 이 Composite 재귀를 "칸마다" loop 하나로 줄였다. 지금 그림의 `FreezingManager`도 영역마다 상태 객체에 묻는 단계를 줄여, 고정된 칸마다 `holdNextState()`를 부르는 loop로 그렸다.
+- 시계는 메뉴가 열려 있으면 틱을 Universe에 넘기지 않는다(원본 그대로). 두 그림에서는 이 조건을 생략했다.
+- 편집 중인지 확인한 뒤 캡처·템플릿 기능이 되돌리기 기록을 지운다(`patternTools.boardChanged()`). 색 기능과 관계가 없어 지금 그림에서 뺐다.
 
 ![원본 틱 처리 시퀀스 다이어그램](diagrams/sd-tick-before.png)
 
 ![지금 틱 처리 시퀀스 다이어그램](diagrams/sd-tick-after.png)
 
-1. Swing 타이머가 `Clock.tick()`을 부르고, 시계가 Universe의 틱 리스너를 부른다.
+1. Swing 타이머가, 또는 Go > Tick 메뉴가 `Clock.tick()`을 부르고, 시계가 Universe의 틱 리스너를 부른다.
 2. 캡처·배치 편집 중이거나 Freezing 영역을 고르는 중이면 여기서 끝난다.
 3. `outermostCell.figureNextState()`: 블록마다, 셀마다 다음 생사를 계산한다. 원본처럼 활성 블록과, 맞닿은 가장자리가 바뀐 이웃 블록만 계산하고 나머지 블록은 건너뛴다. 이어서 확정 전의 판을 복사해 둔다(통계 기능).
 4. `freezing.beforeTransition()`: 고정된 영역의 칸마다 다음 생사를 고정한 순간의 상태로 되돌린다(`holdNextState()`, Freezing 기능).
 5. `outermostCell.transition()`: 모든 블록, 모든 셀이 다음 생사를 확정한다. 이때 각 Resident가 나이를 정하고, 4에서 고정된 칸은 나이를 세지 않는다.
 6. 세대 수를 1 늘리고 `freezing.afterGeneration()`이 각 영역의 남은 세대를 줄인다. 0이 된 영역은 고정이 풀린다(Freezing 기능).
 7. `GENERATION` 이벤트로 통계와 사운드에 생긴 셀, 사라진 셀, 살아 있는 셀의 색을 알린다(통계 기능).
-8. `Resident.colorChangesWithAge()`가 true면, 또는 바뀐 셀이 있으면 `repaint()`를 요청한다.
-9. 이벤트 큐에서 차례가 오면 Swing이 `paintComponent()`를 부른다. `outermostCell.redraw(g, 판, true)`가 블록을 거쳐 각 Resident의 `redraw()`를 부르고, 살아 있는 셀은 `colorPolicy.colorOf(age)`의 색으로 칠해진다.
+8. `Resident.colorChangesWithAge()`가 true면, 또는 바뀐 셀이 있으면 `refreshNow()`로 `repaint()`를 요청한다.
+9. 이벤트 큐에서 차례가 오면 Swing이 `paintComponent()`를 부른다. `outermostCell.redraw(g, 판, true)`가 블록을 거쳐 각 Resident의 `redraw()`를 부르고, 살아 있는 셀은 `colorPolicy.colorOf(age)`의 색으로 칠해진다. 이 부분은 3.3.2절 그림의 아래쪽에 있다.
 
 원본과 다른 단계는 다음과 같다.
 

@@ -5,7 +5,7 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd advanceGeneration() (원본)
+mainframe sd 한 세대 진행 (원본)
 
 participant ":Clock" as C
 participant ":Universe" as U

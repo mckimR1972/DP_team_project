@@ -5,7 +5,7 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd advanceGeneration()
+mainframe sd 한 세대 진행
 
 participant ":Clock" as C
 participant ":Universe" as U
@@ -26,7 +26,8 @@ else else
     N -> R : figureNextState(이웃 8칸)
     note right of R : 활성 블록, 또는 맞닿은 가장자리가\n바뀐 이웃 블록만 계산한다
   end
-  U -> U : before = liveCells()
+  U -> U : liveCells()
+  U -->> U : before = liveCells(): boolean[][]
 
   U -> F : beforeTransition(outermostCell)
   loop 고정된 영역의 칸마다

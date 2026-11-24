@@ -1,0 +1,16 @@
+@startuml ssd-step
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd Step One Generation (색 순환이 켜져 있을 때)
+
+actor "사용자" as User
+participant ":LifeGame" as System
+
+User -> System : stepOneGeneration()
+System -->> User : 다음 세대의 생사와 셀마다 나이에 맞는 색
+note right : 게임이 돌고 있었으면 멈추고 한 세대만 진행한다.\n생사가 그대로인 세대에도 나이가 늘어 색이 바뀔 수 있다
+@enduml
