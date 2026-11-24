@@ -379,15 +379,9 @@ public void showStatistics(Statistics.Summary summary) {
 
 [PNG 이미지](diagrams/statistics-classes.png)
 
-**Life는 통계를 연결하고, Universe는 구독자를 관리한다.** Life의 `connectStatistics()`는 Statistics를 생성한 뒤 `universe.addBoardChangeListener(statistics)`를 호출한다. 등록 메서드 자체는 Universe에 정의되어 있다. Life는 Universe와 Statistics의 참조를 필드에 보관하며, `dispose()`에서 `universe.removeBoardChangeListener(statistics)`를 호출해 등록을 해제한다. 따라서 Life → Universe의 `register / unregister`는 Life가 Universe의 등록·해제 메서드를 사용한다는 의미다.
+Life는 Statistics와 StatisticsPanel을 생성·연결하고, Universe의 메서드를 호출해 통계 구독을 등록·해제한다. Universe는 BoardChangeListener 타입으로 구독자를 관리하고 완료 이벤트를 전달하며, Statistics가 이 인터페이스를 구현한다.
 
-Universe는 `boardListeners`에 `BoardChangeListener` 타입으로 구독자를 보관하고, 이벤트가 준비되면 `onBoardChanged(event)`를 호출한다. Statistics는 이 인터페이스를 구현한다. Universe → BoardChangeListener는 구독자 참조를 보관하는 연관 관계이고, Statistics → BoardChangeListener의 점선과 빈 삼각형은 인터페이스 구현 관계다. Universe는 `outermostCell`을 통해 상태와 색을 읽어 BoardChangeEvent를 만들고, Statistics는 전달받은 이벤트를 집계한다.
-
-`Statistics.Summary`와 `Statistics.ColorCount`는 모두 Statistics 안에 선언한 record다. Statistics는 가장 최근 Summary를 `currentSummary`에 보관한다. Summary의 `colorCounts`는 색상별 결과인 ColorCount의 목록이며, 각 항목에는 `color()`·`cells()`·`ratio()`로 조회하는 색·생존 셀 수·비율이 들어 있다. 목록은 빈 판에서 비어 있을 수 있으므로 ColorCount 쪽 다중성을 `0..*`로 표시했다.
-
-Life는 StatisticsPanel도 생성하고 `panel::showStatistics`를 Statistics의 `Consumer<Summary>` 콜백으로 연결한다. Statistics는 패널의 구체 타입을 참조하지 않고 `onUpdated.accept(summary)`로 결과를 전달한다. 따라서 Statistics → StatisticsPanel의 직접 의존 관계 대신, Life의 패널 생성·콜백 연결과 StatisticsPanel의 Summary 사용 관계를 표시했다.
-
-실선 화살표는 필드에 보관하는 참조 관계를, 일반 점선 화살표는 객체 생성이나 메서드 인자·결과 사용에 따른 의존 관계를 나타낸다. `connectStatistics()`의 밑줄은 static 메서드임을 나타낸다.
+Statistics는 집계 결과를 Statistics.Summary에 보관하고, Summary는 색상별 결과인 Statistics.ColorCount 목록을 포함한다. Summary와 ColorCount는 Statistics 안에 선언한 record다. 화면 갱신은 Life가 연결한 Consumer 콜백으로 요청하므로 Statistics는 StatisticsPanel의 구체 타입에 의존하지 않는다.
 
 ### 3.2 게임 시작 시 통계 연결
 
@@ -414,7 +408,7 @@ Clock이 진행 시점을 알리면 기존 익명 리스너의 `tick()`이 게�
 <a id="colors"></a>
 ### 3.4 색상별 집계와 정책 변경 반영
 
-2.2절에서 설명한 색상 조회를 이용해 **기존 정책 → colorAt() → 이벤트의 aliveColors → Statistics → 패널** 순서로 결과를 전달한다. Universe는 색을 수집하고, Statistics는 아래 코드로 같은 색의 빈도와 비율을 계산한다.
+다음은 3.3의 갱신 과정에서 실행되는 `Statistics.calculate()`의 색상 집계 부분이다. `event.aliveColors()`는 Universe가 `colorAt()`으로 수집한 생존 셀의 색 목록으로, 색상 담당자가 구현한 `CellColorPolicy`의 구현체가 결정한 색을 사용한다. `livingCells`는 같은 메서드에서 먼저 계산한 전체 생존 셀 수다.
 
 ```java
 Map<Color, Integer> counts = new TreeMap<>(Comparator.comparingInt(Color::getRGB));
@@ -426,14 +420,14 @@ for (Map.Entry<Color, Integer> entry : counts.entrySet()) {
 }
 ```
 
-`counts`는 색을 키로 하고 개수를 값으로 저장하는 Map이다. `merge(color, 1, Integer::sum)`은 처음 본 색이면 1을 넣고 이미 있으면 기존 개수에 1을 더한다. 같은 색상값으로 생성한 별도 Color 객체도 하나의 항목으로 묶인다. 빈 판은 counts도 비어 있으므로 나눗셈을 수행하는 반복문에 들어가지 않는다.
+`counts`에 색별 개수를 모으고, 각 개수를 전체 생존 셀 수로 나누어 백분율을 계산한다. 색·개수·비율을 담은 `ColorCount` 목록은 기본 통계와 함께 `Summary`에 포함되어 `StatisticsPanel`로 전달된다.
 
-정지 중 정책 변경도 같은 경로로 반영한다. 예를 들어 0세대에 배치한 2×2 블록이 프리즈 없이 10세대까지 살아남은 뒤 순환 색에서 단색으로 바꾸면, 파랑 4개·100%가 빨강 4개·100%로 바뀐다. 세대 번호 10과 직전 세대의 탄생·사망 0 표시는 유지된다. 이는 2.5절의 currentSummary 보존 규칙을 적용한 결과다.
+정지 중 정책을 바꾸면 Universe가 `COLOR_POLICY_CHANGED` 이벤트로 새 정책의 색 목록을 전달하고, Statistics가 같은 경로로 색상 분포를 다시 집계한다. 세대 번호는 바뀌지 않으며, 같은 세대의 직전 집계 결과가 있으면 탄생·사망 표시 상태도 유지한다.
 
 <a id="events"></a>
 ### 3.5 이벤트와 집계 결과의 데이터 계약
 
-2.4절의 이벤트와 2.5절의 집계 결과가 서로 모순되지 않도록 생성 시 다음 조건을 검사하고, 전달 후에는 외부 변경으로부터 보호한다.
+이벤트가 만족해야 할 입력 조건을 생성 시 검사하고, 이벤트와 집계 결과가 전달 후 외부에서 변경되지 않도록 보호한다.
 
 | 검사 대상 | 지켜야 하는 조건 |
 | --- | --- |
@@ -450,109 +444,102 @@ for (Map.Entry<Color, Integer> entry : counts.entrySet()) {
 <a id="decisions"></a>
 ## 4. 설계 패턴과 설계 결정
 
-통계 기능을 구현하고 팀 기능과 통합하면서 검토한 대안을 정리한다. 코드의 의존 관계·상태 관리·통합 범위를 기준으로 장단점을 비교하고 현재 구조를 선택한 이유를 설명한다.
+### 4.1 Observer를 통한 완료 상태 전달
 
-### 공통 Observer 인터페이스와 이벤트
+**문제:** 통계는 세대 진행뿐 아니라 편집·복원·정책 변경 후에도 갱신되어야 한다. Universe가 각 수신 기능의 구체 클래스를 직접 알고 호출하면 기능이 늘 때 발행 코드도 함께 늘어난다.
 
-통계와 사운드는 같은 게임판의 완료 상태를 사용하지만, 통합 전에는 GenerationListener와 BoardChangeListener로 구독 경로가 나뉘어 있었다. 두 기능에 상태를 어떻게 전달할지 다음 방식을 비교했다.
-
-| 대안 | 장점 | 단점 |
+| 대안 | 구성과 장점 | 단점 |
 | --- | --- | --- |
-| Universe에서 통계·사운드의 구체 메서드를 직접 호출 | 호출 대상과 순서가 코드에 드러나고 연결이 단순하다. | Universe가 각 기능의 타입과 호출 방법을 알아야 한다. 수신 기능을 추가하거나 제거할 때 발행부도 수정해야 한다. |
-| 기능별 리스너와 이벤트 유지 | 각 기능에 맞는 입력을 정의할 수 있고, 기존 구독 코드를 그대로 사용할 수 있다. | 등록·해제·발행 경로를 각각 관리해야 한다. 상태 수집 시점과 이벤트 의미를 두 경로에서 계속 맞춰야 한다. |
-| BoardChangeListener와 BoardChangeEvent로 통일 | 한 번 구성한 완료 이벤트를 함께 사용한다. Universe는 수신 기능의 구체 타입 대신 공통 인터페이스에 알린다. | 수신자가 사용하지 않는 데이터도 이벤트에 포함된다. 공통 이벤트의 형식이 바뀌면 생성 코드와 관련 테스트를 함께 확인해야 한다. |
+| 직접 호출 | Universe에서 Statistics의 구체 메서드 직접 호출 — 연결이 단순하고 호출 위치가 분명하다. | Universe가 수신 기능의 타입과 사용 방법에 의존한다. |
+| 기능별 구독 | 기능별 리스너·이벤트 유지 — 기능마다 필요한 입력을 정의할 수 있다. | 같은 보드의 구독·발행 경로와 완료 시점 계약을 각각 관리해야 한다. |
+| 공통 구독 | 공통 BoardChangeListener·BoardChangeEvent — 완료 이벤트 하나를 여러 구독자가 공유하고 필요한 정보를 선택한다. | 사용하지 않는 데이터도 함께 받으며 공통 계약 변경 시 수신부를 확인해야 한다. |
 
-**공통 인터페이스와 이벤트를 선택했다.** 두 기능 모두 현재 생존 상태와 세대 변화 정보를 사용하므로 완료 시점을 공유하는 편이 적합했다. Universe는 `notifyBoardChanged()`에서 같은 이벤트를 전달하고, Statistics는 통계를 집계한다. SoundEffects는 모든 이벤트로 재생선용 상태를 갱신하되, 효과음은 GENERATION의 탄생·사망이 있을 때만 처리한다. 각 기능이 이벤트 종류와 필요한 데이터를 선택하며 기존 음 생성 로직은 유지한다.
+**선택:** 공통 인터페이스로 구독을 통일했다. Universe는 **Subject**, BoardChangeListener는 **Observer 계약**, Statistics는 **구체 Observer**다. BoardChangeEvent는 Subject가 전달하는 데이터다. 새 구독자는 같은 인터페이스를 구현하여 붙일 수 있고, Statistics와 사운드 사이에는 직접 의존을 만들지 않는다.
 
-### 탄생·사망 비교의 위치와 자료구조
+Clock을 직접 구독하는 방식은 게임판의 전이가 끝난 시점과 통계가 읽는 시점을 따로 맞춰야 한다. 따라서 통계는 Clock의 진행 요청이 아니라 Universe의 **작업 완료 알림**을 받는다.
 
-최초 통계 구현은 현재 BitSet을 받은 뒤 Statistics가 이전 판을 저장해 비교했다. 사운드와 통합할 때는 사운드 발행부에서도 같은 세대의 탄생·사망 좌표를 계산하고 있었다.
+### 4.2 통계 계산과 화면 표시의 책임 분리
 
-| 대안 | 장점 | 단점 |
+**문제:** 계산식과 화면 배치는 서로 다른 이유로 바뀐다. 이를 Universe나 패널 안에 모두 넣으면 계산 검증에도 게임판·UI 연결이 필요해진다.
+
+| 대안 | 구성과 장점 | 단점 |
 | --- | --- | --- |
-| Statistics가 이전 판을 보관하고 직접 비교 | 통계가 비교 기준을 자체 관리하며, 발행자는 현재 상태만 전달할 수 있다. | 이전 상태의 초기화·편집·복원·연속 세대 여부를 관리해야 한다. 사운드와 비교 계산이 중복되고, 이전 판 없이 첫 세대 이벤트만 받으면 변화량을 알 수 없다. |
-| Universe에서 세대 전후를 비교해 결과 공유 | 실제 전이 직전·직후를 기준으로 한 번 비교한다. 통계와 사운드가 같은 탄생·사망 좌표를 사용한다. | Universe가 현재 상태뿐 아니라 변화 좌표까지 구성한다. 비세대 편집과 세대 변화의 입력 계약을 구분해야 한다. |
+| 한곳에서 처리 | Universe 또는 패널에서 계산과 표시를 함께 처리 — 클래스와 연결 코드가 적다. | 보드 조정·계산·UI 변경이 결합되고 계산만 테스트하기 어렵다. |
+| 계산·표시 분리 | Statistics와 StatisticsPanel을 분리하고 Summary로 연결 — 계산과 표현을 각각 바꿀 수 있고 UI 없이 계산을 검증할 수 있다. | 결과 데이터와 콜백 연결이 필요하다. |
 
-**Universe의 `createBoardChangeEvent()`에서 계산한 좌표를 공유하도록 선택했다.** Statistics에서는 이전 판 비교를 제거하고, 생존 수·비율·색상 분포와 전달받은 변화 목록의 크기를 집계한다. 첫 GENERATION에도 해당 세대의 변화 목록이 있으므로 이전 이벤트 수신 여부에 의존하지 않는다. 공개 편집 알림으로 GENERATION을 발행할 수 없도록 하여 전이 전 상태 없이 변화량을 만드는 것을 막는다.
+**선택:** Statistics는 집계, StatisticsPanel은 서식·정렬·배치, Life는 연결을 담당하도록 나눴다. 이는 변경 이유에 따라 책임을 나눈 **단일 책임 원칙**의 적용이다. `Consumer<Summary>`를 통해 Statistics가 구체 패널 타입을 모르도록 했으며, 테스트에서는 같은 콜백에 `updates::add`를 전달해 결과만 수집한다.
 
-자료구조도 기존 사운드 구현의 **현재 판 `boolean[][]`와 변화 좌표 `List<Point>`**에 맞췄다. BitSet은 비트 연산으로 상태 차이를 계산할 수 있지만, 당시 사운드에서 쓰던 배열·좌표 목록과 변환하거나 중복 관리해야 했다. 현재 구조는 그 변환을 줄이고 기존 음 생성 입력을 유지한다. 대신 배열과 가변 Point가 외부에서 수정되지 않도록 이벤트 생성·조회 시 방어적 복사를 하며, 복사에 따른 비용은 남는다.
+현재 개선 범위는 통계 기능의 책임 분리다. Universe에는 기존 보드·UI 조정이, Cell에는 그리기가 남아 있으므로 게임 전체를 완전한 MVC로 분리했다고 보지는 않는다.
 
-### Swing Timer와 EDT
+### 4.3 공통 이벤트와 탄생·사망 비교 책임
 
-통계는 세대 진행이 끝난 보드를 읽고 화면에 표시한다. 보드를 읽는 도중 클릭이나 다른 세대 진행이 끼어들지 않도록 실행 경계를 정할 필요가 있었다.
+**문제:** 초기 통계는 이전 판을 보관하여 차이를 계산했고, 사운드 발행부도 세대 전후를 비교했다. 같은 변화의 계산 위치와 자료구조가 중복되어 있었다.
 
-| 대안 | 장점 | 단점 |
+| 대안 | 구성과 장점 | 단점 |
 | --- | --- | --- |
-| 별도 타이머 스레드에서 진행하고 동기화 | 세대 계산을 UI 스레드와 분리할 수 있다. | 세대 진행뿐 아니라 클릭·템플릿·복원·상태 수집에도 같은 동기화 기준이 필요하다. Swing 화면 갱신은 다시 EDT로 전달해야 한다. |
-| Swing Timer로 진행하고 보드 작업을 EDT에서 처리 | UI 입력과 세대 진행이 같은 스레드에서 처리되어 변경·수집·알림·화면 갱신 순서를 유지하기 쉽다. | 집계와 리스너 처리가 길어지면 화면 응답과 다음 tick 처리가 늦어진다. 정확한 실시간 주기를 보장하는 방법은 아니다. |
+| 수신자가 비교 | 현재 상태만 보내고 Statistics가 이전 상태와 비교 — 발행자의 데이터 구성이 단순하다. | 이전 판·연속 세대·편집 후 비교 기준을 관리해야 하며 다른 기능과 비교가 중복된다. |
+| 발행자가 비교 | 전이 직전·직후를 비교하여 현재 상태와 변화 좌표를 함께 전달 — 실제 한 세대의 차이를 한 번 계산하고 공유한다. 첫 세대 이벤트만 받아도 변화량을 알 수 있다. | Universe의 이벤트 구성에 비교 책임이 추가되고 비세대 이벤트와 구분해야 한다. |
 
-**현재 보드 크기와 Swing UI 구조에서는 EDT로 통일하는 방식을 선택했다.** 초기 통계 구현에서 Swing Timer를 적용했고, dev 병합 시에는 dev에도 Swing Timer가 적용되어 있어 그 구현을 유지했다. Universe의 구독·상태 발행과 StatisticsPanel의 갱신도 EDT에서 수행한다.
+**선택:** 실제 전이 직전·직후를 확보하는 Universe에서 차이를 한 번 계산하도록 했다. 이렇게 하면 구독자의 이전 이벤트 수신 여부에 관계없이 같은 세대의 변화량을 제공할 수 있다. Statistics의 이전 판 저장·비교를 제거한 대신, 생존 수·비율·색상 분포의 집계 책임은 유지했다.
 
-사운드의 예약 실행기는 별도 스레드에 남겨 두되 실제 보드를 직접 읽는 대신 완료 이벤트에서 복사한 배열을 사용한다. 이 선택은 모든 스레드를 EDT가 자동으로 정렬한다는 의미가 아니다. 현재 보드 변경 경로를 EDT로 모은 것이며, 추후 무거운 처리를 추가하면 작업 분리와 스냅샷 전달을 다시 검토해야 한다.
+자료구조는 기존 사운드의 `boolean[][]`·`List<Point>`에 맞췄다. BitSet은 비트 연산으로 차이를 구할 수 있지만, 두 표현을 유지하면 배열·좌표 목록과 변환해야 한다. 동일한 입력 표현을 공유하는 대신 배열과 가변 Point를 방어적으로 복사하는 비용을 받아들였다.
 
-### 세대 진행 메서드 추출과 기존 tick 유지
+### 4.4 Swing Timer와 EDT를 통한 상태 일관성
 
-통계 브랜치에서는 `advanceOneGeneration()`으로 세대 진행을 분리했지만, 병합 대상 dev는 익명 `Clock.Listener.tick()` 안에서 색상·패턴·사운드를 함께 처리하고 있었다.
+**문제:** 통계는 판의 여러 칸을 순회해 읽는다. 그 도중 다른 스레드에서 세대 진행이나 편집이 일어나면 한 이벤트 안에 서로 다른 시점의 상태가 섞일 수 있다. Swing 컴포넌트 갱신도 EDT에서 수행해야 한다.
 
-| 대안 | 장점 | 단점 |
+| 대안 | 구성과 장점 | 단점 |
 | --- | --- | --- |
-| advanceOneGeneration()으로 본문 추출 | 세대 진행에 이름을 붙이고 Clock 콜백을 짧게 만들 수 있다. 세대 진행 코드를 한 메서드에서 확인할 수 있다. | 통합 시 기존 기능의 처리 본문을 이동하고 팀원의 문서·테스트가 참조하는 위치를 맞춰야 한다. 메서드 추출만으로 Universe의 책임이 줄어드는 것은 아니다. |
-| dev의 tick 본문 유지 | 팀 기능의 기존 처리 위치를 유지하면서 통계 연결을 추가할 수 있다. 통합 변경 범위가 작다. | 여러 기능의 조정 코드가 tick 안에 남고, 기능이 늘면 본문이 길어질 수 있다. |
+| 별도 스레드 | 별도 타이머 스레드와 공통 잠금 사용 — 계산을 UI 스레드와 분리할 수 있다. | 클릭·템플릿·복원·조회 모두 같은 잠금 기준을 따라야 하며 UI 갱신은 EDT에 다시 전달해야 한다. |
+| EDT 공유 | Swing Timer와 EDT에서 보드 변경·집계·표시 처리 — 기존 UI 입력과 같은 스레드에서 완료 상태를 수집·전달할 수 있다. | 오래 걸리는 집계나 리스너 처리는 화면 응답과 다음 tick을 지연시킨다. |
 
-**이번 통합에서는 기존 tick을 유지하고 `advanceOneGeneration()`을 제거했다.** 기존 편집 차단·매 세대 transition·색상 화면 갱신을 보존하면서 세대 번호와 완료 알림을 연결하는 것이 우선이었다. 이후 프리즈 담당자도 같은 경로에 고정 처리를 추가했고, 통계는 그 처리가 끝난 결과를 받는다. 당시 통합 범위와 팀 코드의 변경 부담을 기준으로 결정했으며, 세대 진행 메서드 추출은 이후 별도의 구조 개선으로 검토할 수 있다.
+**선택:** 현재 64×64 판과 Swing UI에서는 초기 통계 연결부터 Swing Timer·EDT 방식을 사용하도록 구성했다. 현재 Clock도 Swing Timer를 사용하며, Universe의 등록·해제·알림과 StatisticsPanel의 생성·갱신은 EDT를 요구한다. 호출 흐름은 **보드 변경 → 상태 수집 → 이벤트 전달 → 집계 → 화면 반영** 순서로 끝난다.
 
-### 색상 정보 전달과 집계 책임
+EDT가 모든 외부 스레드의 작업을 자동으로 정렬하는 것은 아니다. 보드 변경 경로를 같은 스레드로 모은 선택이다. 사운드 예약 실행처럼 별도 스레드가 필요한 기능은 완료 이벤트에서 받은 독립 상태를 사용한다. 판이 커지거나 계산량이 늘면 스냅샷 수집과 무거운 처리를 나누는 설계를 다시 검토해야 한다.
 
-색상별 통계에는 살아 있는 셀의 표시 색이 필요하다. 색상 결정은 기존 CellColorPolicy가 담당하므로 통계에서 같은 규칙을 다시 작성하지 않도록 했다.
+### 4.5 기존 색 규칙을 재사용하는 조회 방식
 
-| 대안 | 장점 | 단점 |
+**문제:** 색상별 통계에 필요한 것은 셀의 실제 표시 색이다. 통계에서 나이와 순환 주기로 색을 다시 계산하면 기존 색상 기능의 규칙이 중복된다.
+
+| 대안 | 구성과 장점 | 단점 |
 | --- | --- | --- |
-| Statistics가 셀의 나이·정책을 직접 조회 | 이벤트에 색 목록을 추가하지 않아도 된다. | Statistics가 셀 계층과 현재 정책의 조회 방법을 알아야 한다. 이벤트 수신 후 실제 보드를 다시 읽는 경우 완료 이벤트와 조회 시점을 맞춰야 한다. |
-| 이벤트에 `List<Color>`로 표시 색 전달 | Statistics는 완료 시점의 색 값만 집계한다. 기존 정책을 바꾸어도 같은 조회 계약을 사용할 수 있다. | 이벤트마다 색 목록을 구성하고 보호해야 하며, 색을 사용하지 않는 Observer도 같은 이벤트를 받는다. |
+| 직접 조회 | Statistics가 셀의 나이·정책을 직접 조회 — 이벤트에 색 목록을 넣지 않아도 된다. | 셀 구조·색상 정책에 의존하고 이벤트 수신 후 보드를 다시 읽는 시점도 맞춰야 한다. |
+| 색 목록 전달 | 완료 시점의 표시 색을 List로 전달 — 기존 정책의 결과를 그대로 집계하고 계산 로직을 독립적으로 유지한다. | 이벤트마다 색 목록을 구성·보호해야 한다. |
 
-**`colorAt()`으로 기존 정책이 결정한 색을 읽어 이벤트에 전달하는 방식을 선택했다.** Statistics는 같은 색을 묶어 개수와 생존 셀 대비 비율을 계산한다. 좌표별 색을 사용하는 기능이 아니므로 별도 색상판 대신 `List<Color>`를 사용한다. 정책 교체 때는 `COLOR_POLICY_CHANGED`를 발행하여 게임이 정지된 상태에서도 집계가 갱신되도록 했다.
+**선택:** Cell 계층의 `colorAt()`이 기존 정책으로 결정한 색을 반환하고, Universe가 이를 이벤트에 담도록 했다. Statistics는 색별 빈도만 계산한다. 위치별 색 조회가 필요한 통계가 아니므로 별도 2차원 색상판 대신 `List<Color>`를 사용했다.
 
-### 설계 원칙과 적용 범위
-
-Statistics는 계산 결과를 Summary로 만들고, StatisticsPanel은 표시 순서·이름·숫자 형식·배치를 담당한다. 계산식과 화면 배치가 서로 다른 이유로 변경되므로 책임을 나눈 것이다. `Consumer<Summary>` 콜백으로 연결하여 Statistics가 구체적인 StatisticsPanel 타입을 참조하지 않으며, 패널 없이도 집계 결과를 사용할 수 있다.
-
-Cell의 조회는 기존 **Composite**를 확장한 것이며, 색 결정은 팀원이 구현한 **Strategy**를 재사용한다. 색상 통계에 새 Strategy를 도입한 것은 아니다. Consumer는 JDK의 콜백 인터페이스이며 별도 설계 패턴으로 주장하지 않는다.
-
-현재 작업은 통계·표시·구독 책임을 분리한 범위다. Universe에 보드/UI 조정이 남아 있고 Cell에도 그리기 메서드가 있으므로 게임 전체가 완전한 MVC로 분리되었다고 보지는 않는다.
+패턴 관점에서는 Cell·Neighborhood·Resident의 기존 **Composite 구조를 조회 기능으로 확장**하고, 색상 기능의 `CellColorPolicy` **Strategy를 재사용**한 것이다. 색상 조회의 추가와 재사용 범위는 2.2절에서 구분했으며, 이 선택으로 색상 규칙이 바뀌어도 통계가 같은 조회 계약을 사용할 수 있게 했다.
 
 <a id="tests"></a>
 ## 5. 테스트
 
-프리즈가 통합된 현재 코드(`92e1332`, 기능 기준 `838182c`)를 2026-11-22에 다시 실행한 결과는 **30개 테스트 클래스, JUnit 384개 통과, 실패·오류·건너뜀 0**이다. 이번 문서 수정에서는 소스와 테스트를 변경하지 않았다. 별도 데스크톱 Swing 검사 17개는 2026-11-18의 기존 검증 기록이며 이번에는 재실행하지 않았다.
+### 5.1 테스트 구성과 실행 환경
+
+통계와 밀접한 6개 테스트 클래스에서 **대표 메서드 4개씩, 총 24개**를 선정했다. 정상 집계뿐 아니라 빈 판·좌표 경계·데이터 보호·색 변화 경계·실제 게임 연결을 설명한다. 매개변수 테스트는 한 메서드가 여러 입력으로 실행되므로 대표 메서드 수와 전체 실행 수는 구분한다.
+
+| 테스트 클래스 | 검증 대상 | 클래스 전체 실행 수 | 대표 메서드 수 |
+| --- | --- | ---: | ---: |
+| StatisticsTest | 기본 집계·변화량 의미 | 22 | 4 |
+| BoardChangeEventTest | 입력 계약·좌표·방어적 복사 | 23 | 4 |
+| ColorStatisticsTest | 색상별 계산·정책 변경 | 13 | 4 |
+| StatisticsPanelTest | 숫자 서식·색상 행·표시 상태 | 14 | 4 |
+| StatisticsPanelIntegrationTest | 실제 보드·Clock·이벤트·기본 통계 화면 | 14 | 4 |
+| ColorStatisticsIntegrationTest | 실제 셀 나이·색상 정책·색 통계 화면 | 5 | 4 |
+| 합계 | 통계 핵심 검증 | **91** | **24** |
+
+실행 환경은 Gradle 9.5.1, Java toolchain 17, JUnit Jupiter 6.0.3이다. 기본 테스트는 headless 모드에서 실행하며, 싱글턴 초기화가 클래스 사이에 영향을 주지 않도록 테스트 클래스마다 JVM을 분리한다. Mockito는 메뉴 등록·파일 선택 등 필요한 외부 경계를 대체할 때 사용한다.
 
 ```bash
 ./gradlew test --rerun-tasks --no-daemon --console=plain
-
-# 별도 데스크톱 Swing 검사: 필요한 경우 따로 실행
-./gradlew patternUiTest --no-daemon --console=plain
 ```
 
-Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령의 기본 JUnit 보고서 경로는 `build/reports/tests/test/index.html`이다. 이번 확인에서는 기존 빌드 결과를 덮어쓰지 않도록 Gradle 초기화 스크립트로 빌드·보고서와 프로젝트 캐시를 임시 폴더에 분리하고, 같은 전체 `test` 작업을 오프라인으로 실행했다. `patternUiTest`의 17개는 JUnit 384개에 포함하지 않는다. 기존 기본 오류 수정 회귀 검사도 전체 테스트에 포함했다.
+기본 HTML 결과는 `build/reports/tests/test/index.html`, XML 결과는 `build/test-results/test/`에 생성된다. 별도 데스크톱 실행이 필요한 `patternUiTest`는 아래 JUnit 실행 수에 포함하지 않는다.
 
-| 검증 범위 | JUnit 수 |
-| --- | ---: |
-| 기본 규칙·저장·Clock·Universe 이벤트 | 64 |
-| 기존 색상 정책·나이·색 조회 | 42 |
-| 패턴·템플릿·Undo | 39 |
-| 사운드 계산·공통 이벤트 연동 | 46 |
-| 통계 계산·패널·색상 통계 | 91 |
-| 기존 기능과 통계의 병합 연동 | 12 |
-| 프리즈 모델·기존 기능 및 사운드와의 연동 | 90 |
-| 합계 | **384** |
+### 5.2 기본 집계와 이벤트 계약 검증
 
-### 통계 핵심 테스트의 대표 사례
+#### 기본 집계 — StatisticsTest
 
-통계와 밀접한 6개 클래스에서 **핵심 동작·경계값·예외를 보여주는 메서드 4개씩, 총 24개**를 골랐다. 6개 클래스의 전체 실행 수는 매개변수별 실행을 포함해 **91개**다. 아래 표는 현재 테스트 코드에서 선정한 대표 사례의 목적·실제 입력·기대 결과를 설명한다.
-
-<details>
-<summary>StatisticsTest — 대표 4개 메서드 · 클래스 전체 22회 실행</summary>
-
-원본: [StatisticsTest](../../test/com/holub/life/StatisticsTest.java)
+테스트 코드: [StatisticsTest](../../test/com/holub/life/StatisticsTest.java)
 
 이벤트를 직접 만들어 Statistics에 전달하는 계산 단위 테스트다. 실제 Clock·Universe·템플릿·Undo는 실행하지 않는다. 아래 셀 번호 n은 한 변의 길이가 size일 때 행=n/size(정수 나눗셈), 열=n%size인 0부터 시작하는 번호다.
 
@@ -563,12 +550,9 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령
 | `firstGenerationAlreadyContainsItsOwnDelta` | 이전 이벤트 없이도 전달된 변화 좌표를 집계한다. | 첫 입력으로 GENERATION 9. 3×3 판의 셀 1·4 생존. 탄생 목록에는 셀 번호 1, 사망 목록에는 셀 번호 0을 각각 1개 전달. | 생존 2, 유효한 변화량 탄생 1·사망 1. |
 | `nonGenerationUpdatesPopulationAndClearsDisplayedDelta` | 비세대 이벤트 후에는 이전 변화량을 지우고 이후 세대의 새 변화량을 사용한다. | 6회: INITIAL·EDIT·TEMPLATE·TEMPLATE_UNDO·CLEAR·LOAD. 먼저 탄생 2·사망 1인 세대 이벤트를 보내고, 각 종류로 세대 0·생존 2를 전달한 뒤 다음 세대 이벤트를 보낸다. | 중간 결과는 세대 0·생존 2·변화량 미제공. 다음 GENERATION의 탄생 1·사망 1을 정상 집계한다. |
 
-</details>
+#### 이벤트 계약 — BoardChangeEventTest
 
-<details>
-<summary>BoardChangeEventTest — 대표 4개 메서드 · 클래스 전체 23회 실행</summary>
-
-원본: [BoardChangeEventTest](../../test/com/holub/life/BoardChangeEventTest.java)
+테스트 코드: [BoardChangeEventTest](../../test/com/holub/life/BoardChangeEventTest.java)
 
 이벤트 객체의 좌표 계약과 방어적 복사, 잘못된 변화 목록의 거부를 확인한다. 배열은 [행][열], Point는 (x=열, y=행)이다. 예외 검사는 지정한 예외가 발생해야 통과한다.
 
@@ -579,12 +563,11 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령
 | `rejectsCoordinatesOutsideEitherAxis` | 좌표가 판 밖이면 거부한다. | 2회: 3×3 판에서 사망 Point의 x 또는 y를 각각 -1·3으로 설정. | 두 축의 범위 초과 입력 모두 IllegalArgumentException. |
 | `rejectsDuplicateOrInconsistentChanges` | 중복 좌표와 완료 상태에 모순되는 변화 좌표를 거부한다. | 탄생 좌표 중복, 사망 좌표 중복, 완료 후 죽은 셀을 탄생으로 지정, 살아 있는 셀을 사망으로 지정. | 네 경우 모두 IllegalArgumentException. |
 
-</details>
+### 5.3 색상 집계와 화면 표시 검증
 
-<details>
-<summary>ColorStatisticsTest — 대표 4개 메서드 · 클래스 전체 13회 실행</summary>
+#### 색상 집계 — ColorStatisticsTest
 
-원본: [ColorStatisticsTest](../../test/com/holub/life/ColorStatisticsTest.java)
+테스트 코드: [ColorStatisticsTest](../../test/com/holub/life/ColorStatisticsTest.java)
 
 색 목록을 가진 이벤트를 직접 구성하여 집계와 입력 검증을 확인한다. 실제 셀 나이·색상 정책·화면은 실행하지 않는다. 단위 테스트의 Color.BLUE·Color.GREEN 같은 임의 색과 실제 순환 정책의 파랑·초록 값은 구분한다.
 
@@ -595,12 +578,9 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령
 | `rejectsColorCountDifferentFromTheLivingCellCount` | 생존 수와 색 목록 길이가 일치해야 한다. | 2회: 생존 1개인데 색을 0개 또는 2개 전달. | 각각 IllegalArgumentException. |
 | `policyChangePreservesTheLastGenerationDeltaWhileReplacingColors` | 같은 세대의 정책 변경은 기존 변화량을 보존한다. | GENERATION 10에 파랑 2개·탄생 1·사망 1을 전달한 뒤, 같은 세대의 COLOR_POLICY_CHANGED로 빨강 2개 전달. | 세대 10·유효한 탄생 1·사망 1 유지, 색은 빨강 2개·100%로 변경. |
 
-</details>
+#### 화면 표시 — StatisticsPanelTest
 
-<details>
-<summary>StatisticsPanelTest — 대표 4개 메서드 · 클래스 전체 14회 실행</summary>
-
-원본: [StatisticsPanelTest](../../test/com/holub/life/StatisticsPanelTest.java)
+테스트 코드: [StatisticsPanelTest](../../test/com/holub/life/StatisticsPanelTest.java)
 
 직접 구성한 Summary를 실제 Swing 패널에 전달하고 JLabel의 문자열·순서·색을 읽는다. 패널 생성과 갱신은 EDT에서 실행하며, Universe와 통계 계산은 연결하지 않는다. 비율 서식 검사의 Summary는 문자열 표시를 위한 입력이므로 생존 수로부터 해당 비율을 다시 계산하지 않는다.
 
@@ -611,12 +591,11 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령
 | `measuredZeroDeltaIsDisplayedAsZero` | 측정된 변화량 0과 변화량 미제공 표시를 구분한다. | 생존 4, 탄생·사망 0, hasGenerationDelta=true인 Summary. | 탄생·사망 모두 숫자 0으로 표시. |
 | `keepsRedBlueGreenOrderAsColorsAppearAndCountsChange` | 색의 등장 순서·개수가 바뀌어도 빨강→파랑→초록 순서를 유지한다. | 빨강 4 → 목록 순서가 파랑 1·빨강 3 → 목록 순서가 초록 2·파랑 1·빨강 1인 결과를 차례로 전달. | 빨강이 첫 행이고 파랑·초록은 그 아래에 표시. 마지막 빨강 1개·25.00%, 초록 2개·50.00%. 파랑 견본 색과 전체 생존 셀 기준 안내도 일치. |
 
-</details>
+### 5.4 실제 게임판과 연결한 통합 검증
 
-<details>
-<summary>StatisticsPanelIntegrationTest — 대표 4개 메서드 · 클래스 전체 14회 실행</summary>
+#### 기본 통계 연결 — StatisticsPanelIntegrationTest
 
-원본: [StatisticsPanelIntegrationTest](../../test/com/holub/life/StatisticsPanelIntegrationTest.java)
+테스트 코드: [StatisticsPanelIntegrationTest](../../test/com/holub/life/StatisticsPanelIntegrationTest.java)
 
 실제 Universe·Clock·Statistics·StatisticsPanel을 연결한다. 기본 판은 64×64이며, LifeTestSupport가 EDT에서 실제 마우스 이벤트와 등록된 메뉴 ActionListener를 호출한다. MenuSite의 메뉴 등록은 테스트용으로 대체하고 화면 값은 Swing 컴포넌트에서 읽는다. Load 검사에서는 파일 선택만 대체하며 임시 파일의 읽기·복원은 실제 경로를 사용한다.
 
@@ -627,12 +606,9 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령
 | `loadDisplaysRestoredBoardAndNextGenerationDelta` | 복원 직후의 통계와 복원된 판을 기준으로 한 다음 세대 변화량을 확인한다. | 임시 파일에 Point(7,7),(8,7),(9,7)을 저장. 기존 블록을 한 세대 진행한 뒤 Grid → Load로 복원하고 tick 1회. | Load 직후 세대 0·생존 3·0.07%·변화량 —, 빨강 3개·100.00%. 다음 tick 후 세대 1·생존 3·탄생 2·사망 2. |
 | `automaticTimerReachesTheDisplayOnEdt` | 자동 Timer의 세대 진행도 통계 화면까지 연결된다. | 안정된 4셀 블록과 패널을 연결해 15ms 설정으로 자동 실행. 세대 레이블이 3이 되면 정지하고 EDT 밖에서 최대 5초 대기. | 대기 시간 안에 도달하며 최종 세대 3·생존 4·0.10%·탄생 0·사망 0. 15ms 간격의 정확도를 측정하는 검사는 아니다. |
 
-</details>
+#### 색상 통계 연결 — ColorStatisticsIntegrationTest
 
-<details>
-<summary>ColorStatisticsIntegrationTest — 대표 4개 메서드 · 클래스 전체 5회 실행</summary>
-
-원본: [ColorStatisticsIntegrationTest](../../test/com/holub/life/ColorStatisticsIntegrationTest.java)
+테스트 코드: [ColorStatisticsIntegrationTest](../../test/com/holub/life/ColorStatisticsIntegrationTest.java)
 
 실제 보드·Clock·색상 정책·이벤트·Statistics·패널을 연결하며 보드 이벤트를 직접 만들지 않는다. 기본 순환 정책의 파랑은 #0072B2, 초록은 #009E73이다. 프리즈를 설치하지 않은 보드에서 나이 증가와 색상 집계를 확인한다.
 
@@ -643,87 +619,49 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. 위 명령
 | `switchingPolicyWhilePausedPublishesOnceWithoutAdvancingOrLosingDelta` | 정지 중 정책 변경이 색상만 갱신하고 같은 세대의 변화량을 유지한다. | 고정 빨강 정책에서 안정 블록을 10세대 진행한 뒤 순환 → 단색 → 순환 메뉴 선택. | 첫 변경은 COLOR_POLICY_CHANGED 1회이며 이벤트 변화 목록은 비어 있다. 세대 10 유지, 파랑 4→빨강 4→파랑 4로 집계. 기존 탄생 0 표시 유지, 단색 전환 시 파랑 행 제거. |
 | `newbornsAndSurvivorsAreCountedAfterTransitionAndClickRemovesOldColor` | 전이 후 새 셀과 생존 셀의 색을 구분하고 편집·Clear도 반영한다. | 검사용 1세대 주기 빨강/파랑 정책으로 블링커를 한 세대 진행. 이어 파란 중앙 셀을 클릭해 삭제하고 Grid → Clear 실행. | 진행 후 탄생·사망 각 2, 빨강 2개·66.67%, 파랑 1개·33.33%. 클릭 후 빨강 2개·100%와 탄생 —, 파랑 행 제거. Clear 후 색 목록이 비고 빈 판 안내 표시. |
 
-</details>
+### 5.5 대표 JUnit 코드와 실행 결과
 
-### 전체 검증 범위와 연동 확인
+**UI와 분리한 집계 검사.** 다음은 StatisticsTest의 초기 상태 검사다. `event()`는 4×4 판의 지정 위치를 살아 있게 구성하는 테스트 도우미이며, 0·5·10·15는 행 우선으로 매긴 셀 번호다. `current()`는 마지막 Summary를 조회하고 `assertNoDelta()`는 변화량 미제공 상태를 확인한다. Statistics의 콜백에는 `updates::add`를 전달하므로 Universe·Clock·패널을 만들지 않고 검증한다.
 
-<details>
-<summary>JUnit 클래스별 실행 수와 확인한 내용</summary>
+```java
+@Test void initialSnapshotReportsPopulationAndSuppliedGeneration() {
+    statistics.onBoardChanged(event(INITIAL, 12, 4, 0, 5, 10, 15));
+    assertEquals(12, current().generation());
+    assertEquals(4, current().livingCells());
+    assertEquals(25.0, current().livingRatio(), 0.000001);
+    assertNoDelta();
+}
+```
 
-아래 수는 매개변수별 실행을 포함한다. 테스트 파일은 [test/com/holub/life](../../test/com/holub/life)에 있으며 마지막 세 클래스는 그 아래 `sound` 패키지에 있다.
+**실제 단일 세대 진행과 화면 연결 검사.** 다음은 StatisticsPanelIntegrationTest의 블링커 검사다. `connect()`는 실제 통계와 패널을 연결하고, `click()`은 실제 마우스 처리 경로를 사용한다. `select()`는 테스트에서 기록한 메뉴 ActionListener를 실행한다. `assertDisplay()`의 순서는 세대·생존 수·생존 비율·탄생·사망이다.
 
-| 클래스 | 수 | 주요 검증 |
+```java
+@Test
+void singleStepDisplaysActualBlinkerBirthsAndDeaths() throws Exception {
+    LifeTestSupport.onEdt(() -> {
+        connect();
+        LifeTestSupport.click(7, 7);
+        LifeTestSupport.click(7, 8);
+        LifeTestSupport.click(7, 9);
+        LifeTestSupport.select("Go", "Tick (Single Step)");
+        assertDisplay("1", "3", "0.07%", "2", "2");
+    });
+}
+```
+
+**검증 결과.** 2026-11-22의 프리즈 포함 전체 코드 검증 기록은 **30개 클래스, 384회 실행, 실패·오류·건너뜀 0**이다. 위 6개 통계 핵심 클래스의 91회 실행과 대표 24개 메서드는 이 결과에 포함된다. 전체 실행 수는 통계에서 작성한 테스트만의 수가 아니라 기존 기능과 팀 기능의 회귀 검증을 합한 수다.
+
+| 검증 범위 | 실행 수 | 확인 내용 |
 | --- | ---: | --- |
-| ResidentTest | 18 | 이웃 수별 상태 변화와 transition 반환값. |
-| NeighborhoodTest | 12 | 하위 생존 여부와 중첩 좌표 조회. |
-| UniverseStoreTest | 8 | 저장 좌표 중복 방지, 드래그 생성·삭제·경계, 생존 배열의 행/열, 재생선 표시/제거. |
-| ClockIntegrationTest | 7 | 자동/단일 진행, 실행 중 Single Step 후 정지, 간격, 메뉴 열림, EDT 밖 tick의 EDT 전달. |
-| UniverseEventsTest | 19 | INITIAL·중복 등록/해제·같은 이벤트 전달·실제 클릭·안정/빈 판 세대·Clear·Load 성공/실패/취소·Store 무알림·EDT 계약. |
-| CellColorPolicyTest | 22 | 고정/순환 색상 정책과 입력 검증. |
-| CellAgeColorTest | 9 | 나이 증가/초기화와 Life 규칙 유지. 독립 기준 계산으로 32개 초기 판을 각각 100세대 비교. |
-| DefaultCellColorTest | 1 | 기본 색상 정책. |
-| UniverseColorTest | 7 | Color 메뉴·안정 패턴의 나이/화면·기존 규칙. |
-| CellColorQueryTest | 3 | 죽은 셀/DUMMY의 null, 반복 조회로 나이 불변, 중첩 행·열 변환. |
-| PatternCellsTest | 2 | 행/열 좌표·중복 편집·범위 검사. |
-| PatternCompletionTest | 2 | 배치·Undo 완료 신호. |
-| PatternFeatureTest | 10 | 배치·캡처·규칙 유지. 무작위 12개 판을 각각 30세대 기준 계산과 비교. |
-| PatternHistoryTest | 4 | 패턴 Undo 이력과 복원. |
-| PatternPathTest | 9 | 드래그 경로·경계 처리. |
-| PatternToolsTest | 12 | 편집 모드·조작·패턴 처리. |
-| BoardChangeEventTest | 23 | 입력 검증, 배열/Point 방어적 복사, 이벤트 종류별 변화 목록 계약. |
-| StatisticsTest | 22 | 초기/세대/편집/복원 입력의 집계, 비율, 비교 가능 여부, 콜백·최근 결과. |
-| StatisticsPanelTest | 14 | 값·두 자리 비율·—/0 구분, 색상 행 순서/제거, 선호 크기·여백·제목 폰트, EDT·null 입력 계약. |
-| StatisticsPanelIntegrationTest | 14 | 실제 등록·EDT 갱신·Load·큰 값/색 목록 배치. 공용 탭·숨겨진 탭 검사의 캡처/프리즈 탭은 배치용 JPanel 대역. |
-| ColorStatisticsTest | 13 | 색 목록 보호/길이 검증, 같은 색 묶기, 생존 수 기준 비율, 빈 판, Summary 보호, 정책 변경 시 기존 변화량 유지. |
-| ColorStatisticsIntegrationTest | 5 | 실제 보드의 색 경계·혼합 나이·정지 중 정책 교체·블링커/편집/Clear·초기 등록. |
-| MergedFeaturesIntegrationTest | 12 | 실제 드래그·템플릿·Undo·탭 전환·Clear/Load·세대 진행과 통계의 연결. 프리즈 병합에서 공용 탭 개수와 세 번째 탭 확인을 보완했다. |
-| FreezingModelTest | 50 | 프리즈 상태 전이·기간·영역·고정 상태·나이 유지와 해제 후 진행. |
-| FreezingIntegrationTest | 37 | 실제 보드에서 세대 번호 공유, 고정 셀의 통계·색상, 편집 차단, 템플릿·탭·Clear/Load 연동. |
-| FreezingSoundIntegrationTest | 3 | 실제 SoundEffects와 프리즈 연결. 고정 중 변화음 생략, 해제 후 변화음, 고정 셀의 재생선 연주. |
-| SoundEffectsIntegrationTest | 17 | 실제 SoundEffects 설치·이벤트 수신과 통계의 공동 동작, MIDI/예약 경계는 대역 사용. |
-| NoteMapperTest | 23 | 음 선택·화음·위치·재생선 매핑. |
-| RepeatTrackerTest | 3 | 반복 패턴 감지. |
-| SoundSettingsTest | 3 | 기능별 On/Off·초기 악기·악기 변경 콜백. |
+| 기본 기능 | 64 | 기본 규칙·저장·Clock·Universe 이벤트 — 기존 생사 규칙, 저장, 자동·단일 진행, 완료 알림과 등록·해제. |
+| 색상 | 42 | 기존 색상 정책·나이·색 조회 — 나이 경계·색상 선택·조회가 상태를 변경하지 않는지 확인. |
+| 패턴 | 39 | 패턴·템플릿·Undo — 캡처·배치·드래그·복원과 기존 게임 규칙. |
+| 사운드 | 46 | 사운드 계산·공통 이벤트 연결 — 음 선택·재생 상태 입력·공통 구독의 정상 동작. |
+| 통계 | 91 | 통계 핵심 6개 클래스 — 계산·계약·표시·실제 보드와의 연결. |
+| 통계 연결 | 12 | 기존 기능과 통계 연결 — 실제 템플릿 배치·Undo·탭 전환·Clear/Load 후 통계 반영. |
+| 프리즈 | 90 | 프리즈 모델·기존 기능과의 연결 — 고정·해제·나이 유지, 통계·색상·사운드와의 연결. |
+| 합계 | **384** | **모두 통과** |
 
-</details>
+대표 단위 테스트의 `TEMPLATE`·`TEMPLATE_UNDO` 입력은 **직접 구성한 이벤트**다. 실제 배치·Undo 실행은 별도의 MergedFeaturesIntegrationTest에서 검증한다. 또한 ColorStatisticsIntegrationTest는 프리즈 없는 보드의 색상 경계를 검사하며, 고정 셀의 생존 수·색상과 해제 후 변화량은 FreezingIntegrationTest에서 확인한다.
 
-<details>
-<summary>다른 기능과의 연동 사례 및 검증 범위</summary>
-
-| 시나리오 | 기대 결과 — 모두 통과 |
-| --- | --- |
-| 두 블록 중 하나만 10세대 프리즈 | 10세대에 고정 블록은 빨강 4개, 일반 블록은 파랑 4개. 이후 10세대 더 진행하면 파랑 4개·초록 4개. |
-| 프리즈된 외톨이 셀 1개와 일반 블링커 | 고정 중 생존 4개·탄생/사망 2개씩. 해제 다음 세대는 생존 3개·탄생 2개·사망 3개. |
-| 전체 판 프리즈 | 매 세대 번호를 늘리고 GENERATION을 발행하며 탄생·사망은 0. |
-| 프리즈 설치·해제 자체 / 고정 영역 편집 차단 | 보드 상태가 그대로이면 공통 이벤트가 발생하지 않고 기존 통계를 유지한다. |
-| 템플릿 드래그·Undo·그다음 세대 | 드래그 완료 시 한 번 알림, Undo 후 복원된 상태 집계, 이후 정상 세대 변화 집계. 실제 PatternTools 경로를 사용한다. |
-| Load 실패·취소 | 판과 통계를 유지한다. 성공 시 복원·다음 세대 진행은 위 StatisticsPanelIntegrationTest의 대표 사례에서 설명한다. |
-| 사운드 등록 직후 재생선 | INITIAL 수신 후 예약하므로 첫 스텝부터 현재 판을 사용한다. |
-| 사운드 Off 중 편집 후 On | Off 중에도 최신 배열을 받아 이후 재생선이 새 배치를 사용한다. |
-| 사운드 안정 판·전멸 | 무변화 세대의 효과음 생략. 실제 전멸의 마무리 화음은 유지하고 뒤따르는 빈 세대에는 반복하지 않는다. |
-
-StatisticsTest·ColorStatisticsTest 등 계산 단위 테스트는 **이벤트를 직접 만들어** 전달한다. 이벤트 이름이 TEMPLATE_UNDO라고 해서 실제 Undo 조작까지 수행한 검사는 아니다. 실제 배치/복원 경로는 MergedFeaturesIntegrationTest·패널 통합 검사에서 별도로 확인한다.
-
-MergedFeaturesIntegrationTest와 FreezingIntegrationTest의 사운드 수신 확인에는 기록용 리스너를 쓴다. 실제 SoundEffects 설치까지 연결하는 검사는 SoundEffectsIntegrationTest와 FreezingSoundIntegrationTest이며, MIDI 장치·채널·예약 실행기·메뉴 등록 UI를 대역으로 제어한다. 7종류의 비세대 이벤트 수신 검사 등 일부 입력은 직접 구성하고, 블링커·색상 메뉴·프리즈가 반영된 세대 등의 검사는 실제 Universe 경로를 사용한다.
-
-프리즈 연동 테스트의 상세 목적과 구현은 담당 문서 [FREEZING.md](../FREEZING.md)를 참고한다. 여기서는 위 표의 통계 연동 결과와 전체 실행 수를 기록한다.
-
-</details>
-
-<details>
-<summary>별도 Swing 검사 17개와 검증의 한계</summary>
-
-`patternUiTest`는 별도 JVM에서 Swing 컴포넌트를 만들고 MouseEvent·버튼 동작으로 다음 항목을 확인한다.
-
-| 번호 | 확인 항목 |
-| --- | --- |
-| 1–4 | 512×512 보드 배치, 기본 템플릿 배치, 범위 초과 배치 무변경, 캡처 선택 중 판 유지. |
-| 5–8 | 저장 버튼 활성화, 실제 입력 창을 통한 저장/라이브러리 재조회, 역방향 선택의 영역/셀 수, 캡처 패턴 재배치. |
-| 9–12 | 배치 Undo, Esc 후 일반 그리기, 수동 편집의 Undo 무효화, 단일 세대 진행. |
-| 13–17 | 판 밖 선택 경계 제한, 우클릭 취소, 드래그 연속 배치, 편집 중 tick 차단, 한 스트로크 Undo 복원. |
-
-임시 패턴 저장소를 사용하므로 사용자 템플릿은 변경하지 않는다. 생성된 확인 이미지는 `build/life-selection.png`, `build/life-placement.png`, `build/life-template-drag.png`, `build/life-template-drag-undo.png`이며 Git 추적 대상이 아니다.
-
-이 별도 Swing 검사는 캡처·템플릿 조작에 대한 기존 기록이다. 프리즈 연동은 위 JUnit 결과로 확인했으며, 이번 문서 정리에서 데스크톱 수동 시연이나 별도 Swing 검사를 다시 실행하지 않았다. 실제 MIDI 장치의 음색·음량과 다른 OS의 외형은 자동 테스트 결과만으로 판단하지 않는다.
-
-</details>
+이 검증은 계산 결과와 컴포넌트 상태, 실제 보드 처리 경로를 확인한다. headless 테스트가 운영체제별 창 외형이나 실제 MIDI 음질까지 확인했다는 의미는 아니다. 자동 Timer 검사는 정해진 시간 안에 화면 갱신에 도달하는지를 확인하며 타이머의 정밀도를 측정하지 않는다.
