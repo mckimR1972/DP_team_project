@@ -1,9 +1,9 @@
 # Freezing: 설계 패턴 후보와 설계 결정
 
 - 코드 기준: dev `838182c` (PR #7 병합 후)
-- 결정의 근거 기록: [PR #7](https://github.com/mckimR1972/DP_team_project/pull/7) 본문 6~7절, [FREEZING.md](FREEZING.md) 5·7·8절
-- 관련 문서: [유스케이스와 요약](usecase-and-summary.md), [변경 상세](changes.md)
-- 다이어그램: 본문의 그림은 모두 [diagram/](diagram/README.md) 폴더의 png를 참조한다. 그림을 고칠 때는 같은 이름의 `.puml`을 고치고 png를 다시 그린다
+- 결정의 근거 기록: [PR #7](https://github.com/mckimR1972/DP_team_project/pull/7) 본문 6~7절, [freezing.md](freezing.md) 5·7·8절
+- 관련 문서: [유스케이스 명세와 요약](freezing.md#usecase), [변경 상세](changes.md)
+- 다이어그램: 본문의 그림은 모두 [diagram/](diagram/) 폴더의 png를 참조한다. 그림을 고칠 때는 같은 이름의 `.puml`을 고치고 png를 다시 그린다
 - 테스트 결과 화면: [evidence/](evidence/README.md)
 
 ## 1. 설계 패턴 후보
@@ -36,7 +36,7 @@
 | 전용 리스너 인터페이스 (Observer) | 이름으로 뜻이 드러난다 | 구독자에게 넘길 데이터가 없다. 구독자는 `manager.regions()`를 다시 읽으면 된다 | 제외 |
 | **`Runnable` 콜백 (Observer의 가벼운 형태)** | JDK 타입만 쓴다. 모델에 Swing 코드가 없다 | 무엇이 바뀌었는지는 알려 주지 않아 화면이 목록 전체를 다시 읽는다 | **선택** |
 
-“사후 비교”로 표시한 행은 PR #7이나 `FREEZING.md`에 대안으로 적혀 있지 않고, 선택한 구조를 설명하려고 이 문서에서 덧붙인 비교다. 나머지 행은 `FREEZING.md` 7.1에 적힌 이유다.
+“사후 비교”로 표시한 행은 PR #7이나 `freezing.md`에 대안으로 적혀 있지 않고, 선택한 구조를 설명하려고 이 문서에서 덧붙인 비교다. 나머지 행은 `freezing.md` 7.1에 적힌 이유다.
 
 ### 1.4 기능 사이의 규칙을 어디에 둘까
 
