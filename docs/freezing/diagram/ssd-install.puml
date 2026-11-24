@@ -1,0 +1,23 @@
+@startuml ssd-install
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd Install Freezing E
+
+actor "사용자" as User
+participant ":LifeGame" as System
+
+ref over User, System : Set Duration E
+ref over User, System : Select Region E
+
+User -> System : installFreezing()
+alt 설치함
+  System -->> User : 고정된 영역, 남은 세대 n,\n고정되는 세대 (g+1 ~ g+n)
+  note right : g는 지금 세대
+else 빈 영역이거나 활성 Freezing 영역과 겹침
+  System -->> User : 설치할 수 없는 이유
+end
+@enduml

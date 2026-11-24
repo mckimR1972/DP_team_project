@@ -1,0 +1,26 @@
+@startuml ssd-auto-release
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd Auto Release E (Step One Generation 안에서)
+
+actor "사용자" as User
+participant ":LifeGame" as System
+
+note over User, System : 활성 Freezing 영역이 있고, 영역을 고르는 중이 아니다
+
+User -> System : stepOneGeneration()
+alt 남은 세대가 2 이상
+  System -->> User : 다음 세대의 생사 (영역 안은 설치 순간 그대로),\n영역마다 남은 세대 1 감소
+else 남은 세대가 1 (이번이 마지막 고정 세대)
+  System -->> User : 다음 세대의 생사 (영역 안은 설치 순간 그대로),\n그 영역이 목록과 화면에서 사라짐
+end
+
+loop 게임이 실행 중 (Run / Halt Game)
+  System -->> User : 세대 간격마다 위와 같은 결과
+  note right : 시계는 게임 안에 있어\n입력으로 그리지 않았다
+end
+@enduml

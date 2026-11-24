@@ -1,0 +1,21 @@
+@startuml ssd-release
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd Release Freezing E
+
+actor "사용자" as User
+participant ":LifeGame" as System
+
+alt 영역 하나를 푼다
+  User -> System : releaseFreezing(region)
+  System -->> User : 남은 Freezing 영역 목록
+else 모두 푼다
+  User -> System : releaseAllFreezing()
+  System -->> User : 빈 Freezing 영역 목록
+end
+note over User, System : 풀린 영역의 셀은 지금 생사 그대로 남고, 다음 세대부터 Life 규칙을 따른다
+@enduml

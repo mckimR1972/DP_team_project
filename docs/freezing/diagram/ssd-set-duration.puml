@@ -1,0 +1,16 @@
+@startuml ssd-set-duration
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd Set Duration E
+
+actor "사용자" as User
+participant ":LifeGame" as System
+
+User -> System : setFreezingDuration(n)
+System -->> User : 지속 세대 n
+note right : 1~999만 받는다 (처음 값 5).\n다음에 설치하는 영역에만 쓰인다
+@enduml

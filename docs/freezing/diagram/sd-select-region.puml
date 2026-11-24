@@ -5,46 +5,40 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd Select Region E
+mainframe sd selectRegion(start, end)
 
-actor "사용자" as User
 participant ":FreezingTools" as T
-participant ":Universe" as U
-participant ":PatternTools" as P
-participant ":Clock" as C
 participant ":FreezingManager" as M
+participant ":Universe" as U
 
-User -> T : 영역 선택 클릭
-T -> U : beforeSelect.run()
-note right of U : Universe가 넘겨 준 Runnable
-opt 패턴 편집 중
-  U -> P : cancel()
-end
-U -> P : boardChanged()
-note right of P : 되돌리기 이력 비움
-T -> C : stop()
-T -> T : selecting = true
+note over T, U : 사용자가 보드(:Universe)를 누르고 끌고 놓으면\nSwing이 FreezingTools의 마우스 리스너를 부른다.\nselecting이 false이면 리스너는 바로 돌아간다
 
-User -> T : mousePressed(e)
+[o-> T : mousePressed(e)
 alt 오른쪽 버튼
   T -> T : cancel()
 else 왼쪽 버튼
-  T -> T : anchor = cellAt(point)
-  opt anchor != null (보드 안)
+  T -> T : cellAt(e.getPoint(), false)
+  T -->> T : anchor = cellAt(...): Point
+  note right of T : 보드 밖을 누르면 null이고\n선택을 시작하지 않는다
+  opt anchor != null
     T -> T : selectThrough(anchor)
   end
 end
 
 loop 끄는 동안
-  User -> T : mouseDragged(e)
-  T -> T : selectThrough(end)
-  T -> M : overlapsFrozen(selection)
-  M --> T : overlaps
-  T -> T : install.setEnabled(!overlaps)
+  [o-> T : mouseDragged(e)
+  T -> T : selectThrough(cellAt(e.getPoint(), true))
 end
 
-User -> T : mouseReleased(e)
-T -> T : selectThrough(end)
-T -> T : anchor = null
-note over T : selectThrough()는 누를 때와 놓을 때도\noverlapsFrozen()으로 설치 버튼을 정한다
+[o-> T : mouseReleased(e)
+T -> T : selectThrough(cellAt(e.getPoint(), true))
+note right of T : anchor = null
+
+group selectThrough(end)가 매번 하는 일
+  note over T : selection = anchor와 end를\n두 모서리로 하는 사각형
+  T -> M : overlapsFrozen(selection)
+  M -->> T : overlaps = overlapsFrozen(selection): boolean
+  note right of T : install 버튼 사용 가능 = !overlaps
+  T ->> U : repaint()
+end
 @enduml

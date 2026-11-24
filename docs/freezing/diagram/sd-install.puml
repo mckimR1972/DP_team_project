@@ -5,42 +5,49 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd Install Freezing E
+mainframe sd installFreezing()
 
 actor "사용자" as User
+participant "install : JButton" as B
 participant ":FreezingTools" as T
+participant "duration : JSpinner" as S
 participant ":FreezingManager" as M
-participant "board : Cell" as B
+participant ":Universe" as U
+participant "board : Cell" as Board
 
-User -> T : Freezing 설치 클릭
-T -> T : installSelection()
+User -> B : click()
+B -> T : installSelection()
+T -> S : getValue()
+S -->> T : generations = getValue(): Integer
 T -> M : install(selection, generations)
-M -> M : 영역을 보드에 맞춰 자름
+note right of M : area = selection과 보드의 교집합
 
-alt 빈 영역이거나 기존 영역과 겹침
-  M --> T : IllegalArgumentException
+alt area가 비었거나 활성 영역과 겹침
+  M -->> T : IllegalArgumentException
   T -> T : message(e.getMessage())
-  note right of T
-    화면에서는 겹치면 설치 버튼이 꺼지고
-    선택은 항상 보드 안이라 보통 오지 않는다.
-    모델이 막는 방어 경로다
-  end note
 else
   create participant "region : FreezingRegion" as R
-  M -> R : <<create>>(area)
-  M -> R : freeze(board, generations, generation())
+  M -->> R : new(area)
+  M -> U : getAsLong()
+  note right of U : currentGeneration: Universe가\n넘긴 람다 () -> generation
+  U -->> M : g = getAsLong(): long
+  M -> R : freeze(board, generations, g)
   create participant "frozen : FrozenState" as F
-  R -> F : <<create>>(generations)
-  note right of F : generations < 1이면\n여기서 예외
+  R -->> F : new(generations)
+  note right of F : generations < 1이면\nIllegalArgumentException
   loop 영역의 칸마다
-    R -> B : isAliveAt(row, column)
-    B --> R : alive
+    R -> Board : isAliveAt(row, column)
+    Board -->> R : alive = isAliveAt(row, column): boolean
+    note right of R : snapshot[y][x] = alive
   end
+  note right of R : startGeneration = g\nduration = generations
   R -> R : changeState(frozen)
-  M -> M : regions.add(region)
-  M -> T : refresh()
-  note left : addListener()로 등록한\nRunnable
-  M --> T : region
-  T -> T : selecting = false
+  note right of M : regions.add(region)
+  M -> T : run()
+  note right of T : addListener(this::refresh)로\n등록한 Runnable. 목록과 버튼을 고친다
+  M -->> T : region = install(...): FreezingRegion
+  note right of T : selecting = false\nselection = null
+  T -> T : message("… (g+1 ~ g+n세대 고정)")
 end
+T ->> U : repaint()
 @enduml

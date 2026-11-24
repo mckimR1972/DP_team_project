@@ -5,7 +5,7 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd Auto Release E
+mainframe sd 한 세대 진행과 Auto Release E
 
 participant ":Clock" as C
 participant ":Universe" as U
@@ -16,42 +16,51 @@ participant "region : FreezingRegion" as R
 participant "state : FrozenState" as F
 participant ":FreezingTools" as T
 
+[o-> C : tick()
 C -> U : tick()
-alt 패턴 편집 중이거나 영역 선택 중
-  U --> C : 바로 return (세대 진행 없음)
-else
-U -> P : boardChanged()
-note right of P : 되돌리기 이력 비움
-U -> B : figureNextState(...)
-U -> U : before = liveCells()
-U -> M : beforeTransition(outermostCell)
-loop 영역마다
-  M -> R : beforeTransition(cells)
-  R -> F : beforeTransition(region, board)
-  F -> R : holdSnapshot(board)
-  loop 영역의 칸마다
-    R -> B : holdNextState(location, snapshot[y][x])
-  end
-end
-note right of R : 목록에는 고정 중인 영역만 있다.\n풀린 영역은 afterGeneration()에서 빠진다
-U -> B : transition()
-U -> U : generation++
+note right of U : 시계 리스너는 Universe 안의\n익명 객체라 Universe로 합쳐 그렸다
 
-U -> M : afterGeneration()
-loop 영역마다
-  M -> R : afterGeneration()
-  R -> F : afterGeneration(region)
-  F -> F : --remaining
-  opt remaining <= 0
-    F -> R : changeState(NormalState.INSTANCE)
+alt 캡처·배치 편집 중 또는 Freezing 영역 선택 중
+  U -->> C
+else
+  U -> P : boardChanged()
+  U -> B : figureNextState(DUMMY × 8)
+  note right of B : 칸마다 다음 생사\n(willBeAlive)를 계산한다
+  U -> U : liveCells()
+  U -->> U : before = liveCells(): boolean[][]
+
+  U -> M : beforeTransition(outermostCell)
+  loop 활성 영역마다
+    M -> R : beforeTransition(board)
+    R -> F : beforeTransition(region, board)
+    F -> R : holdSnapshot(board)
+    loop 영역의 칸마다
+      R -> B : holdNextState(location, snapshot[y][x])
+      note right of B : Resident: willBeAlive = 스냅샷 값\nheldThisGeneration = true
+    end
+  end
+
+  U -> B : transition()
+  note right of B : 모든 칸 amAlive = willBeAlive.\nheld 칸은 나이를 세지 않는다
+  B -->> U : changed = transition(): boolean
+  note right of U : generation = generation + 1
+
+  U -> M : afterGeneration()
+  loop 활성 영역마다
+    M -> R : afterGeneration()
+    R -> F : afterGeneration(region)
+    note right of F : remaining = remaining - 1
+    opt remaining <= 0
+      F -> R : changeState(NormalState.INSTANCE)
+    end
+  end
+  note right of M : NormalState로 돌아간 영역을\nregions에서 뺀다
+  M -> T : run()
+  note right of T : refresh(): 목록, 현재 세대,\n영역 자리 다시 그리기 요청
+
+  U -> U : notifyBoardChanged(GENERATION, before)
+  opt 색 순환이 켜져 있거나 changed
+    U ->> U : refreshNow()
   end
 end
-M -> M : regions.removeIf(풀린 영역)
-M -> T : refresh()
-note right : addListener()로 등록한\nRunnable
-U -> U : notifyBoardChanged(GENERATION, before)
-end
-note over U, T
-  생략: 다시 그리기(refreshNow), 통계·사운드가 받는 이벤트 처리
-end note
 @enduml
