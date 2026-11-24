@@ -4,6 +4,19 @@
 
 다시 그리려면 Graphviz를 설치한 뒤 이 폴더에서 `java -DPLANTUML_LIMIT_SIZE=8192 -jar plantuml.jar -charset UTF-8 -tpng *.puml`을 실행한다. 클래스 그림은 폭이 4096px을 넘어서 한도를 늘려야 잘리지 않는다.
 
+## 문서에서 참조하는 위치
+
+명세 문서는 그림을 직접 그리지 않고 이 폴더의 png를 참조한다.
+
+| 그림 | 참조하는 문서 |
+| --- | --- |
+| `usecase-freezing.png` | [usecase-and-summary.md](../usecase-and-summary.md) |
+| `class-freezing.png` | [FREEZING.md](../FREEZING.md) 3절, [design.md](../design.md) 결정 1 |
+| `state-region.png` | [FREEZING.md](../FREEZING.md) 5절, [design.md](../design.md) 결정 1 |
+| `sd-auto-release.png` | [FREEZING.md](../FREEZING.md) 4절, [design.md](../design.md) 결정 2 |
+| `sd-select-region.png` | [design.md](../design.md) 1.4 |
+| 나머지 시퀀스, `state-selection.png` | 이 문서 |
+
 ## 유스케이스
 
 ![유스케이스](usecase-freezing.png)

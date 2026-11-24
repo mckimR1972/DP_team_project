@@ -3,7 +3,7 @@
 - 코드 기준: dev `838182c` (PR #7 병합 후)
 - 결정의 근거 기록: [PR #7](https://github.com/mckimR1972/DP_team_project/pull/7) 본문 6~7절, [FREEZING.md](FREEZING.md) 5·7·8절
 - 관련 문서: [유스케이스와 요약](usecase-and-summary.md), [변경 상세](changes.md)
-- 다이어그램: [diagram/](diagram/README.md) (유스케이스, 클래스, 유스케이스별 시퀀스, 상태). 이 문서의 결정 1~2는 `class-freezing`, `state-region`, `sd-auto-release`에, 1.4의 Mediator는 `class-freezing`의 `Universe` 노트와 `sd-select-region`에 나온다
+- 다이어그램: 본문의 그림은 모두 [diagram/](diagram/README.md) 폴더의 png를 참조한다. 그림을 고칠 때는 같은 이름의 `.puml`을 고치고 png를 다시 그린다
 - 테스트 결과 화면: [evidence/](evidence/README.md)
 
 ## 1. 설계 패턴 후보
@@ -48,6 +48,10 @@
 | Chain of Responsibility (편집 요청을 여러 검사기가 차례로 확인) | 금지 규칙을 가진 기능이 늘어도 검사기만 추가한다 | 검사기가 지금은 Freezing 하나뿐이라 구조만 늘어난다 | 보류(금지 규칙을 가진 기능이 더 생기면 다시 본다) |
 | **Mediator (`Universe`가 연결)** | 원본에서 이미 `Universe`가 Swing 이벤트와 Life 클래스 사이의 중재자다. `FreezingTools`는 `Runnable` 하나, `PatternTools`는 `Predicate` 하나만 안다 | 연결 규칙이 `Universe` 생성자에 모여 길어진다 | **선택** |
 
+![Select Region E 시퀀스 다이어그램](diagram/sd-select-region.png)
+
+*그림 1. 영역 선택을 시작할 때 `Universe`가 패턴 편집을 끝내고 시계를 멈추는 흐름(Mediator). 원본: [diagram/sd-select-region.puml](diagram/sd-select-region.puml)*
+
 ### 1.5 그 밖에 쓴 패턴
 
 | 패턴 | 어디에 | 새로 만든 것인가 | 이유 |
@@ -68,12 +72,24 @@
 - **감수한 비용.** 클래스 3개. 상태가 둘뿐인 지금은 플래그보다 코드가 많다.
 - **상태 객체의 단위.** 셀마다가 아니라 영역마다 하나다. 셀마다 두면 4,096개 셀에 필드가 늘고 `Resident` 수정이 커진다. 영역 단위라서 영역별로 풀고 남은 세대를 표시하기 쉽다.
 
+![Freezing 클래스 다이어그램](diagram/class-freezing.png)
+
+*그림 2. Freezing 클래스 다이어그램. 원본: [diagram/class-freezing.puml](diagram/class-freezing.puml)*
+
+![영역 상태 다이어그램](diagram/state-region.png)
+
+*그림 3. 영역 하나의 상태(State 패턴). 원본: [diagram/state-region.puml](diagram/state-region.puml)*
+
 ### 결정 2. 계산과 전이 사이에서 다음 상태만 바꾼다
 
 - **문제.** 고정된 칸이 죽거나 태어나지 않게 하되, 바깥 칸은 고정된 칸을 평소처럼 이웃으로 세어야 한다.
 - **이유.** `figureNextState()`가 끝난 시점에는 모든 칸이 다음 상태를 정해 두었지만 아직 바뀌지 않았다. 이때 고정된 칸의 다음 상태만 스냅샷 값으로 바꾸면, 모든 칸이 같은 이전 세대를 기준으로 계산된다는 Life의 전제가 유지된다. 전이 뒤에 되돌리는 방식은 칸이 실제로 한 번 바뀌므로 통계·사운드가 받는 출생·사망 목록에 고정된 칸이 섞인다.
 - **결과.** 생존 판정 코드는 한 글자도 바뀌지 않았다. 이벤트를 만드는 코드도 고치지 않았는데 고정된 칸이 목록에서 빠진다.
 - **감수한 비용.** `Cell` 인터페이스에 메서드가 하나 늘었다.
+
+![세대 처리 시퀀스 다이어그램](diagram/sd-auto-release.png)
+
+*그림 4. 계산(`figureNextState`)과 전이(`transition`) 사이에 `beforeTransition`이 끼어드는 세대 처리 흐름. 원본: [diagram/sd-auto-release.puml](diagram/sd-auto-release.puml)*
 
 ### 결정 3. 세대 번호는 `Universe`의 것을 읽는다
 

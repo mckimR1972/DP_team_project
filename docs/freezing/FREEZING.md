@@ -76,109 +76,9 @@
 
 ### 클래스 다이어그램
 
-```mermaid
-classDiagram
-    direction LR
+![Freezing 클래스 다이어그램](diagram/class-freezing.png)
 
-    class Cell {
-        <<interface>>
-        +figureNextState(...) boolean
-        +transition() boolean
-        +isAliveAt(row, column) boolean
-        +colorAt(row, column) Color
-        +holdNextState(location, alive) boolean
-    }
-    class Neighborhood {
-        -grid Cell[][]
-        -amActive boolean
-    }
-    class Resident {
-        -amAlive boolean
-        -willBeAlive boolean
-        -age int
-        -heldThisGeneration boolean
-    }
-    Cell <|.. Neighborhood
-    Cell <|.. Resident
-    Neighborhood o-- "*" Cell
-
-    class Universe {
-        -outermostCell Cell
-        -generation long
-        -patternTools PatternTools
-        -freezingTools FreezingTools
-        +addBoardChangeListener(listener)
-        +freezingControls() JPanel
-        +finishFreezingEditing()
-    }
-    class BoardChangeListener {
-        <<interface>>
-        +onBoardChanged(event)
-    }
-    class Statistics
-    class SoundEffects
-    class PatternTools {
-        +setPlacementGuard(guard)
-        +boardChanged()
-        +cancel()
-    }
-
-    class FreezingTools {
-        +beginSelection()
-        +cancel()
-        +reset()
-        +paintOverlay(Graphics2D)
-    }
-    class FreezingManager {
-        -regions List~FreezingRegion~
-        -currentGeneration LongSupplier
-        +install(area, generations) FreezingRegion
-        +release(region)
-        +releaseAll()
-        +reset()
-        +beforeTransition(cells) boolean
-        +afterGeneration()
-        +isFrozen(cell) boolean
-        +overlapsFrozen(area) boolean
-        +addListener(Runnable)
-    }
-    class FreezingRegion {
-        -area Rectangle
-        -snapshot boolean[][]
-        -state FreezingState
-        +freeze(board, generations, current)
-        +release()
-        +changeState(next)
-        +holdSnapshot(board) boolean
-    }
-    class FreezingState {
-        <<interface>>
-        +beforeTransition(region, board) boolean
-        +afterGeneration(region)
-        +isFrozen() boolean
-        +remainingGenerations() int
-    }
-    class NormalState
-    class FrozenState {
-        -remaining int
-    }
-
-    Universe --> Cell
-    Universe --> PatternTools
-    Universe --> FreezingTools
-    Universe ..> BoardChangeListener : GENERATION 등 발행
-    BoardChangeListener <|.. Statistics
-    BoardChangeListener <|.. SoundEffects
-    FreezingTools --> FreezingManager
-    FreezingManager ..> FreezingTools : 변경 알림 (Runnable)
-    FreezingManager ..> Universe : 세대 번호 읽기
-    FreezingManager o-- "*" FreezingRegion
-    FreezingRegion --> FreezingState
-    FreezingState <|.. NormalState
-    FreezingState <|.. FrozenState
-    FreezingRegion ..> Cell : holdNextState
-    PatternTools ..> FreezingManager : 배치 가드 (Predicate)
-```
+*그림 1. Freezing 클래스 다이어그램. 원본: [diagram/class-freezing.puml](diagram/class-freezing.puml)*
 
 <a id="generation"></a>
 ## 4. 세대 처리
@@ -205,41 +105,9 @@ notifyBoardChanged( GENERATION, before );         // 기존: 통계와 사운드
 - 셀이 실제로 죽었다가 되살아나는 일이 없다. 그래서 바깥 셀은 항상 고정된 셀의 원래 상태를 이웃으로 본다.
 - 모든 셀이 같은 이전 세대를 기준으로 계산된다는 Life의 전제가 유지된다.
 
-```mermaid
-sequenceDiagram
-    participant Clock
-    participant U as Universe
-    participant C as Cell 트리
-    participant M as FreezingManager
-    participant R as FreezingRegion
-    participant S as FreezingState
-    participant O as 통계 · 사운드
+![세대 처리 시퀀스 다이어그램](diagram/sd-auto-release.png)
 
-    Clock->>U: tick()
-    U->>C: figureNextState()
-    Note over C: 모든 셀이 B3/S23으로 다음 상태 계산
-    U->>M: beforeTransition(cells)
-    M->>R: beforeTransition(cells)
-    R->>S: beforeTransition(region, cells)
-    alt FrozenState
-        S->>R: holdSnapshot(cells)
-        R->>C: holdNextState(location, alive)
-        Note over C: 다음 상태만 교체, 나이도 이번 한 번 멈춤
-    else NormalState
-        Note over S: 아무것도 하지 않음
-    end
-    U->>C: transition()
-    U->>U: generation++
-    U->>M: afterGeneration()
-    M->>R: afterGeneration()
-    R->>S: afterGeneration(region)
-    opt 남은 세대가 0
-        S->>R: changeState(NormalState)
-        M->>M: 목록에서 제거
-    end
-    U->>O: BoardChangeEvent(GENERATION)
-    Note over O: 고정된 셀은 출생·사망 목록에 없음
-```
+*그림 2. 한 세대 처리와 자동 해제(Auto Release E). 고정 중인 영역만 목록에 있으므로 NormalState 분기는 그리지 않았다. 원본: [diagram/sd-auto-release.puml](diagram/sd-auto-release.puml)*
 
 `Cell.holdNextState()`는 Composite 구조를 따라 내려간다.
 
@@ -256,17 +124,9 @@ sequenceDiagram
 | State | `FreezingState` |
 | ConcreteState | `NormalState`, `FrozenState` |
 
-```mermaid
-stateDiagram-v2
-    [*] --> Normal
-    Normal: NormalState (규칙 그대로)
-    Frozen: FrozenState (스냅샷 유지, 남은 세대 n)
+![영역 상태 다이어그램](diagram/state-region.png)
 
-    Normal --> Frozen: freeze(n)
-    Frozen --> Frozen: 세대 진행, n - 1
-    Frozen --> Normal: n = 0 (자동 해제)
-    Frozen --> Normal: release() (강제 해제, Clear, Load)
-```
+*그림 3. 영역 하나의 상태(State 패턴). 원본: [diagram/state-region.puml](diagram/state-region.puml)*
 
 - `FreezingRegion`은 자기가 고정 중인지 `if`로 확인하지 않는다. `beforeTransition()`과 `afterGeneration()`을 현재 State 객체에 그대로 넘긴다.
 - 전환 조건도 State 안에 있다. `FrozenState`가 남은 세대를 세다가 0이 되면 스스로 `region.changeState(NormalState.INSTANCE)`를 부른다.
