@@ -30,14 +30,14 @@
 
 | 클래스 | 책임과 주요 메서드 |
 | --- | --- |
-| [BoardChangeListener](../src/com/holub/life/BoardChangeListener.java) | `onBoardChanged(event)`로 완료 상태를 수신하는 공통 인터페이스. |
-| [BoardChangeEvent](../src/com/holub/life/BoardChangeEvent.java) | 작업 종류·세대·판 크기·생존 배열·탄생/사망 좌표·생존 셀 색을 보관한다. 배열·좌표는 방어적 복사로 보호한다. |
-| [Universe](../src/com/holub/life/Universe.java) | `addBoardChangeListener()`·`removeBoardChangeListener()`로 구독 관리. `liveCells()`로 상태 수집, `createBoardChangeEvent(kind, before)`로 이벤트 구성, `notifyBoardChanged()`로 발행한다. 기존 익명 `Clock.Listener.tick()` 안에서 세대를 진행한다. |
-| [Statistics](../src/com/holub/life/Statistics.java) | `onBoardChanged()` → `calculate()`로 집계하고 콜백에 결과를 전달한다. `current()`는 최근 결과를 `Optional<Summary>`로 반환한다. 이전 게임판은 보관하지 않는다. |
+| [BoardChangeListener](../../src/com/holub/life/BoardChangeListener.java) | `onBoardChanged(event)`로 완료 상태를 수신하는 공통 인터페이스. |
+| [BoardChangeEvent](../../src/com/holub/life/BoardChangeEvent.java) | 작업 종류·세대·판 크기·생존 배열·탄생/사망 좌표·생존 셀 색을 보관한다. 배열·좌표는 방어적 복사로 보호한다. |
+| [Universe](../../src/com/holub/life/Universe.java) | `addBoardChangeListener()`·`removeBoardChangeListener()`로 구독 관리. `liveCells()`로 상태 수집, `createBoardChangeEvent(kind, before)`로 이벤트 구성, `notifyBoardChanged()`로 발행한다. 기존 익명 `Clock.Listener.tick()` 안에서 세대를 진행한다. |
+| [Statistics](../../src/com/holub/life/Statistics.java) | `onBoardChanged()` → `calculate()`로 집계하고 콜백에 결과를 전달한다. `current()`는 최근 결과를 `Optional<Summary>`로 반환한다. 이전 게임판은 보관하지 않는다. |
 | `Statistics.Summary`·`Statistics.ColorCount` | Statistics 안의 record. Summary는 기본 통계와 `List<ColorCount>`를, ColorCount는 색·개수·백분율을 담는다. 결과 목록은 수정할 수 없다. |
-| [StatisticsPanel](../src/com/holub/life/StatisticsPanel.java) | `showStatistics(summary)`로 값·색상 행을 표시한다. 게임판 조회, 이벤트 구독, 통계 계산을 하지 않는다. |
-| [Life](../src/com/holub/life/Life.java) | `createSidebar()`로 공용 탭, `createContent()`로 창 배치를 구성한다. `connectStatistics()`에서 계산과 화면을 연결하고, `dispose()`에서 통계 구독을 해제한다. |
-| [Clock](../src/com/holub/life/Clock.java)·[Cell](../src/com/holub/life/Cell.java) 계층 | Clock은 Swing Timer로 진행 시점을 알린다. Cell의 `isAliveAt(row, column)`·`colorAt(row, column)`으로 생존·색을 조회한다. |
+| [StatisticsPanel](../../src/com/holub/life/StatisticsPanel.java) | `showStatistics(summary)`로 값·색상 행을 표시한다. 게임판 조회, 이벤트 구독, 통계 계산을 하지 않는다. |
+| [Life](../../src/com/holub/life/Life.java) | `createSidebar()`로 공용 탭, `createContent()`로 창 배치를 구성한다. `connectStatistics()`에서 계산과 화면을 연결하고, `dispose()`에서 통계 구독을 해제한다. |
+| [Clock](../../src/com/holub/life/Clock.java)·[Cell](../../src/com/holub/life/Cell.java) 계층 | Clock은 Swing Timer로 진행 시점을 알린다. Cell의 `isAliveAt(row, column)`·`colorAt(row, column)`으로 생존·색을 조회한다. |
 
 `new Statistics(panel::showStatistics)`의 콜백 타입은 **JDK의 `java.util.function.Consumer<Summary>`**다. 별도로 만든 인터페이스가 아니며, Statistics는 구체적인 StatisticsPanel 타입에 의존하지 않는다.
 
@@ -216,7 +216,7 @@ Universe에서 연결한 세부 경로는 다음과 같다.
 
 ### 사운드 담당자에게 해당하는 변경
 
-사운드 기능 자체는 팀원의 기존 구현이다. 통계와의 공통 이벤트 전환 과정에서 사운드 패키지의 [SoundEffects.java](../src/com/holub/life/sound/SoundEffects.java)만 연결을 수정했다. 다음 표가 실제 변경 지점이며, 음 생성 알고리즘 전체를 다시 구현한 것이 아니다.
+사운드 기능 자체는 팀원의 기존 구현이다. 통계와의 공통 이벤트 전환 과정에서 사운드 패키지의 [SoundEffects.java](../../src/com/holub/life/sound/SoundEffects.java)만 연결을 수정했다. 다음 표가 실제 변경 지점이며, 음 생성 알고리즘 전체를 다시 구현한 것이 아니다.
 
 | 위치 | 변경 전 → 변경 후 |
 | --- | --- |
@@ -325,7 +325,7 @@ Gradle 9.5.1·Java toolchain 17·JUnit Jupiter 6.0.3을 사용한다. JUnit 실�
 <details>
 <summary>JUnit 클래스별 실행 수와 확인한 내용</summary>
 
-아래 수는 매개변수별 실행을 포함한다. 테스트 파일은 [test/com/holub/life](../test/com/holub/life)에 있으며 마지막 세 클래스는 그 아래 `sound` 패키지에 있다.
+아래 수는 매개변수별 실행을 포함한다. 테스트 파일은 기능별 폴더 [test](../../test) 아래에 있으며 마지막 세 클래스는 `test/sound`의 `sound` 패키지에 있다.
 
 | 클래스 | 수 | 주요 검증 |
 | --- | ---: | --- |
