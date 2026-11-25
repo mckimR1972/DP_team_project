@@ -21,7 +21,7 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 
 `FreezingModelTest`는 Universe와 Swing 없이 보드(`Neighborhood` + `Resident`)와 `FreezingManager`만 만들어 시험한다. 세대 진행은 테스트 안의 `tick()`이 게임과 같은 순서(`figureNextState` → `beforeTransition` → `transition` → 세대 +1 → `afterGeneration`)로 부른다.
 
-묶음별 화면은 2026-11-22에 같은 코드에서 `gradlew test --rerun --tests "com.holub.life.FreezingModelTest.<메서드>"`로 묶음에 속한 테스트만 실행한 결과다. 7개 묶음의 합은 50개로 전체 실행의 `FreezingModelTest`와 같다.
+묶음별 화면은 2026-11-22에 같은 코드에서 `gradlew test --rerun --tests "com.holub.life.FreezingModelTest.<메서드>"`로 묶음에 속한 테스트만 실행한 결과다. 7개 묶음의 합은 50개로 전체 실행의 `FreezingModelTest`와 같다. 1번 묶음(기본 규칙) 화면만 글라이더 테스트의 이름을 고친 뒤(#26) 2026-11-25에 같은 방법으로 다시 찍었다.
 
 | 화면 | 묶음 | 확인하는 것 | 결과 |
 | --- | --- | --- | --- |
@@ -40,7 +40,7 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 | Child | 실행 수 | 확인하는 것 |
 | --- | --- | --- |
 | `a_frozenLiveCellDoesNotDieWhileAnUnfrozenLoneCellDoes()` | 1 | 혼자 있는 산 셀 두 개 중 하나만 고정하면, 고정된 셀은 3세대 동안 살아 있고 고정하지 않은 셀은 원래 규칙대로 죽는다 |
-| `aGliderIsStoppedByAFrozenEmptyWallAndPassesAfterRelease()` | 1 | 글라이더가 오는 길에 비어 있는 세로줄을 60세대 고정하면, 그 줄에는 셀이 태어나지 않고 줄 너머로 넘어가는 셀도 없다 |
+| `aGliderIsStoppedByAFrozenEmptyWallAndStaysStoppedAfterRelease()` | 1 | 글라이더가 오는 길에 비어 있는 세로줄을 60세대 고정하면, 그 줄에는 셀이 태어나지 않고 줄 너머로 넘어가는 셀도 없다. 글라이더는 벽 앞에서 부서져 2×2 블록이 되고, 벽이 풀린 뒤 40세대(61~100세대) 동안에도 블록이 그대로라 줄을 넘어가지 않는다 |
 | `anEmptyRegionOnAnEmptyBoardDoesNothing()` | 1 | 빈 보드에 빈 영역을 고정해도 셀이 생기지 않고, 지속 세대가 지나면 영역 목록이 빈다 |
 | `aStillLifeInsideAndOutsideStaysTheSame()` | 1 | 블록(정물)을 하나는 고정하고 하나는 그대로 두면, 고정 중과 풀린 뒤 모두 판이 처음과 같다 |
 | `b_frozenDeadCellIsNotBornEvenWithThreeNeighbors()` | 1 | 원래 규칙이라면 태어날 죽은 칸(이웃 3개)을 고정하면 4세대 동안 태어나지 않는다 |
