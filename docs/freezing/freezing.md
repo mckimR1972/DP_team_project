@@ -186,10 +186,7 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 
 ## 2. 기존 코드에서 바뀐 부분
 
-원본 클래스 중 `Cell`, `Neighborhood`, `Resident`, `Universe`, `Life`를 고쳤다. 아래에는 코드를 옮기는 대신 무엇이 달라졌는지와 이유를 적었다. 줄 단위 비교는 [changes.md](changes.md)에 있다.
-
-- 이 문서에서 "원본"은 Freezing을 붙이기 전의 코드(dev `d215c7a`, PR #16까지)다. Holub 원본과 다른 점은 따로 적었다.
-- 지금 코드 기준은 dev `cfba2ed`다(`src`는 PR #7 병합 후 `838182c`와 같다).
+원본 클래스 중 `Cell`, `Neighborhood`, `Resident`, `Universe`, `Life`를 고쳤다.
 
 ### 2.1 Cell 계층: 좌표로 다음 생사만 바꾼다
 
