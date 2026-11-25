@@ -199,6 +199,59 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 
 생사를 계산하는 `figureNextState()`는 한 줄도 바꾸지 않았다.
 
+**실제 코드 변화**
+
+`Cell.java`: 인터페이스에 메서드를 하나 선언하고, 보드 바깥을 뜻하는 `DUMMY`(Null Object)는 아무것도 하지 않게 했다.
+
+```diff
+ 	void clear();
+
++	/** [Freezing] Override the next state that the most recent
++	 *  {@link #figureNextState} computed for the unitary cell at
++	 *  <code>location</code> ... @return true if the override changed the pending next state.
++	 */
++	boolean holdNextState( Point location, boolean alive );
+ ...
+ 		public boolean	 transition()		{return false;			  }
++		public boolean	 holdNextState(Point p, boolean a)	{return false;}
+```
+
+`Neighborhood.java`: 좌표가 속한 하위 셀에 좌표를 바꿔 넘긴다. `isAliveAt()`, `colorAt()`과 같은 방식이다.
+
+```diff
++	public boolean holdNextState(Point location, boolean alive)
++	{	int subcellWidth = grid[0][0].widthInCells();
++		return grid[location.y / subcellWidth][location.x / subcellWidth]
++				.holdNextState( new Point( location.x % subcellWidth,
++										   location.y % subcellWidth ), alive );
++	}
+```
+
+`Resident.java`: 다음 생사(`willBeAlive`)만 바꾸고, 그 세대에는 나이를 세지 않는다.
+
+```diff
+ 	private int		age			= 0;	// 연속으로 살아남은 세대 수 (태어나면 0)
++	private boolean heldThisGeneration = false;	// [Freezing] 이번 전이에서는 나이도 멈춘다
+ ...
+ 	public boolean transition()
+ 	{	boolean changed = amAlive != willBeAlive;
+-		age = (amAlive && willBeAlive) ? age + 1 : 0;
++		if( !heldThisGeneration )			// [Freezing] 고정된 셀은 나이와 색도 그대로 둔다
++			age = (amAlive && willBeAlive) ? age + 1 : 0;
++		heldThisGeneration = false;
+ 		amAlive = willBeAlive;
+ 		return changed;
+ 	}
+
++	public boolean holdNextState(Point location, boolean alive)
++	{	assert location.x == 0 && location.y == 0;
++		boolean overridden = willBeAlive != alive;
++		willBeAlive = alive;
++		heldThisGeneration = true;
++		return overridden;
++	}
+```
+
 ### 2.2 Universe: 틱 처리와 기능 사이의 연결
 
 | 단계 | 원본 | 바뀐 뒤 |
@@ -206,6 +259,35 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 | 틱을 건너뛰는 조건 | 캡처·배치 편집 중 | Freezing 영역을 고르는 중일 때도 건너뛴다<br>이유: 고르는 동안 판이 바뀌면 사용자가 본 모습과 기록되는 스냅샷이 달라진다 |
 | 계산과 확정 사이 | 없음 | `freezing.beforeTransition(outermostCell)`: 활성 영역마다 다음 생사를 스냅샷으로 바꾼다<br>이유: 셀이 한 번도 잘못 바뀌지 않아 이벤트와 나이가 저절로 맞는다(4.2절) |
 | 세대 증가 뒤 | 통계·사운드에 `GENERATION` 이벤트 | 그 전에 `freezing.afterGeneration()`: 남은 세대를 줄이고 0이 된 영역을 푼다 |
+
+**실제 코드 변화: 틱 처리** (`Universe.java`의 시계 리스너)
+
+```diff
+ 			{	public void tick()
+-				{	if (patternTools.isEditing()) return;
++				{	if (patternTools.isEditing() || freezingTools.isEditing()) return;
+ 					patternTools.boardChanged();
+ 					outermostCell.figureNextState
+ 						   ( Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,
+ 							 Cell.DUMMY,Cell.DUMMY,Cell.DUMMY,Cell.DUMMY
+ 						   );
+ 					boolean[][] before = liveCells();
+
++					// [Freezing] 규칙 계산(figureNextState)과 전이(transition)는
++					// 그대로 두고, 그 사이에서 각 Freezing 영역이 자기 State에
++					// 물어 다음 상태를 스냅샷으로 되돌린다.
++					FreezingManager freezing = freezingTools.manager();
++					freezing.beforeTransition( outermostCell );
++
+ 					// 바뀌는 셀이 없어도 매 틱 불러야 멈춘 패턴도 나이를 먹는다
+ 					boolean changed = outermostCell.transition();
+
+ 					// 같은 완료 이벤트를 통계와 사운드에 전달한다.
++					// 고정된 셀은 before와 같으므로 출생·사망 목록에 들어가지 않는다.
+ 					generation++;
++					freezing.afterGeneration();			// [Freezing] 남은 세대 감소, 0이면 Frozen -> Normal
+ 					notifyBoardChanged(BoardChangeEvent.Kind.GENERATION, before);
+```
 
 그 밖에 `Universe` 생성자와 메뉴 처리에서 Freezing과 다른 기능을 연결했다. 연결은 모두 `Universe`에만 있고, 기능끼리는 서로를 모른다(4.4절).
 
@@ -218,9 +300,104 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 | Esc | 켜져 있는 편집 모드(Freezing 영역 선택, 또는 캡처·배치)를 끝낸다 |
 | 그리기 | `paintComponent()`가 셀을 그린 뒤 `freezingTools.paintOverlay()`로 영역을 그린다 |
 
+**실제 코드 변화: 연결** (`Universe.java`)
+
+생성자에서 `FreezingTools`를 만들고 배치 가드와 Esc를 연결한다.
+
+```diff
+ 	private final PatternTools patternTools;
++	private final FreezingTools freezingTools;	// [Freezing]
+ ...
++		freezingTools = new FreezingTools( this,
++			new FreezingManager( outermostCell, () -> generation ),
++			() -> {	if (patternTools.isEditing()) patternTools.cancel();
++					patternTools.boardChanged();
++				  } );
++		patternTools.setPlacementGuard( area -> freezingTools.manager().overlapsFrozen(area) );
++
++		// [Freezing] Esc ends whichever editing mode is on.
++		getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "cancel-editing");
++		getActionMap().put("cancel-editing", new AbstractAction()
++		{	public void actionPerformed(ActionEvent e)
++			{	if (freezingTools.isEditing()) freezingTools.cancel();
++				else patternTools.cancel();
++			}
++		});
+```
+
+브러시: 영역을 고르는 중에는 그리지 않고, 고정된 셀에서는 획을 시작하지 않으며, 획이 지나가는 고정된 칸은 건너뛴다.
+
+```diff
+ 			public void mousePressed(MouseEvent e)
+ 			{	lastCell = null;
+-				if (patternTools.isEditing() || !SwingUtilities.isLeftMouseButton(e)
++				if (patternTools.isEditing() || freezingTools.isEditing()
++                        || !SwingUtilities.isLeftMouseButton(e)
+                         || !contains(e.getPoint())) return;
+ 				lastCell	= cellAt( e.getPoint() );
++				if (freezingTools.manager().isFrozen(lastCell))	// [Freezing] no stroke starts on a frozen cell
++				{	freezingTools.blockedEdit();
++					lastCell = null;
++					return;
++				}
+ ...
+ 			public void mouseDragged(MouseEvent e)
+-			{	if (lastCell == null || patternTools.isEditing()) return;
++			{	if (lastCell == null || patternTools.isEditing() || freezingTools.isEditing()) return;
+ ...
+ 	private boolean setCell( Point cell, boolean alive )
+ 	{	if( outermostCell.isAliveAt(cell.y, cell.x) == alive )
+ 			return false;
++		if( freezingTools.manager().isFrozen(cell) )	// [Freezing] a drag skips frozen cells
++		{	freezingTools.blockedEdit();
++			return false;
++		}
+```
+
+Grid > Clear와 Load는 보드를 바꾼 뒤 Freezing을 초기화하고, 그리기는 셀 다음에 영역을 그린다.
+
+```diff
+ 					outermostCell.clear();
+                     generation = 0;
++                    freezingTools.reset();				// [Freezing]
+                     notifyBoardChanged(BoardChangeEvent.Kind.CLEAR);
+ ...
+         outermostCell.transfer(memento, new Point(0, 0), Cell.LOAD);
+         generation = 0;
++        freezingTools.reset();				// [Freezing]
+         notifyBoardChanged(BoardChangeEvent.Kind.LOAD);
+ ...
+ 		outermostCell.redraw(g, panelBounds, true);		//{=Universe.redraw1}
++		if (freezingTools != null) freezingTools.paintOverlay((Graphics2D) g);	// [Freezing]
+ 		drawPlayhead( g );
+```
+
+사이드바와 테스트가 쓰는 접근자도 더했다.
+
+```diff
++	JPanel freezingControls() { return freezingTools.controls(); }	// [Freezing]
++	FreezingManager freezing() { return freezingTools.manager(); }	// [Freezing]
++
++    /** [Freezing] Finish a hidden area selection when the sidebar switches to another tool. */
++    void finishFreezingEditing() { freezingTools.cancel(); }
+```
+
 ### 2.3 Life: 사이드바 탭
 
 `Life.createSidebar()`가 패턴 캡처, 통계 뒤에 Freezing 탭을 세 번째로 더한다. 기존 두 탭의 순서는 바꾸지 않았다. Freezing 탭을 떠나면 진행 중인 영역 선택을 끝낸다.
+
+**실제 코드 변화** (`Life.java`)
+
+```diff
+         tabs.addTab("패턴 캡처", patterns);
+         tabs.addTab("통계", statisticsPanel);
++        JPanel freezing = universe.freezingControls();
++        tabs.addTab("Freezing", freezing);
+         tabs.addChangeListener(event -> {
+             if (tabs.getSelectedComponent() != patterns) universe.finishPatternEditing();
++            if (tabs.getSelectedComponent() != freezing) universe.finishFreezingEditing();
+         });
+```
 
 ### 2.4 새로 만든 클래스
 
@@ -232,6 +409,50 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 | `FreezingRegion` | 사각형 영역, 스냅샷, 설치 세대, 지속 세대, 현재 상태를 가진다. 세대 처리를 현재 상태 객체에 넘긴다 |
 | `FreezingManager` | 활성 영역 목록. 설치 검사(빈 영역, 겹침, 지속 세대), 해제, 초기화, 세대 처리 단계를 맡는다. Swing 코드가 없다 |
 | `FreezingTools` | Freezing 탭 화면, 영역 선택(끌기), 보드 위 표시 |
+
+**핵심 코드** (새 파일 536줄 중 State 패턴과 세대 처리 부분 발췌)
+
+`FreezingRegion`(Context)은 세대 처리를 현재 상태 객체에 그대로 넘기고, 상태를 바꾸는 곳은 `changeState()` 하나다.
+
+```java
+private FreezingState state = NormalState.INSTANCE;
+
+boolean beforeTransition(Cell board) { return state.beforeTransition(this, board); }
+void afterGeneration() { state.afterGeneration(this); }
+
+void changeState(FreezingState next) { state = next; }
+
+/** Forced release: Frozen -> Normal. */
+void release() { changeState(NormalState.INSTANCE); }
+```
+
+`FrozenState`(ConcreteState)는 스냅샷을 적용하고, 남은 세대가 0이 되면 스스로 영역을 `NormalState`로 바꾼다. `NormalState`의 두 메서드는 아무것도 하지 않는다.
+
+```java
+@Override public boolean beforeTransition(FreezingRegion region, Cell board) {
+    return region.holdSnapshot(board);
+}
+
+@Override public void afterGeneration(FreezingRegion region) {
+    if (--remaining <= 0) region.changeState(NormalState.INSTANCE);   // Frozen -> Normal
+}
+```
+
+`FreezingManager`는 틱 처리가 부르는 두 단계를 영역마다 넘기고, 풀린 영역을 목록에서 뺀 뒤 화면에 알린다.
+
+```java
+boolean beforeTransition(Cell cells) {
+    boolean overridden = false;
+    for (FreezingRegion r : regions) overridden |= r.beforeTransition(cells);
+    return overridden;
+}
+
+void afterGeneration() {
+    for (FreezingRegion r : regions) r.afterGeneration();
+    regions.removeIf(r -> !r.isFrozen());
+    changed();
+}
+```
 
 | 정한 것 | 이유 |
 | --- | --- |
