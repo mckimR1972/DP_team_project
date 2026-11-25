@@ -4,7 +4,10 @@ skinparam dpi 150
 skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam usecaseBackgroundColor #F1F1F1
-top to bottom direction
+' 사용자를 왼쪽에 두어 사용자에서 오는 선이 상자 제목과 겹치지 않게 한다
+left to right direction
+' 간격을 바꾸면 extend 점선이 점선의 빈 부분에서 끝나 원과 떨어져 보일 수 있다
+skinparam ranksep 67
 
 actor "사용자" as User
 
@@ -20,9 +23,6 @@ extension points
 
   rectangle "추가 시스템 기능 (Freezing)" as Extended {
     usecase "Auto Release (E)" as Auto
-    ' 보이지 않는 빈칸: 가운데를 비워 사용자에서 오는 선이 제목과 겹치지 않게 한다.
-    ' 폭을 바꾸면 extend 점선의 끝이 점선 간격에 걸려 원에서 떨어져 보일 수 있다.
-    usecase "                                         " as Gap #transparent;line:transparent
     usecase "Install Freezing (E)" as Install
     usecase "Release Freezing (E)" as Release
     usecase "Select Region (E)" as Region
@@ -32,6 +32,8 @@ extension points
 
 User -- Install
 User -- Release
+' Release를 Install 오른쪽 열에 두어 상자를 낮게 만든다
+Install -[hidden]- Release
 User -- Run
 User -- Step
 
@@ -39,9 +41,9 @@ Install ..> Region : <<include>>
 Install ..> Duration : <<include>>
 Run ..> Advance : <<include>>
 Step ..> Advance : <<include>>
-' 화살표를 Auto에서 위로 그려야 <<extend>> 글자가 선 바로 옆에 붙는다
+' note left: 조건 노트를 <<extend>> 왼쪽에 둔다
 Auto .up.> Advance : <<extend>>
-note right on link
+note left on link
   condition: {남은 세대가 0}
   extension point: 세대 확정 후
 end note
