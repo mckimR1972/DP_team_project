@@ -191,7 +191,7 @@ SoundEffects.install(universe);
 | Observer | `BoardChangeListener` |
 | ConcreteObserver | `SoundEffects`, `Statistics` |
 
-`Universe`가 판의 변화를 발행하고 `SoundEffects`가 받는다. `Universe`는 `BoardChangeListener` 인터페이스만 알고 누가 듣고 있는지는 모른다. 그래서 사운드를 빼도 게임은 그대로 돌고, 다른 기능이 같은 정보가 필요하면 리스너로 등록만 하면 된다.
+`Universe`가 판의 변화를 발행하고 `SoundEffects`가 받는다. `Universe`는 `BoardChangeListener` 인터페이스만 알고 누가 듣고 있는지는 모른다. 추상 Subject를 따로 두지 않아서 `Universe`가 Subject와 ConcreteSubject를 함께 맡는다. 그래서 사운드를 빼도 게임은 그대로 돌고, 다른 기능이 같은 정보가 필요하면 리스너로 등록만 하면 된다.
 
 처음(#3)에는 사운드 전용 `GenerationListener`를 두고 구독 관리는 Holub 코드의 `Publisher`를 썼다. `Clock`이 이미 같은 방식으로 리스너를 관리하고 있어서 같은 구조를 따랐다. 통계 기능이 같은 정보를 필요로 하자 두 기능이 같은 이벤트를 받도록 `BoardChangeListener`로 합쳐졌다(#10). 소리를 만드는 코드가 처음부터 `Universe`와 떨어져 있었기 때문에, 이때 사운드 쪽에서 고친 곳은 `SoundEffects`의 수신부 30줄 정도였고 `NoteMapper`, `RepeatTracker`, `SoundSettings`는 그대로였다.
 
@@ -206,9 +206,10 @@ SoundEffects.install(universe);
 | 역할 | 재생 예약 | `Sound` 메뉴 |
 |---|---|---|
 | Client | `SoundEffects` | `SoundEffects.createMenus()` |
-| Command | `Runnable` 람다 (음 켜기, 음 끄기, 타악기, 악기 변경, 재생선 한 스텝) | `ActionListener` 람다 |
+| Command | `Runnable` | `ActionListener` |
+| ConcreteCommand | 람다(음 켜기, 음 끄기, 타악기)와 메서드 참조(`applyInstruments` 악기 변경, `playStep` 재생선 한 스텝) | 람다(`enabled = true`, `enabled = false`, `showSettings()`) |
 | Invoker | 단일 스레드 `ScheduledExecutorService` (`sound-notes` 스레드) | 메뉴 항목 |
-| Receiver | `MidiChannel` | `SoundEffects` |
+| Receiver | `MidiChannel` (악기 변경과 재생선 한 스텝은 `SoundEffects`의 메서드를 거쳐 부른다) | `SoundEffects` |
 
 소리는 대부분 "지금"이 아니라 "조금 뒤에" 나야 한다. 화음은 25ms 간격으로 퍼뜨리고, 타악기는 60ms 늦게 치고, 모든 음은 220ms(재생선은 400ms) 뒤에 꺼야 한다. 재생선은 150ms마다 한 스텝씩 가야 한다. 이걸 이벤트 스레드에서 기다리면서 처리할 수는 없으니, 할 일을 객체로 만들어 실행 시간과 함께 큐에 넣고 스케줄러 스레드가 시간에 맞춰 꺼내 실행하게 했다.
 
@@ -227,7 +228,7 @@ private void play( MidiChannel channel, NoteMapper.Note note,
 }
 ```
 
-큐 하나를 스레드 하나가 순서대로 처리하는 모양이라 수업에서 본 Active Object와 구조가 비슷하다. 이 구조 덕분에 동기화도 단순해졌다. 설치할 때 생성자에서 악기를 처음 정하는 한 번을 빼면, `MidiChannel`, 재생선 위치(`step`), 지금 누르고 있는 패드 음(`padNotes`)은 스케줄러 스레드에서만 만지기 때문에 잠금이 필요 없다. 설정 창에서 악기를 바꿀 때도 이벤트 스레드가 채널을 직접 건드리지 않고 `noteScheduler.execute(this::applyInstruments)`로 명령을 넣는다. 두 스레드가 같이 쓰는 객체는 `SoundSettings` 하나뿐이라 여기만 `synchronized`로 막았고, 메뉴에서 바꾸는 `enabled`, 코드 위치 `chord`, 이벤트로 받은 판 `latestCells`는 `volatile`로 두었다.
+큐 하나를 스레드 하나가 순서대로 처리하는 모양이라 Active Object 패턴(GoF 밖의 동시성 패턴)과 구조가 비슷하다. 이 구조 덕분에 동기화도 단순해졌다. 설치할 때 생성자에서 악기를 처음 정하는 한 번을 빼면, `MidiChannel`, 재생선 위치(`step`), 지금 누르고 있는 패드 음(`padNotes`)은 스케줄러 스레드에서만 만지기 때문에 잠금이 필요 없다. 설정 창에서 악기를 바꿀 때도 이벤트 스레드가 채널을 직접 건드리지 않고 `noteScheduler.execute(this::applyInstruments)`로 명령을 넣는다. 두 스레드가 함께 바꾸는 값은 따로 막았다. 설정 값을 담은 `SoundSettings`는 `synchronized`로, 메뉴에서 바꾸는 `enabled`, 코드 위치 `chord`, 이벤트로 받은 판 `latestCells`는 `volatile`로 두었다. 재생선 위치는 사운드 스레드가 `Universe.setPlayhead()`로 넘기므로 `Universe`의 `playhead`도 `volatile`이고, 다시 그리기는 Swing의 `repaint()`에 맡긴다. `NoteMapper`는 두 스레드가 모두 부르지만 바뀌는 상태가 `java.util.Random` 하나뿐이고, `Random`은 여러 스레드에서 써도 안전해서 따로 막지 않았다.
 
 Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리를 되돌릴 일이 없으니 undo나 이력은 필요 없었고, 명령마다 클래스를 만들면 파일만 늘어난다고 판단했다.
 
@@ -237,9 +238,9 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 |---|---|
 | Component | `Cell` |
 | Composite | `Neighborhood` |
-| Leaf | `Resident`, `Cell.DUMMY` |
+| Leaf | `Resident` |
 
-판은 원래 8×8 `Neighborhood` 안에 8×8 `Neighborhood`가 들어 있는 Composite 구조다. 여기에 `isAliveAt()`를 추가하면서 같은 구조를 따랐다. `Neighborhood`는 좌표를 나눠서 하위 셀에 넘기고, `Resident`는 자기 상태를 답한다. `Universe`는 `outermostCell.isAliveAt(row, column)`만 부르면 되고, 판이 몇 단계로 중첩돼 있는지 알 필요가 없다.
+판은 원래 8×8 `Neighborhood` 안에 8×8 `Neighborhood`가 들어 있는 Composite 구조다. 여기에 `isAliveAt()`를 추가하면서 같은 구조를 따랐다. `Neighborhood`는 좌표를 나눠서 하위 셀에 넘기고, `Resident`는 자기 상태를 답한다. `Universe`는 `outermostCell.isAliveAt(row, column)`만 부르면 되고, 판이 몇 단계로 중첩돼 있는지 알 필요가 없다. 판 바깥의 이웃을 대신하는 `Cell.DUMMY`도 `Cell`을 구현해서 `isAliveAt()`을 갖지만(항상 `false`), 트리에 들어가지 않으므로 Leaf로 보지 않았다.
 
 대신 칸 하나를 읽을 때마다 바깥 `Neighborhood`, 안쪽 `Neighborhood`, `Resident` 순서로 세 번 호출이 이어진다. 세대 알림 때문에 틱마다 판(4096칸)을 두 번 읽게 되지만, 화면을 다시 그리는 비용에 비하면 작아서 그대로 두었다.
 
@@ -251,7 +252,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 ### 4.5 설계 원칙
 
-`Universe`는 사운드가 아니라 `BoardChangeListener`라는 인터페이스에 의존한다. 새로운 리스너가 생겨도 `Universe`를 고치지 않고 등록만 하면 되므로 변경에는 닫혀 있고 확장에는 열려 있다. 실제로 통계 기능은 같은 인터페이스로 등록해서 붙었다.
+`Universe`는 사운드가 아니라 `BoardChangeListener`라는 인터페이스에 의존한다. 지금 이벤트에 담긴 정보로 충분한 기능이라면 `Universe`를 고치지 않고 리스너로 등록만 하면 되므로, 이 범위에서는 변경에는 닫혀 있고 확장에는 열려 있다. 다만 이벤트에 없는 정보가 필요하면 이벤트와 `Universe`를 고쳐야 한다. 통계 기능을 합칠 때(#10)는 판 전체와 셀 색처럼 사운드 이벤트에 없던 정보가 필요해서 `BoardChangeEvent`를 새로 만들고 `Universe`의 알림 코드를 고쳤다. 그때도 사운드 쪽은 수신부만 바뀌었다(4.1).
 
 `SoundEffects` 하나에 다 넣지 않고 바뀌는 이유별로 클래스를 나눴다. 음 고르는 규칙이 바뀌면 `NoteMapper`, 반복 판단 기준이 바뀌면 `RepeatTracker`, 설정 항목이 바뀌면 `SoundSettings`만 고치면 된다. 이렇게 나눈 덕에 `NoteMapper`, `RepeatTracker`, `SoundSettings`는 MIDI 장치와 화면 없이 테스트할 수 있다(6장).
 
@@ -270,7 +271,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 ### 5.2 판 상태를 어떻게 읽을까
 
-`Cell`을 고치지 않는 방법으로는 Holub 코드의 Load/Store용 Memento(`createMemento()`, `transfer()`)를 쓰는 것이 있다. 이걸로 산 셀 목록을 받을 수는 있지만, Memento는 `Storable`이라 파일 입출력 메서드까지 구현해야 하고, 칸 하나만 궁금해도 판 전체를 복사한다. 또 `Neighborhood.transfer()`는 `activeEdges`를 바꾸기 때문에, 저장할 때만 쓰던 경로를 게임 진행 중에 매 틱 부르게 된다.
+`Cell`을 고치지 않는 방법으로는 Holub 코드의 Load/Store용 Memento(`createMemento()`, `transfer()`)를 쓰는 것이 있다. `createMemento()`로 산 셀 목록을 받을 수는 있지만, 부를 때마다 판 전체를 새 목록(`LinkedList`)에 복사하고, 칸 하나를 물을 때도 `isAlive(Point)`가 그 목록을 처음부터 찾는다. 필요한 것만 담는 Memento를 따로 만들어 `transfer()`에 넘기는 방법도 있지만, `Cell.Memento`가 `Storable`을 상속해서 쓰지도 않을 파일 입출력(`load`, `flush`)까지 구현해야 한다. 또 `Neighborhood.transfer()`는 `activeEdges`를 바꾸기 때문에, 저장할 때만 쓰던 경로를 게임 진행 중에 매 틱 부르게 된다.
 
 `Universe`가 따로 `boolean[][]`을 들고 있는 방법도 있었다. `Cell`은 안 고쳐도 되지만 클릭, Clear, Load, 세대 진행이 있을 때마다 실제 셀과 맞춰 줘야 한다. 한 군데라도 빠지면 소리와 화면이 어긋난다.
 
@@ -310,7 +311,9 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 ### 5.7 아직 정리하지 못한 부분
 
-지금 `SoundEffects` 안에는 `settings.isOn(...)`으로 기능마다 분기하는 곳이 10군데 있다. 생성음, 타악기, 패드, 재생선 등을 각각 객체로 나눠 공통 인터페이스 뒤에 두면(Strategy) 분기는 없어질 것이다. 문제는 이 기능들이 서로 독립적이지 않다는 점이다. 현재 코드(`chord`)와 반복 페이드 값(`gain`)을 여러 기능이 같이 쓰고, 생성음에서 고른 화음을 대량 생성 레이어가 다시 받아 쓴다. 인터페이스를 정하려면 이 값들을 어떻게 넘길지부터 정해야 해서, 이번에는 동작을 먼저 맞추고 이 정리는 남겨 두었다.
+지금 `SoundEffects` 안에는 `settings.isOn(...)`으로 설정을 확인하는 곳이 10군데 있다. 소리를 내는 기능 5개(생성음, 대량 생성, 소멸 타악기, 패드, 재생선)를 각각 객체로 나눠 공통 인터페이스 뒤에 두면(Strategy), 그중 5곳은 목록을 돌며 켜졌는지 확인하는 한 줄로 바뀐다. 나머지 5곳은 코드 진행, 스트럼, 반복 페이드, 작은 흔들림(2곳)처럼 여러 기능에 함께 걸리는 조절 항목이라 그대로 남는다.
+
+나누기 어려운 이유는 세 가지다. 첫째, 기능끼리 값을 주고받는다. 현재 코드(`chord`)와 반복 페이드 값(`gain`)을 여러 기능이 같이 쓰고, 생성음에서 고른 화음을 대량 생성 레이어가 다시 받아 쓴다. 둘째, 악기를 적용하는 방식이 다르다. 생성음, 대량 생성, 재생선, 패드는 채널 악기를 바꾸는데(`programChange`) 패드는 그 전에 누르고 있던 음을 끊어야 하고, 타악기는 채널 9에서 악기 번호를 건반 번호로 쓴다. 셋째, MIDI 채널이 모자랄 수 있다. 채널은 16개인데 생성음이 5개(음마다 좌우 위치를 따로 주려고), 나머지 네 기능이 1개씩 모두 9개를 이미 쓰고 있어서, 새 기능에 필요한 채널 수와 배정도 함께 정해야 한다. 인터페이스를 정하려면 이 값과 방식, 채널 배정을 어떻게 넘길지부터 정해야 해서, 이번에는 동작을 먼저 맞추고 이 정리는 남겨 두었다. 소리를 내는 기능을 새로 추가하게 되면 가장 먼저 할 정리다.
 
 ## 6. 테스트
 
