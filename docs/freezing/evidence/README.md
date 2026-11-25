@@ -30,7 +30,7 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 | [3-state](test-freezing-model-3-state.png) | State 패턴 | Normal → Frozen → Normal 전환을 상태 객체가 스스로 함, `NormalState` 하나를 공유 | 2개 통과 |
 | [4-install](test-freezing-model-4-install.png) | 설치 검사·영역 관리 | 지속 세대 1 미만(4건), 빈·null·보드 밖 영역, 경계에 맞춤, 겹침 거부와 맞닿음 허용, 다시 설치, 영역별 만료, 목록 보호, 변경 알림 | 11개 통과 |
 | [5-composite](test-freezing-model-5-composite.png) | Composite (`holdNextState`) | 다음 상태만 바꿈, `DUMMY`는 무시, 모서리·블록 경계 1칸 영역(9건), 블록 4개에 걸친 영역, 보드 전체 | 13개 통과 |
-| [6-color](test-freezing-model-6-color.png) | 색 순환 연동 | 고정 중 나이와 색이 멈추고 풀리면 이어서 셈, 고정된 죽은 칸은 색 없음 | 2개 통과 |
+| [6-color](test-freezing-model-6-color.png) | 나이 (색으로 읽음) | 고정 중 나이가 멈추고 풀리면 이어서 셈, 고정 중 죽어 있던 칸은 풀린 뒤 태어나면 나이 0. 간격 1인 색 규칙을 써서 칸의 색으로 나이를 읽음 | 2개 통과 |
 | [7-random](test-freezing-model-7-random.png) | 무작위 비교 | 무작위 보드 12종 × 250세대, 설치·해제를 섞어 독립 계산과 모든 칸의 생사·나이 비교 | 12개 통과 |
 
 ## 기본 규칙 테스트 결과
@@ -50,7 +50,7 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 ![Composite](test-freezing-model-5-composite.png)
 
 ## 나이 Test
-![색 순환 연동](test-freezing-model-6-color.png)
+![나이 (색으로 읽음)](test-freezing-model-6-color.png)
 
 ## Random Test
 ![무작위 비교](test-freezing-model-7-random.png)

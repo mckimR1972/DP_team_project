@@ -773,7 +773,7 @@ Freezing 테스트 메서드 64개(실행 수 90개)를 묶음별로 정리했�
 | 여러 영역과 알림 | `regionsWithDifferentDurationsExpireIndependently`, `theListOfRegionsCannotBeChangedFromOutside`, `listenersHearInstallReleaseGenerationAndReset` | FR-7, NFR-3 |
 | Composite | `holdNextStateReplacesOnlyThePendingStateUntilTransition`, `theNullObjectCellIgnoresHolds`, `singleCellRegionsWorkAtCornersAndBlockBorders`(9가지), `aRegionAcrossFourNeighborhoodBlocksIsHeldAsOne`, `theWholeBoardCanBeFrozen` | FR-4 |
 | 패턴 | `aStillLifeInsideAndOutsideStaysTheSame`, `anEmptyRegionOnAnEmptyBoardDoesNothing`, `aGliderIsStoppedByAFrozenEmptyWallAndPassesAfterRelease` | FR-4, FR-5 |
-| 나이와 색 | `aFrozenCellKeepsItsAgeAndColorAndResumesAfterRelease`, `aFrozenDeadCellHasNoColorAndABirthAfterReleaseStartsAtAgeZero` | NFR-2 |
+| 나이 (색으로 읽음) | `aFrozenCellKeepsItsAgeAndColorAndResumesAfterRelease`, `aFrozenDeadCellHasNoColorAndABirthAfterReleaseStartsAtAgeZero` | NFR-2 |
 | 무작위 비교 | `randomBoardsWithRandomInstallsAndReleasesMatchAnIndependentReference`(12가지): 무작위 보드 12종 × 250세대, 설치·해제를 섞어 모든 칸의 생사와 나이 비교 | FR-4, FR-5, FR-6 |
 
 **`FreezingIntegrationTest`: 실제 `Universe`에서**
