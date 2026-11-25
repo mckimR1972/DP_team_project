@@ -1,44 +1,29 @@
 @startuml statistics-use-cases
-!pragma layout smetana
 left to right direction
+skinparam linetype polyline
 skinparam defaultFontName "Apple SD Gothic Neo"
 skinparam defaultFontSize 18
-skinparam dpi 130
-skinparam backgroundColor white
+skinparam dpi 160
+skinparam monochrome true
 skinparam shadowing false
 skinparam roundcorner 0
-skinparam ArrowColor #52616B
-skinparam ArrowThickness 1.2
-skinparam defaultFontColor #18374A
-skinparam actorBorderColor #385C72
-skinparam usecaseBorderColor #7B8790
-skinparam rectangleBorderColor #51768B
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam actorBorderColor black
+skinparam actorFontColor black
+skinparam rectangleBorderColor black
 skinparam rectangleBackgroundColor white
-skinparam nodesep 22
-skinparam ranksep 45
+skinparam usecaseBorderColor black
+skinparam usecaseBackgroundColor white
+skinparam usecaseFontColor black
+skinparam nodesep 45
+skinparam ranksep 50
 
-actor "게임 사용자" as Player
+actor "Game User" as Player
 rectangle "Life Game" {
-    usecase "셀 편집\n(생성·삭제)" as Edit #F3F4F6
-    usecase "세대 진행\n(자동 진행·Single Step)" as Advance #F3F4F6
-    usecase "실행 정지" as Halt #F3F4F6
-    usecase "게임판 초기화" as Clear #F3F4F6
-    usecase "게임판 저장" as Store #F3F4F6
-    usecase "게임판 불러오기" as Load #F3F4F6
-    usecase "기본 통계 확인 E" as BasicStatistics #E4F1FA
-    usecase "색상별 생존 분포 확인 E" as ColorStatistics #E4F1FA
+    usecase "View Color Distribution(E)" as ColorStatistics
+    usecase "View Basic Statistics(E)" as BasicStatistics
 }
-Player -- Edit
-Player -- Advance
-Player -- Halt
-Player -- Clear
-Player -- Store
-Player -- Load
 Player -- BasicStatistics
 Player -- ColorStatistics
-
-legend bottom
-회색: 기존 주요 기능
-파랑 · E: 통계 확장 기능
-endlegend
 @enduml
