@@ -13,7 +13,7 @@
 - n세대가 지나면 저절로 풀리고, 버튼으로 언제든 풀 수 있다. 풀린 셀은 그 순간의 생사 그대로 다음 세대부터 원본 규칙을 따른다.
 - 영역은 여러 개 둘 수 있고 영역마다 지속 세대가 다를 수 있다. 서로 겹칠 수는 없고 맞닿는 것은 된다.
 
-영역이 하나도 없으면 프로그램은 원본과 똑같이 동작한다.
+영역이 하나도 없으면 프로그램은 Freezing을 붙이기 전과 똑같이 동작한다.
 
 ![Freezing 탭과 고정된 영역 세 개](evidence/freezing-tab.png)
 
@@ -41,16 +41,16 @@
 
 | 유스케이스 | 시작하는 곳 | 다른 유스케이스와의 관계 | 내용 |
 | --- | --- | --- | --- |
-| Install Freezing (E) | Freezing 탭의 Freezing 설치 | Select Region (E), Set Duration (E)를 «include» | 고른 영역을 정한 세대 수 동안 고정한다 |
-| Select Region (E) | Freezing 탭의 영역 선택, 이어서 보드에서 끌기 | Install Freezing (E)가 «include» | 고정할 사각형 영역을 고른다 |
-| Set Duration (E) | Freezing 탭의 지속 세대 입력 칸 | Install Freezing (E)가 «include» | 고정할 세대 수를 정한다 |
-| Release Freezing (E) | Freezing 탭의 선택한 Freezing 해제, 모든 Freezing 해제 | | 남은 세대를 기다리지 않고 고정을 푼다 |
-| Auto Release (E) | 세대가 진행될 때마다 | Advance Generation을 «extend» (조건: 남은 세대가 0) | 지속 세대가 지난 영역을 저절로 푼다 |
+| Install Freezing(E) | Freezing 탭의 Freezing 설치 | Select Region(E), Set Duration(E)를 «include» | 고른 영역을 정한 세대 수 동안 고정한다 |
+| Select Region(E) | Freezing 탭의 영역 선택, 이어서 보드에서 끌기 | Install Freezing(E)가 «include» | 고정할 사각형 영역을 고른다 |
+| Set Duration(E) | Freezing 탭의 지속 세대 입력 칸 | Install Freezing(E)가 «include» | 고정할 세대 수를 정한다 |
+| Release Freezing(E) | Freezing 탭의 선택한 Freezing 해제, 모든 Freezing 해제 | | 남은 세대를 기다리지 않고 고정을 푼다 |
+| Expire Freezing(E) | 세대가 진행될 때마다 | Advance Generation을 «extend» (조건: 남은 세대가 0) | 지속 세대가 지난 영역을 저절로 푼다 |
 
-- Advance Generation은 원본에서 한 세대를 계산하고 확정하는 부분이다. Run / Halt Game(Go 메뉴의 속도 선택)과 Step One Generation(Go > Tick (Single Step))이 모두 이것을 «include»한다. Auto Release (E)는 이 공통 부분의 확장 지점 "세대 확정 후"에 붙으므로 Run과 Step에 따로 그리지 않았다.
-- Select Region (E)와 Set Duration (E)는 사용자가 그것만으로 끝내는 목표가 아니라 설치의 하위 목표다. 설치할 때마다 반드시 거치고, 영역 선택은 따로 취소할 수 있을 만큼 흐름이 길어서 «include»로 나눠 명세했다.
-- Auto Release (E)는 남은 세대가 0이 된 세대에만 일어나므로 «extend»다.
-- 세대마다 고정 영역의 다음 생사를 설치 순간의 생사로 두는 일은 따로 유스케이스로 그리지 않았다. 사용자가 따로 시작하는 목표가 아니라 Install Freezing (E)의 결과이고, Advance Generation의 대체 시나리오 1a로 적었다.
+- Advance Generation은 원본에서 한 세대를 계산하고 확정하는 부분이다. Run / Halt Game(Go 메뉴의 속도 선택)과 Step One Generation(Go > Tick (Single Step))이 모두 이것을 «include»한다. Expire Freezing(E)는 이 공통 부분의 확장 지점 "세대 확정 후"에 붙으므로 Run과 Step에 따로 그리지 않았다.
+- Select Region(E)와 Set Duration(E)는 사용자가 그것만으로 끝내는 목표가 아니라 설치의 하위 목표다. 설치할 때마다 반드시 거치고, 영역 선택은 따로 취소할 수 있을 만큼 흐름이 길어서 «include»로 나눠 명세했다.
+- Expire Freezing(E)는 남은 세대가 0이 된 세대에만 일어나므로 «extend»다.
+- 세대마다 고정 영역의 다음 생사를 설치 순간의 생사로 두는 일은 따로 유스케이스로 그리지 않았다. 사용자가 따로 시작하는 목표가 아니라 Install Freezing(E)의 결과이고, Advance Generation의 대체 시나리오 1a로 적었다.
 - Edit Cells, Clear Board, Store / Load Board도 Freezing의 영향을 받지만 «include»나 «extend» 관계가 아니어서 그림에 넣지 않았다. 영향은 1.5절에 있다.
 
 각 명세는 유스케이스 이름, 범위, 수준, 주 행위자, 사전 조건, 메인 성공 시나리오, 대체 시나리오, 연관 요구사항 순서로 적었다.
@@ -71,39 +71,39 @@ Advance Generation은 원본 유스케이스지만, Freezing 유스케이스가 
 | 대체 시나리오 | 1a. 활성 Freezing 영역 안의 셀이다:<br>&emsp;1. 시스템이 그 셀의 다음 생사를 계산 결과 대신 Freezing을 설치한 순간의 생사로 둔다.<br>&emsp;2. 시스템이 그 셀의 나이를 이번 세대에 세지 않는다.<br>사전 조건을 만족하지 않는다(편집 중이거나 영역을 고르는 중):<br>&emsp;1. 시스템이 세대를 진행하지 않는다. 남은 세대도 줄지 않는다. |
 | 연관 요구사항 | FR-4, FR-5, NFR-1, NFR-2 |
 
-| 유스케이스 이름 | Install Freezing (E) |
+| 유스케이스 이름 | Install Freezing(E) |
 | --- | --- |
 | 범위 | Life Game |
 | 수준 | User goal |
 | 주 행위자 | 사용자 |
 | 사전 조건 | 없음. 게임이 돌고 있을 때도 멈춰 있을 때도 쓸 수 있다(영역을 고르기 시작하면 게임이 멈춘다) |
-| 메인 성공 시나리오 | 1. Set Duration (E)를 포함한다(«include»).<br>2. Select Region (E)를 포함한다(«include»).<br>3. 사용자가 고른 영역을 고정하겠다고 요청한다.<br>4. 시스템이 영역을 보드 경계에 맞추고, 영역 안 모든 칸의 생사를 기록한다.<br>5. 시스템이 지금 세대 g와 지속 세대 n을 기록하고 영역을 고정 상태로 만든다.<br>6. 시스템이 영역 선택을 끝내고, 고정된 영역과 남은 세대 n, 고정되는 세대(g+1 ~ g+n)를 보여 준다. |
+| 메인 성공 시나리오 | 1. Set Duration(E)를 포함한다(«include»).<br>2. Select Region(E)를 포함한다(«include»).<br>3. 사용자가 고른 영역을 고정하겠다고 요청한다.<br>4. 시스템이 영역을 보드 경계에 맞추고, 영역 안 모든 칸의 생사를 기록한다.<br>5. 시스템이 지금 세대 g와 지속 세대 n을 기록하고 영역을 고정 상태로 만든다.<br>6. 시스템이 영역 선택을 끝내고, 고정된 영역과 남은 세대 n, 고정되는 세대(g+1 ~ g+n)를 보여 준다. |
 | 대체 시나리오 | 3a. 고른 영역이 활성 영역과 겹친다:<br>&emsp;1. 시스템이 설치를 받지 않는다(화면의 설치 버튼이 꺼져 있다). 맞닿는 것은 허용한다.<br>4a. 고른 영역이 보드와 겹치지 않거나 비어 있다:<br>&emsp;1. 시스템이 "보드 안의 영역을 선택하세요."를 보여 주고 아무것도 바꾸지 않는다.<br>5a. 지속 세대가 1 미만이다:<br>&emsp;1. 시스템이 "지속 세대는 1 이상이어야 합니다."를 보여 주고 아무것도 바꾸지 않는다. 화면의 입력 칸은 1~999만 받으므로 모델을 직접 부를 때만 일어난다. |
 | 연관 요구사항 | FR-3, FR-4, FR-7, FR-10, NFR-4 |
 
 예: 지금 세대가 10일 때 지속 세대 5로 설치하면 11~15세대 동안 고정되고, 16세대부터 원본 규칙으로 계산한다.
 
-| 유스케이스 이름 | Select Region (E) |
+| 유스케이스 이름 | Select Region(E) |
 | --- | --- |
 | 범위 | Life Game |
-| 수준 | Subfunction (Install Freezing (E)가 «include») |
-| 주 행위자 | 사용자 (포함하는 Install Freezing (E)의 주 행위자를 따른다) |
+| 수준 | Subfunction (Install Freezing(E)가 «include») |
+| 주 행위자 | 사용자 (포함하는 Install Freezing(E)의 주 행위자를 따른다) |
 | 사전 조건 | 없음 |
 | 메인 성공 시나리오 | 1. 사용자가 영역을 고르기 시작하겠다고 요청한다.<br>2. 시스템이 진행 중인 캡처·배치 편집을 끝내고 배치 되돌리기 기록을 지운 뒤, 게임을 멈추고 영역 선택 모드로 들어간다.<br>3. 사용자가 보드에서 한 칸을 누르고 끌어 사각형의 두 모서리를 정한다.<br>4. 시스템이 끄는 동안 사각형과, 활성 영역과 겹치는지(설치할 수 있는지)를 보여 준다.<br>5. 사용자가 버튼을 놓아 사각형을 정한다. |
 | 대체 시나리오 | 3a. 보드 밖에서 누른다:<br>&emsp;1. 시스템이 선택을 시작하지 않는다.<br>3b. 반대 방향(오른쪽 아래에서 왼쪽 위)으로 끈다:<br>&emsp;1. 시스템이 같은 사각형으로 정한다.<br>3c. 보드 밖으로 끈다:<br>&emsp;1. 시스템이 가장 가까운 가장자리 칸에 맞춘다.<br>*a. 사용자가 선택을 그만둔다(Esc, 오른쪽 클릭, 선택 끝내기, 다른 탭으로 전환):<br>&emsp;1. 시스템이 영역 선택 모드를 끝낸다. 설치된 영역은 그대로이고 게임은 저절로 다시 돌지 않는다. |
 | 연관 요구사항 | FR-1, FR-10 |
 
-| 유스케이스 이름 | Set Duration (E) |
+| 유스케이스 이름 | Set Duration(E) |
 | --- | --- |
 | 범위 | Life Game |
-| 수준 | Subfunction (Install Freezing (E)가 «include») |
-| 주 행위자 | 사용자 (포함하는 Install Freezing (E)의 주 행위자를 따른다) |
+| 수준 | Subfunction (Install Freezing(E)가 «include») |
+| 주 행위자 | 사용자 (포함하는 Install Freezing(E)의 주 행위자를 따른다) |
 | 사전 조건 | 없음 |
 | 메인 성공 시나리오 | 1. 사용자가 고정할 세대 수 n을 정한다.<br>2. 시스템이 n을 다음 설치에 쓸 지속 세대로 보여 준다. |
 | 대체 시나리오 | 1a. 사용자가 값을 바꾸지 않는다:<br>&emsp;1. 시스템이 처음 값 5를 쓴다.<br>1b. 1~999 밖의 값이다:<br>&emsp;1. 시스템이 받지 않고 이전 값을 유지한다. |
 | 연관 요구사항 | FR-2 |
 
-| 유스케이스 이름 | Release Freezing (E) |
+| 유스케이스 이름 | Release Freezing(E) |
 | --- | --- |
 | 범위 | Life Game |
 | 수준 | User goal |
@@ -113,7 +113,7 @@ Advance Generation은 원본 유스케이스지만, Freezing 유스케이스가 
 | 대체 시나리오 | 1a. 모든 영역을 풀겠다고 요청한다:<br>&emsp;1. 시스템이 모든 활성 영역을 같은 방식으로 풀고 빈 목록을 보여 준다.<br>2a. 고른 영역이 없다:<br>&emsp;1. 시스템이 요청을 받지 않는다(해제 버튼이 꺼져 있다). |
 | 연관 요구사항 | FR-6 |
 
-| 유스케이스 이름 | Auto Release (E) |
+| 유스케이스 이름 | Expire Freezing(E) |
 | --- | --- |
 | 범위 | Life Game |
 | 수준 | Subfunction (Advance Generation의 확장 지점 "세대 확정 후"에서 «extend») |
@@ -146,22 +146,22 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 
 | ID | 요구사항 | 유스케이스 |
 | --- | --- | --- |
-| FR-1 | 영역 선택을 시작하면 게임이 멈추고, 보드를 끌어 사각형 영역을 고른다. 반대 방향으로 끌어도 같은 사각형이고, 보드 밖으로 끌면 가장자리 칸에 맞춘다. 고르는 동안 세대가 진행되지 않고 일반 그리기도 되지 않는다 | Select Region (E) |
-| FR-2 | 지속 세대는 1~999이고 처음 값은 5다. 이미 설치된 영역에는 적용하지 않는다 | Set Duration (E) |
-| FR-3 | 설치하면 그 순간 영역 안 모든 칸(살아 있는 칸과 죽은 칸)의 생사를 기록하고, 지금 세대가 g이면 g+1 ~ g+n세대 동안 고정한다 | Install Freezing (E) |
-| FR-4 | 고정된 동안 영역 안의 살아 있는 셀은 죽지 않고 죽은 셀은 태어나지 않는다. 영역 밖은 원본 규칙대로 진화하고, 고정된 살아 있는 셀은 바깥 셀의 이웃으로 센다 | Advance Generation, Install Freezing (E) |
-| FR-5 | 지속 세대가 지나면 영역이 저절로 풀리고, 그 영역의 셀은 다음 세대부터 원본 규칙을 따른다 | Auto Release (E) |
-| FR-6 | 선택한 영역 하나, 또는 모든 영역의 고정을 바로 풀 수 있다 | Release Freezing (E) |
-| FR-7 | 영역을 여러 개 둘 수 있고 영역마다 지속 세대가 다를 수 있다. 활성 영역과 겹치는 영역은 설치할 수 없고 맞닿는 것은 된다 | Install Freezing (E), Auto Release (E) |
+| FR-1 | 영역 선택을 시작하면 게임이 멈추고, 보드를 끌어 사각형 영역을 고른다. 반대 방향으로 끌어도 같은 사각형이고, 보드 밖으로 끌면 가장자리 칸에 맞춘다. 고르는 동안 세대가 진행되지 않고 일반 그리기도 되지 않는다 | Select Region(E) |
+| FR-2 | 지속 세대는 1~999이고 처음 값은 5다. 이미 설치된 영역에는 적용하지 않는다 | Set Duration(E) |
+| FR-3 | 설치하면 그 순간 영역 안 모든 칸(살아 있는 칸과 죽은 칸)의 생사를 기록하고, 지금 세대가 g이면 g+1 ~ g+n세대 동안 고정한다 | Install Freezing(E) |
+| FR-4 | 고정된 동안 영역 안의 살아 있는 셀은 죽지 않고 죽은 셀은 태어나지 않는다. 영역 밖은 원본 규칙대로 진화하고, 고정된 살아 있는 셀은 바깥 셀의 이웃으로 센다 | Advance Generation, Install Freezing(E) |
+| FR-5 | 지속 세대가 지나면 영역이 저절로 풀리고, 그 영역의 셀은 다음 세대부터 원본 규칙을 따른다 | Expire Freezing(E) |
+| FR-6 | 선택한 영역 하나, 또는 모든 영역의 고정을 바로 풀 수 있다 | Release Freezing(E) |
+| FR-7 | 영역을 여러 개 둘 수 있고 영역마다 지속 세대가 다를 수 있다. 활성 영역과 겹치는 영역은 설치할 수 없고 맞닿는 것은 된다 | Install Freezing(E), Expire Freezing(E) |
 | FR-8 | 고정된 셀은 클릭이나 드래그로 바꿀 수 없다. 템플릿은 사각형이 활성 영역과 겹치면 배치를 거부한다 | Edit Cells, Draw Cells by Dragging(E), Place Template(E) (다른 기능) |
 | FR-9 | Grid > Clear와 Grid > Load(읽기 성공)는 모든 영역을 없앤다. Load를 취소하면 영역은 그대로다. Store는 영역을 저장하지 않는다 | Clear Board, Store / Load Board |
-| FR-10 | 고정된 영역, 남은 세대, 고정된 살아 있는 셀, 고르는 중인 사각형, 겹쳐서 설치할 수 없는 선택을 보드 위에 구분해 보여 준다(1.1절 표) | Select Region (E), Install Freezing (E) |
+| FR-10 | 고정된 영역, 남은 세대, 고정된 살아 있는 셀, 고르는 중인 사각형, 겹쳐서 설치할 수 없는 선택을 보드 위에 구분해 보여 준다(1.1절 표) | Select Region(E), Install Freezing(E) |
 
 **비기능 요구사항**
 
 | ID | 요구사항 | 기준 |
 | --- | --- | --- |
-| NFR-1 | 생사 규칙 계산 코드가 바뀌지 않고, 영역이 없으면 원본과 같게 동작한다 | `Resident.figureNextState()`를 고치지 않는다. 원본 동작을 검사하는 기존 테스트가 Freezing 때문에 고친 곳 없이 통과한다 |
+| NFR-1 | 생사 규칙 계산 코드가 바뀌지 않고, 영역이 없으면 Freezing을 붙이기 전과 같게 동작한다 | `Resident.figureNextState()`를 고치지 않는다. 원본 동작을 검사하는 기존 테스트가 Freezing 때문에 고친 곳 없이 통과한다 |
 | NFR-2 | 통계·사운드·색 순환과 어긋나지 않는다 | 세대 번호가 한 곳에만 있다. 고정된 셀은 출생·사망 목록에 들어가지 않고 생존 수에는 들어간다. 고정된 셀은 나이와 색이 멈춘다 |
 | NFR-3 | 고정 규칙은 게임 창 없이 테스트할 수 있다 | `FreezingManager`, `FreezingRegion`, 상태 클래스에 Swing 코드가 없다 |
 | NFR-4 | 다른 확장 기능의 클래스를 고치지 않는다 | `PatternTools`, `BoardEditor`, `PlacePatternCommand`, `Statistics`, `StatisticsPanel`, `BoardChangeEvent`, `SoundEffects`, `CellColorPolicy`와 구현들, `Clock`이 Freezing 병합 전과 같다 |
@@ -170,7 +170,7 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 
 ### 1.5 기존 기능에 미치는 영향
 
-다음 세대의 생사는 원본 규칙대로 계산한 뒤, 활성 영역 안의 칸만 확정 직전에 설치 순간의 생사로 바뀐다. 영역이 없으면 이 단계는 아무것도 하지 않으므로 결과가 원본과 같다(NFR-1).
+다음 세대의 생사는 원본 규칙대로 계산한 뒤, 활성 영역 안의 칸만 확정 직전에 설치 순간의 생사로 바뀐다. 영역이 없으면 이 단계는 아무것도 하지 않으므로 결과가 Freezing을 붙이기 전과 같다(NFR-1).
 
 | 기존 기능 | 영역이 없을 때 | 영역이 있을 때 |
 | --- | --- | --- |
@@ -186,11 +186,11 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 
 ## 2. 기존 코드에서 바뀐 부분
 
-원본 클래스 중 `Cell`, `Neighborhood`, `Resident`, `Universe`, `Life`를 고쳤다.
+원본 클래스 중 `Cell`, `Neighborhood`, `Resident`, `Universe`, `Life`를 고쳤다. 원본은 Holub 코드 그대로(저장소의 첫 커밋)다. 아래 표의 "Freezing 전"과 코드의 `-` 줄은 Freezing을 붙이기 직전의 dev 코드(`d215c7a`)이고, 그중 Holub 원본에 없던 것(셀의 나이, 통계·사운드 이벤트, 캡처·배치 편집 중 틱 건너뛰기)은 다른 기능이 더한 것이다. Holub 코드의 오류를 고친 내용은 [docs/fixes/](../fixes/)에 있다.
 
 ### 2.1 Cell 계층: 좌표로 다음 생사만 바꾼다
 
-| 부분 | 원본 | 바뀐 뒤 |
+| 부분 | Freezing 전 | 바뀐 뒤 |
 | --- | --- | --- |
 | `Cell` | 다음 생사는 `figureNextState()`만 정한다 | `holdNextState(location, alive)`를 선언했다. `Cell.DUMMY`는 아무것도 하지 않고 false를 돌려준다<br>이유: 영역이 보드의 중첩 구조(8×8 블록 두 단계)를 몰라도 좌표 하나로 칸에 닿게 한다(4.2절) |
 | `Neighborhood` | | `holdNextState()`를 좌표가 속한 하위 셀에 넘기기만 한다. 블록의 활성 표시(`amActive`)는 건드리지 않는다<br>이유: 다음 생사가 실제로 바뀌는 칸은 방금 `figureNextState()`가 "변화 있음"으로 계산한 블록에만 있어, 그 블록은 이미 활성이다 |
@@ -254,7 +254,7 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 
 ### 2.2 Universe: 틱 처리와 기능 사이의 연결
 
-| 단계 | 원본 | 바뀐 뒤 |
+| 단계 | Freezing 전 | 바뀐 뒤 |
 | --- | --- | --- |
 | 틱을 건너뛰는 조건 | 캡처·배치 편집 중 | Freezing 영역을 고르는 중일 때도 건너뛴다<br>이유: 고르는 동안 판이 바뀌면 사용자가 본 모습과 기록되는 스냅샷이 달라진다 |
 | 계산과 확정 사이 | 없음 | `freezing.beforeTransition(outermostCell)`: 활성 영역마다 다음 생사를 스냅샷으로 바꾼다<br>이유: 셀이 한 번도 잘못 바뀌지 않아 이벤트와 나이가 저절로 맞는다(4.2절) |
@@ -500,15 +500,15 @@ void afterGeneration() {
 - 포함하는 하위 유스케이스는 `ref`로 불렀다.
 - 세대를 넘기는 시계는 게임 안에 있으므로 입력으로 그리지 않았다. 게임이 돌고 있는 동안 세대 간격마다 보여 주는 부분은 시스템에서 사용자로 가는 출력만 loop로 그렸다.
 
-![Select Region (E)의 시스템 시퀀스 다이어그램](diagram/ssd-select-region.png)
+![Select Region(E)의 시스템 시퀀스 다이어그램](diagram/ssd-select-region.png)
 
-![Set Duration (E)의 시스템 시퀀스 다이어그램](diagram/ssd-set-duration.png)
+![Set Duration(E)의 시스템 시퀀스 다이어그램](diagram/ssd-set-duration.png)
 
-![Install Freezing (E)의 시스템 시퀀스 다이어그램](diagram/ssd-install.png)
+![Install Freezing(E)의 시스템 시퀀스 다이어그램](diagram/ssd-install.png)
 
-![Release Freezing (E)의 시스템 시퀀스 다이어그램](diagram/ssd-release.png)
+![Release Freezing(E)의 시스템 시퀀스 다이어그램](diagram/ssd-release.png)
 
-![Auto Release (E)의 시스템 시퀀스 다이어그램](diagram/ssd-auto-release.png)
+![Expire Freezing(E)의 시스템 시퀀스 다이어그램](diagram/ssd-auto-release.png)
 
 | 시스템 연산 | 실제 입력 | 이 기능과의 관계 |
 | --- | --- | --- |
@@ -528,7 +528,7 @@ void afterGeneration() {
 **CO1: startRegionSelection()**
 
 - Operation: `startRegionSelection()`
-- Cross References: Select Region (E)
+- Cross References: Select Region(E)
 - Preconditions: 없음
 - Postconditions:
   - 캡처·배치 편집 중이었다면 끝났다 (속성 변경)
@@ -540,7 +540,7 @@ void afterGeneration() {
 **CO2: selectRegion(start, end)**
 
 - Operation: `selectRegion(start: 칸, end: 칸)`
-- Cross References: Select Region (E)
+- Cross References: Select Region(E)
 - Preconditions:
   - `FreezingTools.selecting`이 true다
   - start가 보드 안의 칸이다
@@ -552,7 +552,7 @@ void afterGeneration() {
 **CO3: cancelRegionSelection()**
 
 - Operation: `cancelRegionSelection()`
-- Cross References: Select Region (E)
+- Cross References: Select Region(E)
 - Preconditions: `FreezingTools.selecting`이 true다 (false이면 아무것도 바뀌지 않는다)
 - Postconditions:
   - `FreezingTools.selecting`이 false가 되었다 (속성 변경)
@@ -561,7 +561,7 @@ void afterGeneration() {
 **CO4: setFreezingDuration(n)**
 
 - Operation: `setFreezingDuration(n: 정수)`
-- Cross References: Set Duration (E)
+- Cross References: Set Duration(E)
 - Preconditions: 1 ≤ n ≤ 999
 - Postconditions:
   - 지속 세대 입력 값이 n이 되었다 (속성 변경)
@@ -571,7 +571,7 @@ void afterGeneration() {
 **CO5: installFreezing()**
 
 - Operation: `installFreezing()`
-- Cross References: Install Freezing (E)
+- Cross References: Install Freezing(E)
 - Preconditions:
   - `FreezingTools.selection`이 있다
   - selection을 보드에 맞춘 사각형 area가 비어 있지 않다
@@ -592,7 +592,7 @@ void afterGeneration() {
 **CO6: releaseFreezing(region)**
 
 - Operation: `releaseFreezing(region: FreezingRegion)`
-- Cross References: Release Freezing (E)
+- Cross References: Release Freezing(E)
 - Preconditions: region이 `FreezingManager`의 활성 영역이다
 - Postconditions:
   - `FreezingManager`와 region의 연관이 끊어졌다 (연관 해제)
@@ -601,7 +601,7 @@ void afterGeneration() {
 **CO7: releaseAllFreezing()**
 
 - Operation: `releaseAllFreezing()`
-- Cross References: Release Freezing (E)
+- Cross References: Release Freezing(E)
 - Preconditions: 활성 영역이 하나 이상 있다
 - Postconditions:
   - 모든 활성 영역 r에 대해 CO6의 사후 조건이 일어났다
@@ -611,7 +611,7 @@ CO6과 CO7은 셀을 바꾸지 않는다. 풀린 영역의 셀은 지금 생사 
 **CO8: stepOneGeneration()**
 
 - Operation: `stepOneGeneration()`
-- Cross References: Step One Generation, Advance Generation, Auto Release (E)
+- Cross References: Step One Generation, Advance Generation, Expire Freezing(E)
 - Preconditions:
   - 캡처·배치 편집 중이 아니다
   - `FreezingTools.selecting`이 false다
@@ -623,7 +623,7 @@ CO6과 CO7은 셀을 바꾸지 않는다. 풀린 영역의 셀은 지금 생사 
   - 모든 활성 영역의 `FrozenState.remaining`이 1 줄었다 (속성 변경)
   - remaining이 0이 된 영역 r은 `NormalState.INSTANCE`와 연관되고, `FreezingManager`와의 연관이 끊어졌다 (연관 형성, 연관 해제)
 
-마지막 사후 조건이 Auto Release (E)다. 시계가 세대 간격마다 보내는 틱도 "시계가 멈췄다"를 뺀 같은 사후 조건을 만든다. 영역 밖 셀의 나이 계산은 색 순환 기능의 사후 조건이라 여기 적지 않았다.
+마지막 사후 조건이 Expire Freezing(E)다. 시계가 세대 간격마다 보내는 틱도 "시계가 멈췄다"를 뺀 같은 사후 조건을 만든다. 영역 밖 셀의 나이 계산은 색 순환 기능의 사후 조건이라 여기 적지 않았다.
 
 ### 3.3 시퀀스 다이어그램
 
@@ -680,7 +680,7 @@ CO6과 CO7은 셀을 바꾸지 않는다. 풀린 영역의 셀은 지금 생사 
 
 #### 3.3.5 한 세대 진행과 자동 해제
 
-시스템 연산 `stepOneGeneration()`(CO8)과, 시계가 세대 간격마다 보내는 틱의 상호작용이다. Auto Release (E)는 이 그림의 `afterGeneration()` 부분이다.
+시스템 연산 `stepOneGeneration()`(CO8)과, 시계가 세대 간격마다 보내는 틱의 상호작용이다. Expire Freezing(E)는 이 그림의 `afterGeneration()` 부분이다.
 
 ![한 세대 진행 시퀀스 다이어그램](diagram/sd-auto-release.png)
 

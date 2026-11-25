@@ -7,42 +7,35 @@ skinparam usecaseBackgroundColor #F1F1F1
 ' 사용자를 왼쪽에 두어 사용자에서 오는 선이 상자 제목과 겹치지 않게 한다
 left to right direction
 ' 간격을 바꾸면 extend 점선이 점선의 빈 부분에서 끝나 원과 떨어져 보일 수 있다
-skinparam ranksep 67
+skinparam ranksep 64
 
 actor "사용자" as User
 
 rectangle "Life Game" {
-  rectangle "기존 시스템 기능" as Original {
-    usecase "Run / Halt Game" as Run
-    usecase "Step One Generation" as Step
-    usecase Advance as "Advance Generation
+  usecase "Run / Halt Game" as Run
+  usecase "Step One Generation" as Step
+  usecase Advance as "Advance Generation
 --
 extension points
 세대 확정 후"
-  }
-
-  rectangle "추가 시스템 기능 (Freezing)" as Extended {
-    usecase "Auto Release (E)" as Auto
-    usecase "Install Freezing (E)" as Install
-    usecase "Release Freezing (E)" as Release
-    usecase "Select Region (E)" as Region
-    usecase "Set Duration (E)" as Duration
-  }
+  usecase "Install Freezing(E)" as Install
+  usecase "Select Region(E)" as Region
+  usecase "Set Duration(E)" as Duration
+  usecase "Release Freezing(E)" as Release
+  usecase "Expire Freezing(E)" as Expire
 }
 
-User -- Install
-User -- Release
-' Release를 Install 오른쪽 열에 두어 상자를 낮게 만든다
-Install -[hidden]- Release
 User -- Run
 User -- Step
+User -- Install
+User -- Release
 
-Install ..> Region : <<include>>
-Install ..> Duration : <<include>>
 Run ..> Advance : <<include>>
 Step ..> Advance : <<include>>
+Install ..> Region : <<include>>
+Install ..> Duration : <<include>>
 ' note left: 조건 노트를 <<extend>> 왼쪽에 둔다
-Auto .up.> Advance : <<extend>>
+Expire .up.> Advance : <<extend>>
 note left on link
   condition: {남은 세대가 0}
   extension point: 세대 확정 후

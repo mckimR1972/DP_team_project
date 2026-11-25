@@ -5,7 +5,7 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd Set Duration (E)
+mainframe sd Set Duration(E)
 
 actor "사용자" as User
 participant ":LifeGame" as System
