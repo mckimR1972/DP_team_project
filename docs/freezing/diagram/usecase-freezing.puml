@@ -22,7 +22,7 @@ extension points
   usecase "Select Region(E)" as Region
   usecase "Set Duration(E)" as Duration
   usecase "Release Freezing(E)" as Release
-  usecase "Expire Freezing(E)" as Expire
+  usecase "Release Freezing Automatically(E)" as AutoRelease
 }
 
 User -- Run
@@ -35,7 +35,7 @@ Step ..> Advance : <<include>>
 Install ..> Region : <<include>>
 Install ..> Duration : <<include>>
 ' note left: 조건 노트를 <<extend>> 왼쪽에 둔다
-Expire .up.> Advance : <<extend>>
+AutoRelease .up.> Advance : <<extend>>
 note left on link
   condition: {남은 세대가 0}
   extension point: 세대 확정 후
