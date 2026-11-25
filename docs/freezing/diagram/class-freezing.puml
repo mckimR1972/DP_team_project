@@ -160,7 +160,7 @@ note bottom of NormalState : ConcreteState\n값이 없어 객체 하나를 공�
 note bottom of FrozenState
   ConcreteState
   남은 세대가 0이 되면 스스로
-  NormalState로 바꾼다 (Auto Release E)
+  NormalState로 바꾼다: Auto Release (E)
 end note
 note left of FreezingRegion
   Context
@@ -169,15 +169,15 @@ note left of FreezingRegion
 end note
 note right of FreezingTools
   화면 담당
-  Select Region E, Set Duration E의
+  Select Region (E), Set Duration (E)의
   입력을 받아 manager에 넘긴다.
   beforeSelect는 Universe가 넘긴 Runnable로
   패턴 편집 종료와 되돌리기 이력 비움을 한다
 end note
 note right of FreezingManager
-  Install Freezing E : install()
-  Release Freezing E : release(), releaseAll(), reset()
-  Auto Release E : afterGeneration()
+  Install Freezing (E) : install()
+  Release Freezing (E) : release(), releaseAll(), reset()
+  Auto Release (E) : afterGeneration()
   listeners에는 FreezingTools.refresh가
   Runnable로만 들어 있다.
   FreezingTools 타입도 Swing도 모른다

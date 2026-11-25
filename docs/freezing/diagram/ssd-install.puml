@@ -5,13 +5,13 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd Install Freezing E
+mainframe sd Install Freezing (E)
 
 actor "사용자" as User
 participant ":LifeGame" as System
 
-ref over User, System : Set Duration E
-ref over User, System : Select Region E
+ref over User, System : Set Duration (E)
+ref over User, System : Select Region (E)
 
 User -> System : installFreezing()
 alt 설치함
