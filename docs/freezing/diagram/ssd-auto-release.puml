@@ -5,7 +5,7 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd Expire Freezing(E) (Step One Generation 안에서)
+mainframe sd Release Freezing Automatically(E) (Step One Generation 안에서)
 
 actor "사용자" as User
 participant ":LifeGame" as System

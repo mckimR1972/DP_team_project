@@ -149,7 +149,7 @@ note bottom of FrozenState
   ConcreteState
   beforeTransition()에서 region.holdSnapshot()을 부르고,
   남은 세대가 0이 되면 region.changeState(NormalState.INSTANCE)로
-  스스로 바꾼다: Expire Freezing(E)
+  스스로 바꾼다: Release Freezing Automatically(E)
 end note
 note left of FreezingRegion
   Context
@@ -167,7 +167,7 @@ end note
 note right of FreezingManager
   Install Freezing(E) : install()
   Release Freezing(E) : release(), releaseAll(), reset()
-  Expire Freezing(E) : afterGeneration()
+  Release Freezing Automatically(E) : afterGeneration()
   listeners에는 FreezingTools.refresh가
   Runnable로만 들어 있다.
   FreezingTools 타입도 Swing도 모른다
