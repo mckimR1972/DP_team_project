@@ -1,4 +1,4 @@
-# Freezing 테스트 결과 화면
+# Freezing 테스트 결과 보고서
 
 Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡처했다.
 
@@ -33,22 +33,29 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 | [6-color](test-freezing-model-6-color.png) | 색 순환 연동 | 고정 중 나이와 색이 멈추고 풀리면 이어서 셈, 고정된 죽은 칸은 색 없음 | 2개 통과 |
 | [7-random](test-freezing-model-7-random.png) | 무작위 비교 | 무작위 보드 12종 × 250세대, 설치·해제를 섞어 독립 계산과 모든 칸의 생사·나이 비교 | 12개 통과 |
 
+## 기본 규칙 테스트 결과
+
 ![기본 규칙](test-freezing-model-1-rules.png)
 
+## 경계 수치 테스트 결과
 ![경계 수치](test-freezing-model-2-boundary.png)
 
+## State Pattern 구조 테스트 결과
 ![State 패턴](test-freezing-model-3-state.png)
 
+## Freezing 영역 설치 테스트 결과
 ![설치 검사·영역 관리](test-freezing-model-4-install.png)
 
+## Cell 계층 Composite Pattern 구조 테스트 결과
 ![Composite](test-freezing-model-5-composite.png)
 
+## 나이 Test
 ![색 순환 연동](test-freezing-model-6-color.png)
 
+## Random Test
 ![무작위 비교](test-freezing-model-7-random.png)
 
 ## 통합 테스트
-
 ![FreezingIntegrationTest](test-freezing-integration.png)
 
 ![FreezingSoundIntegrationTest](test-freezing-sound.png)
