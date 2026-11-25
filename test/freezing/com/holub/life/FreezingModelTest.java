@@ -392,7 +392,7 @@ class FreezingModelTest {
     }
 
     @Test
-    void aGliderIsStoppedByAFrozenEmptyWallAndPassesAfterRelease() {
+    void aGliderIsStoppedByAFrozenEmptyWallAndStaysStoppedAfterRelease() {
         // Glider moving down-right toward a frozen empty column.
         set(new int[] {1, 0}, new int[] {2, 1}, new int[] {0, 2}, new int[] {1, 2}, new int[] {2, 2});
         freezing.install(new Rectangle(12, 0, 1, SIZE), 60);
@@ -401,6 +401,17 @@ class FreezingModelTest {
             for (int y = 0; y < SIZE; y++) assertFalse(alive(12, y), "wall cell born at generation " + g);
             for (int y = 0; y < SIZE; y++) for (int x = 13; x < SIZE; x++)
                 assertFalse(alive(x, y), "cell crossed the wall at generation " + g);
+        }
+
+        // The glider broke up against the wall into a block, a still life, so
+        // nothing crosses the column even after the wall is released.
+        assertTrue(freezing.regions().isEmpty(), "the wall is released after 60 generations");
+        assertEquals(4, liveCount());
+        assertTrue(alive(10, 11) && alive(11, 11) && alive(10, 12) && alive(11, 12), "the wreck is a block");
+        boolean[][] wreck = cells();
+        for (int g = 61; g <= 100; g++) {
+            tick();
+            assertArrayEquals(wreck, cells(), "the block stays where it stopped at generation " + g);
         }
     }
 
