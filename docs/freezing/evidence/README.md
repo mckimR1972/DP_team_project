@@ -13,6 +13,8 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 | [test-freezing-integration.png](test-freezing-integration.png) | `FreezingIntegrationTest` (실제 Universe에서 다른 기능과 함께) | 37개 통과 |
 | [test-freezing-sound.png](test-freezing-sound.png) | `FreezingSoundIntegrationTest` (실제 SoundEffects와 함께) | 3개 통과 |
 
+## 회귀 테스트
+
 ![Freezing JUnit 테스트를 포함한 전체 테스트](test-all.png)
 
 ## FreezingModelTest 묶음별
