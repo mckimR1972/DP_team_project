@@ -16,16 +16,16 @@
 
 ### 1.1 유스케이스
 
-확장한 유스케이스는 이름 끝에 `E`를 붙였다. 기존 유스케이스 이름은 팀 전체 유스케이스 그림과 같게 맞췄고, 유스케이스별 상세 흐름은 [sound-effects-spec.md](sound-effects-spec.md) 2장에 있다.
+확장한 유스케이스는 이름 끝에 `(E)`를 붙였다. 기존 유스케이스 이름은 팀 전체 유스케이스 그림과 같게 맞췄고, 유스케이스별 상세 흐름은 [sound-effects-spec.md](sound-effects-spec.md) 2장에 있다.
 
 ![사운드 이펙트 유스케이스 다이어그램](diagram/usecase.png)
 
 | 유스케이스 | 내용 |
 |---|---|
-| Hear Generation Sound E | 세대마다 생긴 셀은 화음, 사라진 셀은 타악기로 들린다. 세대를 확정한 뒤(Advance Generation의 확장점) 소리가 켜져 있으면 동작한다. |
-| Hear Board Sweep E | 재생선이 판을 반복해서 훑으며 산 셀을 연주한다. 게임이 멈춰 있어도 동작한다. |
-| Toggle Sound E | `Sound` 메뉴에서 소리 전체를 켜고 끈다. 끄면 재생선도 사라진다. |
-| Configure Sound E | 설정 창에서 기능별 on/off와 악기를 바꾼다. |
+| Hear Generation Sound(E) | 세대마다 생긴 셀은 화음, 사라진 셀은 타악기로 들린다. 세대를 확정한 뒤(Advance Generation의 확장점) 소리가 켜져 있으면 동작한다. |
+| Hear Board Sweep(E) | 재생선이 판을 반복해서 훑으며 산 셀을 연주한다. 게임이 멈춰 있어도 동작한다. |
+| Toggle Sound(E) | `Sound` 메뉴에서 소리 전체를 켜고 끈다. 끄면 재생선도 사라진다. |
+| Configure Sound(E) | 설정 창에서 기능별 on/off와 악기를 바꾼다. |
 
 ### 1.2 소리를 정하는 규칙
 

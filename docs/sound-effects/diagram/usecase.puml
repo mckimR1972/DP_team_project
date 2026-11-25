@@ -4,47 +4,37 @@ skinparam monochrome true
 skinparam dpi 150
 skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
-skinparam packageStyle rectangle
+skinparam usecaseBackgroundColor #F1F1F1
 left to right direction
-title 사운드 이펙트 유스케이스 (기존 기능과 추가 기능)
 
 actor "사용자" as User
 
-rectangle "기존 기능" {
-  usecase "Edit Cells" as Edit
+rectangle "Life Game" {
   usecase "Run / Halt Game" as Run
   usecase "Step One Generation" as Step
-  usecase "Clear Board" as Clear
-  usecase "Store / Load Board" as File
-  usecase "Exit Game" as Exit
+
   usecase Adv as "Advance Generation
 --
 extension points
 세대 확정 후"
+
+  usecase "Hear Generation Sound(E)" as Gen
+  usecase "Hear Board Sweep(E)" as Sweep
+  usecase "Toggle Sound(E)" as Toggle
+  usecase "Configure Sound(E)" as Config
 }
 
-rectangle "사운드 추가 기능" {
-  usecase "Hear Generation Sound E" as Gen
-  usecase "Hear Board Sweep E" as Sweep
-  usecase "Toggle Sound E" as Toggle
-  usecase "Configure Sound E" as Config
-}
-
-User -- Edit
 User -- Run
 User -- Step
-User -- Clear
-User -- File
-User -- Exit
 User -- Sweep
 User -- Toggle
 User -- Config
 
 Run ..> Adv : <<include>>
 Step ..> Adv : <<include>>
-Gen ..> Adv : <<extend>>
-note on link
-  조건: {소리가 켜져 있음}
-  확장점: 세대 확정 후
+Adv <.. Gen : <<extend>>
+note top on link
+  condition: {소리가 켜져 있음}
+  extension point: 세대 확정 후
 end note
 @enduml

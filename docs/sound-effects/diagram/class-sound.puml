@@ -9,16 +9,16 @@ hide circle
 hide empty members
 set separator none
 left to right direction
-skinparam ranksep 70
+skinparam ranksep 50
 skinparam nodesep 30
-title com.holub.life.sound 패키지 상세 (dev 838182c)
+title com.holub.life.sound 패키지 상세
 
-interface BoardChangeListener <<Observer>> {
+interface BoardChangeListener <<interface>> {
   + onBoardChanged(event : BoardChangeEvent)
 }
 
 package "com.holub.life.sound" {
-  class SoundEffects <<ConcreteObserver, Client>> {
+  class SoundEffects {
     - latestCells : boolean[][] {volatile}
     - enabled : boolean = true {volatile}
     - chord : int = 0 {volatile}
@@ -27,9 +27,9 @@ package "com.holub.life.sound" {
     - lastPhraseNanos : long
     + {static} install(universe : Universe)
     + onBoardChanged(event : BoardChangeEvent)
-    - generationChanged(births, deaths)
+    - generationChanged(births : List<Point>, deaths : List<Point>)
     - playStep()
-    - play(channel, note, delayMs, lengthMs)
+    - play(channel : MidiChannel, note : Note, delayMs : int, lengthMs : int)
     - playPercussion(velocity : int)
     - playEnding()
     - applyInstruments()
@@ -38,11 +38,11 @@ package "com.holub.life.sound" {
   }
 
   class NoteMapper {
-    ~ notesFor(births, boardWidth, chord) : List<Note>
-    ~ sweepNotesFor(liveCells, firstColumn, columns, chord, accented) : List<Note>
-    ~ burstLayerFor(births : int, notes) : List<Note>
-    ~ humanized(notes) : List<Note>
-    ~ scaled(notes, gain : double) : List<Note>
+    ~ notesFor(births : List<Point>, boardWidth : int, chord : int) : List<Note>
+    ~ sweepNotesFor(liveCells : boolean[][], firstColumn : int, columns : int, chord : int, accented : boolean) : List<Note>
+    ~ burstLayerFor(births : int, notes : List<Note>) : List<Note>
+    ~ humanized(notes : List<Note>) : List<Note>
+    ~ scaled(notes : List<Note>, gain : double) : List<Note>
     ~ endingChordFor(chord : int) : List<Note>
     ~ padNotesFor(chord : int) : int[]
     ~ padLevelFor(liveCells : int) : int
@@ -53,16 +53,16 @@ package "com.holub.life.sound" {
   class RepeatTracker {
     - recent : Deque<Integer>
     - repeats : int
-    ~ gainFor(births, deaths) : double
+    ~ gainFor(births : List<Point>, deaths : List<Point>) : double
   }
 
   class SoundSettings {
     - switches : Map<Feature, Boolean>
     - choices : Map<Feature, Instrument>
-    ~ isOn(feature) : boolean
-    ~ setOn(feature, on : boolean)
-    ~ instrumentOf(feature) : Instrument
-    ~ setInstrument(feature, instrument)
+    ~ isOn(feature : Feature) : boolean
+    ~ setOn(feature : Feature, on : boolean)
+    ~ instrumentOf(feature : Feature) : Instrument
+    ~ setInstrument(feature : Feature, instrument : Instrument)
     ~ onInstrumentChange(listener : Runnable)
   }
 
@@ -71,12 +71,12 @@ package "com.holub.life.sound" {
   }
 
   class "NoteMapper.Note" as Note <<record>> {
-    pitch : int
-    pan : int
-    velocity : int
+    - pitch : int
+    - pan : int
+    - velocity : int
   }
 
-  enum "SoundSettings.Feature" as Feature {
+  enum "SoundSettings.Feature" as Feature <<enumeration>> {
     BIRTHS
     PROGRESSION
     STRUM
@@ -89,47 +89,47 @@ package "com.holub.life.sound" {
   }
 
   class "SoundSettings.Instrument" as Instrument <<record>> {
-    name : String
-    code : int
+    - name : String
+    - code : int
   }
 }
 
-interface ScheduledExecutorService <<Invoker>> {
-  + schedule(command, delay, unit)
-  + scheduleAtFixedRate(command, initialDelay, period, unit)
-  + execute(command)
+interface ScheduledExecutorService <<interface>> {
+  + schedule(command : Runnable, delay : long, unit : TimeUnit) : ScheduledFuture<?>
+  + scheduleAtFixedRate(command : Runnable, initialDelay : long, period : long, unit : TimeUnit) : ScheduledFuture<?>
+  + execute(command : Runnable)
 }
 
-interface Runnable <<Command>> {
+interface Runnable <<interface>> {
   + run()
 }
 
-interface MidiChannel <<Receiver>> {
-  + noteOn(pitch, velocity)
-  + noteOff(pitch)
-  + programChange(program)
-  + controlChange(controller, value)
+interface MidiChannel <<interface>> {
+  + noteOn(noteNumber : int, velocity : int)
+  + noteOff(noteNumber : int)
+  + programChange(program : int)
+  + controlChange(controller : int, value : int)
 }
 
 class JDialog
 
 BoardChangeListener <|.. SoundEffects
 
-SoundEffects *-- "1" NoteMapper : mapper
-SoundEffects *-- "1" RepeatTracker : repeats
-SoundEffects *-- "1" SoundSettings : settings
-SoundEffects --> "0..1" SoundSettingsDialog : settingsDialog
-SoundEffects --> "1" ScheduledExecutorService : noteScheduler
-SoundEffects --> "9" MidiChannel : 채널 9개
+SoundEffects "1" *-- "1" NoteMapper : mapper
+SoundEffects "1" *-- "1" RepeatTracker : repeats
+SoundEffects "1" *-- "1" SoundSettings : settings
+SoundEffects "1" --> "0..1" SoundSettingsDialog : settingsDialog
+SoundEffects "1" --> "1" ScheduledExecutorService : noteScheduler
+SoundEffects "1" --> "9" MidiChannel
 SoundEffects ..> Runnable : <<create>>
 
 NoteMapper ..> Note : <<create>>
 SoundSettings +-- Feature
 SoundSettings +-- Instrument
-SoundSettingsDialog --> "1" SoundSettings : 값 변경
+SoundSettingsDialog ..> SoundSettings : <<use>>
 JDialog <|-- SoundSettingsDialog
-ScheduledExecutorService o-- "*" Runnable : 예약된 명령
-Runnable ..> MidiChannel : 실행할 때 호출
+ScheduledExecutorService "1" o-- "*" Runnable
+Runnable ..> MidiChannel : <<use>>
 
 note bottom of ScheduledExecutorService
   단일 스레드(sound-notes).
@@ -138,11 +138,13 @@ note bottom of ScheduledExecutorService
   이 스레드에서만 만진다.
 end note
 
-legend right
-  Command: SoundEffects(Client)가 Runnable(Command)을 만들어
+legend bottom left
+  Command 역할: SoundEffects(Client)가 Runnable(Command)을 만들어
   ScheduledExecutorService(Invoker)에 예약하고,
   예약한 시간에 MidiChannel(Receiver)을 부른다.
-  채널 9개 = 생성음 5, 대량 생성 1, 패드 1, 재생선 1, 타악기 1
+  MidiChannel 9개 = 생성음 5, 대량 생성 1, 패드 1, 재생선 1, 타악기 1
+  SoundSettingsDialog는 체크박스·선택 상자의 리스너에서
+  SoundSettings 값을 바꾼다.
   NoteMapper, RepeatTracker, SoundSettings는 MIDI와 Swing에 의존하지 않아서
   JUnit으로 바로 테스트한다.
 endlegend

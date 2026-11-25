@@ -10,14 +10,14 @@ set separator none
 hide empty members
 skinparam ranksep 60
 skinparam nodesep 45
-title 사운드를 붙인 뒤: 게임과 사운드의 연결 (dev 838182c)
+title 사운드를 붙인 뒤: 게임과 사운드의 연결
 
 package "com.holub.life" {
   class Life {
     - Life()
   }
 
-  class Universe <<Subject>> {
+  class Universe {
     - outermostCell : Cell
     - boardListeners : Set<BoardChangeListener>
     - generation : long
@@ -31,7 +31,7 @@ package "com.holub.life" {
     - notifyBoardChanged(kind : Kind, before : boolean[][])
   }
 
-  interface BoardChangeListener <<Observer>> {
+  interface BoardChangeListener <<interface>> {
     + onBoardChanged(event : BoardChangeEvent)
   }
 
@@ -49,7 +49,7 @@ package "com.holub.life" {
     + copyDeaths() : List<Point>
   }
 
-  enum "BoardChangeEvent.Kind" as Kind {
+  enum "BoardChangeEvent.Kind" as Kind <<enumeration>> {
     INITIAL
     GENERATION
     EDIT
@@ -60,66 +60,76 @@ package "com.holub.life" {
     COLOR_POLICY_CHANGED
   }
 
-  class Statistics <<ConcreteObserver>> {
-    + onBoardChanged(event : BoardChangeEvent)
-  }
+  class Statistics
 
-  interface Cell <<Component>> {
+  interface Cell <<interface>> {
     + isAlive() : boolean
     + **isAliveAt(row : int, column : int) : boolean**
     + widthInCells() : int
     + transition() : boolean
   }
 
-  class Neighborhood <<Composite>> {
+  class Neighborhood {
     - grid : Cell[][]
     + **isAliveAt(row : int, column : int) : boolean**
   }
 
-  class Resident <<Leaf>> {
+  class Resident {
     - amAlive : boolean
     + **isAliveAt(row : int, column : int) : boolean**
   }
 }
 
 package "com.holub.life.sound" {
-  class SoundEffects <<ConcreteObserver>> {
+  class SoundEffects {
+    - universe : Universe
     + {static} install(universe : Universe)
     + onBoardChanged(event : BoardChangeEvent)
   }
 }
 
-Life ..> Universe
-Life ..> SoundEffects : install(universe)
+Life ..> Universe : <<use>>
+Life ..> SoundEffects : <<use>>
 
-Universe o-- "*" BoardChangeListener : boardListeners
+Universe "1" o-- "*" BoardChangeListener : boardListeners
 Universe ..> BoardChangeEvent : <<create>>
 BoardChangeEvent +-- Kind
 BoardChangeListener <|.. Statistics
 BoardChangeListener <|.. SoundEffects
-SoundEffects ..> BoardChangeEvent : 판 복사본, 생성·소멸 좌표
-SoundEffects --> "1" Universe : 재생선 표시 (setPlayhead)
+SoundEffects ..> BoardChangeEvent : <<use>>
+SoundEffects "0..1" --> "1" Universe : universe
 
-Universe --> "1" Cell : outermostCell
+Universe "1" --> "1" Cell : outermostCell
 Cell <|.. Neighborhood
 Cell <|.. Resident
-Neighborhood o-- "64" Cell : grid (8×8)
+Neighborhood "1" *-- "64" Cell : grid
 
 note top of Universe
-  Observer의 Subject.
-  BoardChangeListener만 알고
+  Observer 역할
+  Subject: Universe
+  Observer: BoardChangeListener
+  ConcreteObserver: Statistics, SoundEffects
+  Universe는 BoardChangeListener만 알고
   사운드 패키지는 import하지 않는다.
 end note
 
 note bottom of Neighborhood
-  Composite 확장: isAliveAt()은 좌표를
-  하위 격자 위치와 나머지로 나눠
-  해당 하위 셀에 넘긴다.
+  Composite 역할
+  Component: Cell
+  Composite: Neighborhood
+  Leaf: Resident
+  isAliveAt()은 좌표를 하위 격자 위치와
+  나머지로 나눠 해당 하위 셀에 넘긴다.
+end note
+
+note bottom of SoundEffects
+  Life는 install(universe)로 사운드를 설치한다.
+  SoundEffects는 판 복사본과 생성·소멸 좌표를
+  BoardChangeEvent에서 읽고, Universe에는
+  재생선 위치(setPlayhead)만 알린다.
 end note
 
 legend right
   굵은 글씨: 사운드 작업에서 추가한 연산
-  리스너 구조는 처음(#3)에는 GenerationListener였고
-  통계 기능(#10)에서 BoardChangeListener로 합쳐졌다.
 endlegend
 @enduml

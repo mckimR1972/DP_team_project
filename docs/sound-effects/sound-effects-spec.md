@@ -77,35 +77,35 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 ### 2.1 유스케이스 목록
 
-기존 기능과 추가 기능을 나눠 적었다. 추가한 유스케이스는 이름 끝에 `E`를 붙였고, 기존 유스케이스 이름은 팀 전체 유스케이스 다이어그램과 같게 맞췄다.
+기존 기능과 추가 기능을 나눠 적었다. 추가한 유스케이스는 이름 끝에 `(E)`를 붙였고, 기존 유스케이스 이름은 팀 전체 유스케이스 다이어그램과 같게 맞췄다.
 
 | 구분 | 유스케이스 | 사운드와의 관계 |
 |---|---|---|
 | 기존 | Edit Cells | 편집한 판을 재생선이 다음 스텝부터 연주한다 |
 | 기존 | Run / Halt Game | Advance Generation을 포함한다 |
 | 기존 | Step One Generation | Advance Generation을 포함한다 |
-| 기존 | Advance Generation | 확장점 "세대 확정 후"에서 Hear Generation Sound E가 확장한다 |
+| 기존 | Advance Generation | 확장점 "세대 확정 후"에서 Hear Generation Sound(E)가 확장한다 |
 | 기존 | Clear Board, Store / Load Board | Clear와 Load로 바뀐 판을 재생선이 다음 스텝부터 연주한다 |
 | 기존 | Exit Game | 관계 없음 |
-| 추가 (UC-S1) | Hear Generation Sound E | Advance Generation을 확장한다. 조건은 소리가 켜져 있을 때다 |
-| 추가 (UC-S2) | Hear Board Sweep E | 사용자와 직접 연관. 게임 진행과 상관없이 동작한다 |
-| 추가 (UC-S3) | Toggle Sound E | 사용자와 직접 연관 |
-| 추가 (UC-S4) | Configure Sound E | 사용자와 직접 연관 |
+| 추가 (UC-S1) | Hear Generation Sound(E) | Advance Generation을 확장한다. 조건은 소리가 켜져 있을 때다 |
+| 추가 (UC-S2) | Hear Board Sweep(E) | 사용자와 직접 연관. 게임 진행과 상관없이 동작한다 |
+| 추가 (UC-S3) | Toggle Sound(E) | 사용자와 직접 연관 |
+| 추가 (UC-S4) | Configure Sound(E) | 사용자와 직접 연관 |
 
 ![사운드 이펙트 유스케이스 다이어그램](diagram/usecase.png)
 
-그림 원본은 [diagram/usecase.puml](diagram/usecase.puml)이다. 그림에 있는 관계는 이렇다.
+그림 원본은 [diagram/usecase.puml](diagram/usecase.puml)이다. 시스템 경계는 "Life Game" 상자 하나다. 기존 유스케이스는 사운드와 «include»·«extend»로 이어지는 Run / Halt Game, Step One Generation, Advance Generation만 그렸다. Edit Cells, Clear Board, Store / Load Board, Exit Game은 사운드와 이런 관계가 없어서 위 표에만 적었다. 그림에 있는 관계는 이렇다.
 
 - «include»: 게임을 실행하면(Run / Halt Game) 틱마다, Step One Generation을 고르면 한 번 세대가 진행된다(Advance Generation). 할 때마다 반드시 따라오는 일이라 include로 그렸다. Halt는 세대 진행을 멈추기만 한다.
-- «extend»: 세대가 확정된 뒤(확장점 "세대 확정 후") 소리가 켜져 있을 때만 Hear Generation Sound E가 끼어든다. 소리가 꺼져 있어도 세대 진행에는 아무 문제가 없어서 extend로 그렸다.
-- Hear Generation Sound E는 사용자가 직접 시작하는 일이 아니라 세대 진행에 붙어서 일어나서, 사용자와 선으로 잇지 않았다.
-- Hear Board Sweep E는 게임 진행과 관계없이 150ms 타이머로 돌아서 기존 유스케이스와 include·extend 관계가 없다.
+- «extend»: 세대가 확정된 뒤(확장점 "세대 확정 후") 소리가 켜져 있을 때만 Hear Generation Sound(E)가 끼어든다. 소리가 꺼져 있어도 세대 진행에는 아무 문제가 없어서 extend로 그렸다.
+- Hear Generation Sound(E)는 사용자가 직접 시작하는 일이 아니라 세대 진행에 붙어서 일어나서, 사용자와 선으로 잇지 않았다.
+- Hear Board Sweep(E)는 게임 진행과 관계없이 150ms 타이머로 돌아서 기존 유스케이스와 include·extend 관계가 없다.
 
 ### 2.2 유스케이스 명세
 
 기본 흐름은 아무 문제가 없을 때의 순서이고, 대안 흐름은 그중 한 단계에서 갈라지는 경우다. 대안 흐름의 1a는 기본 흐름 1단계에서 갈라지는 첫 번째 경우다.
 
-#### UC-S1 Hear Generation Sound E
+#### UC-S1 Hear Generation Sound(E)
 
 | 항목 | 내용 |
 |---|---|
@@ -133,7 +133,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 - 4a. 작은 흔들림이 켜져 있으면 음마다 시작이 0~15ms 늦어지고 세기가 조금씩 달라지며, 가끔 한 옥타브 위 음이 섞인다.
 - 4b. 설정에서 끈 항목은 UC-S4의 설정 항목 표대로 동작이 바뀐다. 예를 들어 스트럼을 끄면 음 사이의 25ms 간격 없이 내고, 코드 진행을 끄면 늘 C 코드의 5음을 쓴다.
 
-#### UC-S2 Hear Board Sweep E
+#### UC-S2 Hear Board Sweep(E)
 
 | 항목 | 내용 |
 |---|---|
@@ -152,13 +152,13 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 대안 흐름
 
-- 1a. 사용자가 셀을 편집하거나(Edit Cells, Draw Cells by Dragging E) Clear, Load, 템플릿 배치·되돌리기(Place Template E, Undo Placement E)를 하면 다음 스텝부터 바뀐 판을 연주한다.
+- 1a. 사용자가 셀을 편집하거나(Edit Cells, Draw Cells by Dragging(E)) Clear, Load, 템플릿 배치·되돌리기(Place Template(E), Undo Placement(E))를 하면 다음 스텝부터 바뀐 판을 연주한다.
 - 1b. 설정에서 재생선을 끄면 선을 지우고 연주하지 않는다. 패드는 따로 켜고 끈다.
 - 2a. 재생선이 지나는 4열에 산 셀이 없으면 그 스텝은 조용하다.
 - 3a. 판이 비어 있거나 설정에서 패드를 끄면 패드를 끈다. 재생선은 계속 움직인다.
 - 4a. 설정에서 코드 진행을 끄면 코드는 C에 머문다.
 
-#### UC-S3 Toggle Sound E
+#### UC-S3 Toggle Sound(E)
 
 | 항목 | 내용 |
 |---|---|
@@ -180,7 +180,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 - 2a. Off인 동안에도 판이 바뀐 내용은 계속 받아 둔다. 그래서 On으로 바꾸면 그 사이에 편집한 판을 바로 연주한다.
 - 2b. Off를 고르기 전에 이미 예약된 음은 예정대로 울리고 꺼진다.
 
-#### UC-S4 Configure Sound E
+#### UC-S4 Configure Sound(E)
 
 | 항목 | 내용 |
 |---|---|

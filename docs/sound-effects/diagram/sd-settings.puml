@@ -5,7 +5,7 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd 설정 창에서 악기 바꾸기 (Configure Sound E)
+mainframe sd 설정 창에서 악기 바꾸기 (Configure Sound(E))
 
 actor "사용자" as User
 participant "effects :\nSoundEffects" as S

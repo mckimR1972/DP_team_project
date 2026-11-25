@@ -44,7 +44,7 @@ class Publisher {
 }
 
 interface Cell <<interface>> {
-  + figureNextState(이웃 8칸 : Cell) : boolean
+  + figureNextState(north : Cell, south : Cell, east : Cell, west : Cell, northeast : Cell, northwest : Cell, southeast : Cell, southwest : Cell) : boolean
   + transition() : boolean
   + isAlive() : boolean
   + widthInCells() : int
@@ -67,16 +67,23 @@ class MenuSite {
   + {static} addLine(requester : Object, menu : String, name : String, listener : ActionListener)
 }
 
-Life ..> Universe : 화면에 붙임
-Universe --> "1" Cell : outermostCell
+Life ..> Universe : <<use>>
+Universe "1" --> "1" Cell : outermostCell
 Cell <|.. Neighborhood
 Cell <|.. Resident
-Neighborhood o-- "64" Cell : grid (8×8)
+Neighborhood "1" *-- "64" Cell : grid
 
-Universe ..> MenuSite : Grid 메뉴 등록
-Clock --> Publisher
-Publisher o-- "*" ClockListener : subscribers
-Universe ..> ClockListener : 익명 클래스로 구현해 등록
+Universe ..> MenuSite : <<use>>
+Clock "1" --> "1" Publisher : publisher
+Publisher "1" o-- "*" ClockListener : subscribers
+Universe ..> ClockListener : <<create>>
+
+note left of Life
+  Life는 Universe를 창에 붙인다.
+  Universe는 Grid 메뉴를 MenuSite에 등록하고,
+  Clock.Listener를 익명 클래스로 만들어
+  Clock에 등록한다.
+end note
 
 note right of Universe
   tick()마다 transition() 후 다시 그리기만 한다.

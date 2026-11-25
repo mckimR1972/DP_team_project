@@ -21,6 +21,8 @@
 - Observer: `Universe`(Subject)가 `BoardChangeListener`(Observer) 목록을 갖고, 판이 바뀔 때마다 `BoardChangeEvent`를 만들어 보낸다. `SoundEffects`와 `Statistics`가 ConcreteObserver다. `Universe`는 사운드 패키지를 import하지 않는다. 게임 쪽에서 사운드를 아는 곳은 시작점인 `Life`가 `install()`을 부르는 한 곳뿐이다.
 - Composite 확장: `Cell`(Component)에 `isAliveAt(row, column)`을 추가하고 `Neighborhood`(Composite)와 `Resident`(Leaf)가 구현했다.
 
+두 패턴의 역할은 그림의 노트에 적었다. `Statistics`는 통계 기능의 클래스라서 이름만 그렸다.
+
 `SoundEffects`에서 `Universe`로 가는 연관은 재생선을 판 위에 그리기(`setPlayhead`) 위한 것이다. 판의 상태는 `Universe`에 묻지 않고 이벤트로만 받는다.
 
 ### 1.3 사운드 패키지 상세
@@ -29,7 +31,7 @@
 
 `SoundEffects`가 음 고르기(`NoteMapper`), 반복 판단(`RepeatTracker`), 설정 값(`SoundSettings`)을 각각 하나씩 갖고 일을 맡긴다. 이 셋은 MIDI와 Swing을 모르기 때문에 단위 테스트를 바로 할 수 있다.
 
-Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffects`(Client)가 음 켜기·끄기, 타악기, 악기 변경, 재생선 한 스텝을 `Runnable`(Command)로 만들고, 단일 스레드 `ScheduledExecutorService`(Invoker)가 예약한 시간에 실행해 `MidiChannel`(Receiver)을 부른다.
+Command 패턴의 역할은 그림의 범례에 적었다. `SoundEffects`(Client)가 음 켜기·끄기, 타악기, 악기 변경, 재생선 한 스텝을 `Runnable`(Command)로 만들고, 단일 스레드 `ScheduledExecutorService`(Invoker)가 예약한 시간에 실행해 `MidiChannel`(Receiver)을 부른다.
 
 `{volatile}`이 붙은 세 필드(`latestCells`, `enabled`, `chord`)는 Swing 이벤트 스레드와 사운드 스레드가 함께 읽는 값이다. `step`과 `padNotes`는 사운드 스레드에서만 쓰므로 표시가 없다.
 
@@ -111,7 +113,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Hear Board Sweep E, Toggle Sound E, Configure Sound E |
+| Cross References | Hear Board Sweep(E), Toggle Sound(E), Configure Sound(E) |
 | Preconditions | 없음 |
 | Postconditions | MIDI 신시사이저를 열 수 있었으면: `SoundEffects` 인스턴스 `effects`가 생성되었다. `effects`가 `Universe.boardListeners`와 연관되었다. `effects.latestCells`가 시작 시점 판의 복사본이 되었다. `effects.enabled`가 true, `effects.chord`와 `effects.step`이 0이 되었다. `SoundSettings` 인스턴스 `settings`가 생성되어 `effects`와 연관되었고, 9개 기능이 모두 켜짐, 악기는 각 목록의 첫 번째가 되었다. `playStep` 명령이 150ms 주기로 `scheduler`와 연관되었다. Sound 메뉴 항목 3개가 등록되었다. 열 수 없었으면: `SoundEffects` 인스턴스가 생성되지 않았고 `Universe.boardListeners`에 사운드가 없다 |
 
@@ -119,7 +121,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Run / Halt Game, Step One Generation, Advance Generation, Hear Generation Sound E |
+| Cross References | Run / Halt Game, Step One Generation, Advance Generation, Hear Generation Sound(E) |
 | Preconditions | 캡처·배치 편집 중이 아니다. `effects`가 설치되어 있다 |
 | Postconditions | (원본의 세대 전이에 더해) `effects.latestCells`가 틱 후 판의 복사본으로 바뀌었다. 생긴 셀이나 사라진 셀이 있고 `effects.enabled`가 true인 경우: 반복 페이드가 켜져 있으면 `RepeatTracker.recent`에 이번 변화의 값이 더해졌고(8개를 넘으면 가장 오래된 값이 빠짐), `repeats`가 같은 변화면 1 늘고 아니면 0이 되었다. 판이 전멸했고 반복 페이드가 켜져 있으면 마무리 화음 명령 6개(켜기 3, 끄기 3)가 `scheduler`와 연관되었다. 그 밖에 gain이 0보다 크고 직전 소리 후 120ms가 지났으면 `effects.lastPhraseNanos`가 현재 시각이 되었고, 생성음의 켜기·끄기 명령이 음마다 한 쌍씩(최대 5쌍) `scheduler`와 연관되었다. 12개 이상 생겼으면 대량 생성 레이어 명령 쌍이, 사라진 셀이 있으면 60ms 뒤의 타악기 명령 1개가 더 연관되었다(각 기능이 켜져 있을 때). 생긴 셀도 사라진 셀도 없으면 `latestCells` 말고는 바뀐 것이 없다 |
 
@@ -127,7 +129,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Hear Board Sweep E |
+| Cross References | Hear Board Sweep(E) |
 | Preconditions | `effects.latestCells`가 null이 아니다 |
 | Postconditions | `effects.enabled`가 true인 경우: `Universe.playhead`가 `step × 4`가 되었다(재생선이 꺼져 있으면 -1). 그 4열 안의 산 셀로 고른 음마다 켜기·끄기 명령 한 쌍(최대 3쌍)이 `scheduler`와 연관되었다. `effects.padNotes`가 현재 코드의 패드 음이 되었다(패드 세기가 0이면 빈 배열). `effects.step`이 `(step + 1) % 16`이 되었고, 0이 되었으면 `effects.chord`가 1 늘었다. `effects.enabled`가 false인 경우: `effects.padNotes`가 빈 배열, `Universe.playhead`가 -1이 되었다. `step`과 `chord`는 바뀌지 않았다 |
 
@@ -135,7 +137,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Edit Cells, Clear Board, Store / Load Board, Place Template E, Undo Placement E, Hear Board Sweep E |
+| Cross References | Edit Cells, Clear Board, Store / Load Board, Place Template(E), Undo Placement(E), Hear Board Sweep(E) |
 | Preconditions | 각 연산의 원래 사전 조건. `effects`가 설치되어 있다 |
 | Postconditions | (각 연산의 원래 사후 조건에 더해) `effects.latestCells`가 편집 후 판의 복사본으로 바뀌었다. 소리 명령은 `scheduler`와 연관되지 않았다 |
 
@@ -143,7 +145,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Toggle Sound E |
+| Cross References | Toggle Sound(E) |
 | Preconditions | `effects`가 설치되어 있다 |
 | Postconditions | `effects.enabled`가 false가 되었다 |
 
@@ -153,7 +155,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Toggle Sound E |
+| Cross References | Toggle Sound(E) |
 | Preconditions | `effects`가 설치되어 있다 |
 | Postconditions | `effects.enabled`가 true가 되었다 |
 
@@ -161,7 +163,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Configure Sound E |
+| Cross References | Configure Sound(E) |
 | Preconditions | `effects`가 설치되어 있다 |
 | Postconditions | `effects.settingsDialog`가 없었으면 `SoundSettingsDialog` 인스턴스 `d`가 생성되어 `effects.settingsDialog`, `settings`와 연관되었다. 설정 창이 보이는 상태가 되었다 |
 
@@ -169,7 +171,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Configure Sound E |
+| Cross References | Configure Sound(E) |
 | Preconditions | 설정 창이 열려 있다 |
 | Postconditions | `settings.switches[feature]`가 `on`이 되었다. 다른 기능의 값은 바뀌지 않았다 |
 
@@ -177,7 +179,7 @@ Command 패턴의 역할은 그림의 스테레오타입과 같다. `SoundEffect
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Configure Sound E |
+| Cross References | Configure Sound(E) |
 | Preconditions | 설정 창이 열려 있다. `feature`는 악기가 있는 기능(생성음, 소멸 타악기, 저음 패드, 대량 생성 악기, 재생선)이고 `instrument`는 그 기능의 악기 목록 중 하나다 |
 | Postconditions | `settings.choices[feature]`가 `instrument`가 되었다. `applyInstruments` 명령 1개가 `scheduler`와 연관되었다. 그 명령이 실행되면 각 채널의 악기가 현재 선택으로 바뀌고 `effects.padNotes`가 빈 배열이 된다 |
 
