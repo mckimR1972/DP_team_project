@@ -1,56 +1,61 @@
 @startuml
 !include theme.puml
-skinparam defaultFontSize 18
 hide empty members
-class PatternTools <<Swing>> {
+class PatternTools {
   -mode : Mode
   -stampTimer : Timer
-  ~setPlacementGuard(guard)
+  ~setPlacementGuard(guard : Predicate<Rectangle>) : void
 }
 class BoardEditor {
-  +capture(name, area)
-  +place(pattern, origin)
-  +beginStroke() / endStroke()
-  +undo()
+  +capture(name : String, area : Rectangle) : PatternTemplate
+  +place(pattern : PatternTemplate, origin : Point) : boolean
+  +beginStroke() : void
+  +endStroke() : boolean
+  +undo() : void
 }
 class PatternLibrary {
-  +save(pattern)
-  +patterns()
+  +save(pattern : PatternTemplate) : void
+  +patterns() : List<PatternTemplate>
 }
-class PatternTemplate <<immutable>> {
+class PatternTemplate {
   -name : String
   -cells : boolean[][]
 }
-class PlacePatternCommand <<Command>> {
+class PlacePatternCommand {
   -added : Set<Point>
-  ~execute() / undo()
-  ~include(next)
+  ~execute() : boolean
+  ~undo() : void
+  ~include(next : PlacePatternCommand) : void
 }
-class PatternCells <<adapter role>> {
-  ~isAlive(cell)
-  ~setAlive(cell, alive)
+class PatternCells {
+  ~isAlive(cell : Point) : boolean
+  ~setAlive(cell : Point, alive : boolean) : boolean
 }
-class PatternPath <<utility>> {
-  {static} ~visit(from, to, visitor)
+class PatternPath {
+  {static} ~visit(from : Point, to : Point, visitor : Consumer<Point>) : void
 }
-interface Cell <<existing>> {
-  +isAliveAt(row, column)
-  +userClicked(point, surface)
-  +createMemento()
+interface Cell <<interface>> {
+  +isAliveAt(row : int, column : int) : boolean
+  +userClicked(here : Point, surface : Rectangle) : void
+  +createMemento() : Storable
 }
-class Neighborhood <<existing Composite>>
-class Resident <<existing Leaf>>
+class Neighborhood
+class Resident
 
-PatternTools --> BoardEditor : 편집 위임
-PatternTools --> PatternLibrary : 목록·저장
-PatternTools ..> PatternPath : 이동 보간
-PatternLibrary "1" --> "0..*" PatternTemplate
-BoardEditor ..> PatternTemplate : 생성 / 배치
+PatternTools "1" --> "1" BoardEditor : editor
+PatternTools "1" --> "1" PatternLibrary : library
+PatternTools ..> PatternPath : <<use>>
+PatternLibrary "1" --> "0..*" PatternTemplate : patterns
+BoardEditor ..> PatternTemplate : <<create>>
 BoardEditor "1" --> "0..100" PlacePatternCommand : history
-PlacePatternCommand --> PatternCells : 필요한 셀만 편집
-PatternCells --> Cell : 기존 계약 사용
-BoardEditor ..> Cell : 캡처 Memento 조회
+PlacePatternCommand "1" --> "1" PatternCells : cells
+PatternCells "0..*" --> "1" Cell : board
+BoardEditor "0..*" --> "1" Cell : board
 Neighborhood ..|> Cell
 Resident ..|> Cell
-Neighborhood o-- Cell : 하위 셀
+Neighborhood "1" *-- "64" Cell : grid
+note bottom of Neighborhood
+  현재 게임: gridSize = 8 (8 × 8 = 64)
+  생성자는 다른 gridSize도 지원한다.
+end note
 @enduml

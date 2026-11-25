@@ -3,7 +3,7 @@
 영역의 생존 모양을 저장하고 재사용하는 캡처 기능의 기준 문서다. 기능 요구, 설계 선택, 타 기능 연결, 테스트와 개발 근거를 한곳에서 관리한다.
 
 - 코드 기준: dev `cfba2ed27be43eb09cff295154960fb8a276fa7e` (프리징·통계 통합 완료).
-- 문서 확인일: 2026-11-23 / 최신 기능 검사 실행일: 2026-11-23 (Asia/Seoul).
+- 문서 확인일: 2026-11-25 / 최신 기능 검사 실행일: 2026-11-23 (Asia/Seoul).
 - 전체 JUnit **384**회, Pattern 계열 **39**회 포함, 실패·오류·건너뜀 0. 별도 Swing **17 checks** 통과.
 - 팀 보고서용: [캡처 기능 명세 및 설계](capture.md). 이 상세 문서는 전체 근거와 유지보수 설명을 보관한다.
 - 실행 방법: [프로젝트 README](../../README.md). 코드·테스트 기준이 바뀌면 해당 계약과 결과를 함께 갱신한다.
@@ -79,16 +79,16 @@
 
 | ID | 이름 | 사용자 관점의 의미 |
 |---|---|---|
-| E-01 | Capture Template E | 선택 영역의 생존 모양을 템플릿으로 저장 |
-| E-02 | Place Template E | 선택한 템플릿 배치 |
-| E-03 | Place Template Continuously E | 누른 채 연속 배치 |
-| E-04 | Undo Placement E | 마지막 배치 작업 되돌리기 |
-| E-05 | Finish Template Editing E | 캡처·배치 편집 종료 |
+| E-01 | Capture Template(E) | 선택 영역의 생존 모양을 템플릿으로 저장 |
+| E-02 | Place Template(E) | 선택한 템플릿 배치 |
+| E-03 | Place Template Continuously(E) | 누른 채 연속 배치 |
+| E-04 | Undo Placement(E) | 마지막 배치 작업 되돌리기 |
+| E-05 | Finish Template Editing(E) | 캡처·배치 편집 종료 |
 
-`E-01` 등의 ID와 이름 끝의 `E`는 별개다. 앞의 ID는 요구사항 추적용이고, 끝의 `E`는 확장 기능 표기다. 팀 공통 그림의 Capture Template·Place Template·Undo Placement 명칭을 사용하며 연속 배치와 편집 종료를 별도 상세 유스케이스로 명시한다.
+`E-01` 등의 ID는 본문의 요구사항 추적용이며 유스케이스 이름의 일부가 아니다. 그림에서는 앞 번호를 빼고 이름 끝의 `(E)`로 확장 기능을 표시한다. Capture Template·Place Template·Undo Placement 명칭을 유지하고 연속 배치와 편집 종료를 별도 상세 유스케이스로 명시한다.
 
 
-#### E-01 Capture Template E
+#### E-01 Capture Template(E)
 
 - 목표/전제: 화면의 생존 모양을 재사용한다. 보드가 열려 있다.
 - 기본 흐름: 영역 캡처 선택 → 시계 정지 → 드래그로 영역 선택 → 선택 영역 저장 → 이름 입력 → 생존 모양 추출 → 파일 저장 → 목록 선택 → 배치 모드 진입.
@@ -96,7 +96,7 @@
 - 사후 조건: 성공 시 `.lifepattern` 파일과 목록 항목이 생긴다. 원본 셀은 바뀌지 않는다.
 - 연결: R-01, R-02, R-08.
 
-#### E-02 Place Template E
+#### E-02 Place Template(E)
 
 - 전제: 기본 또는 사용자 템플릿이 선택돼 있다.
 - 기본 흐름: 배치 버튼/목록 더블클릭 → 시계 정지 → 미리보기 이동 → 왼쪽 버튼 누름 → 범위·guard 검사 → 죽어 있던 대상 셀만 살림 → 해제하여 작업 확정.
@@ -104,7 +104,7 @@
 - 사후 조건: 새 셀은 나이 0이며 기존 셀의 나이·색은 유지된다. Undo 가능한 실제 변경만 기록된다.
 - 연결: R-03, R-05, R-06, R-09.
 
-#### E-03 Place Template Continuously E
+#### E-03 Place Template Continuously(E)
 
 - 관계: E-02의 확장이다. 버튼을 유지하거나 끌 때 추가되는 선택적 흐름이다.
 - 기본 흐름: 최초 배치 후 같은 위치를 주기적으로 재시도 → 이동하면 이전 기준점부터 현재 기준점까지 보간 → 각 기준점을 별도로 검사·배치 → 버튼 해제로 전체 작업 확정.
@@ -112,7 +112,7 @@
 - 사후 조건: 허용된 위치의 변경만 한 작업에 묶인다. 금지 위치를 통과해도 허용된 위치의 배치를 모두 취소하지는 않는다.
 - 연결: R-04, R-05, R-06, R-07, R-09.
 
-#### E-04 Undo Placement E
+#### E-04 Undo Placement(E)
 
 - 전제: 배치 이력이 있다. 버튼 또는 Ctrl+Z로 실행한다.
 - 기본 흐름: 활성 드래그 종료 → 시계 정지 → 마지막 Command가 기록한 추가 셀만 제거 → Undo 완료 알림 → 화면 갱신.
@@ -120,7 +120,7 @@
 - 사후 조건: 그 작업 전부터 있던 셀은 보존되고, 같은 작업의 중복 좌표는 한 번만 복원된다.
 - 연결: R-06, R-08, R-09.
 
-#### E-05 Finish Template Editing E
+#### E-05 Finish Template Editing(E)
 
 - 전제: 캡처 또는 배치 모드다. Esc, 오른쪽 클릭, 편집 끝내기로 요청한다.
 - 기본 흐름: 활성 반복과 전역 리스너 종료 → 작업 확정 → 선택/미리보기 초기화 → DRAW로 복귀.
@@ -566,23 +566,23 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 
 ## UML과 도식
 
-공유용과 상세 문서는 아래의 같은 PNG를 사용한다. SVG는 확대·편집용, PDF는 인쇄용이다. 연산 계약은 [OC-01~OC-06](#contracts)에 표로 명시한다.
+공유용과 상세 문서는 아래의 같은 PNG를 사용한다. 편집 원본은 같은 이름의 puml이며, 확대할 때는 PNG를 연다. 연산 계약은 [OC-01~OC-06](#contracts)에 표로 명시한다.
 
-### D-01 기존 기능과 추가 기능의 통합 유스케이스
+### D-01 캡처·템플릿 유스케이스
 
-![D-01 기존 기능과 추가 기능의 통합 유스케이스](diagrams/01-use-cases.png)
+![D-01 캡처·템플릿 유스케이스](diagrams/01-use-cases.png)
 
-기존 시스템과 추가 시스템을 구역으로 구별한다. 캡처 E-01~E-05와 다른 팀 기능을 같은 경계 안에 배치한다. 캡처 E-01~E-05와 다른 담당의 대표 유스케이스를 표시한다. 다른 기능의 전체 목록·세부 관계는 담당 문서를 따른다. E-03은 E-02의 선택적 확장이다.
+캡처 담당의 다섯 유스케이스와 직접 연결되는 원본 셀 편집만 표시한다. 시스템 경계는 Life Game 하나이며 다른 담당 기능은 넣지 않는다. 기존 Edit Cells와 확장 기능은 이름 끝의 (E)로 구분한다. Place Template Continuously(E)는 Place Template(E)의 반복 배치 확장 지점에 연결하고, 버튼 유지·드래그 조건은 선 옆 노트에 적는다. Edit Cells는 배치·Undo가 재사용하는 기존 Cell 편집의 기준이며, 일반 입력과 템플릿 입력 사이에 임의의 include·extend 관계를 추가하지 않는다.
 
-[원본](diagrams/01-use-cases.puml) · [확대 SVG](diagrams/svg/01-use-cases.svg) · [개별 PDF](diagrams/pdf/01-use-cases.pdf)
+[원본](diagrams/01-use-cases.puml)
 
 ### D-02 캡처 객체의 책임과 협력
 
 ![D-02 캡처 객체의 책임과 협력](diagrams/02-classes.png)
 
-입력·저장·편집 이력을 분리하고 기존 Cell Composite를 공개 계약으로 재사용한다. 현재 배치 Undo는 변경 좌표 Command다. 캡처 조회에만 기존 Memento를 사용한다. 일부 메서드는 가독성을 위해 생략했다.
+입력·저장·편집 이력을 분리하고 기존 Cell Composite를 공개 계약으로 재사용한다. 현재 배치 Undo는 변경 좌표 Command다. 캡처 조회에만 기존 Memento를 사용한다. 일부 메서드는 가독성을 위해 생략했다. 표시한 속성·연산에는 실제 코드의 가시성, 매개변수 타입과 반환 타입을 적었다. 패턴 역할은 위 GoF 표에서 설명하고, Cell은 인터페이스로 표시한다. Neighborhood–Cell은 합성이며 현재 게임의 8×8 구성에 맞춰 1–64로 표시한다. Neighborhood 생성자는 다른 gridSize도 지원한다.
 
-[원본](diagrams/02-classes.puml) · [확대 SVG](diagrams/svg/02-classes.svg) · [개별 PDF](diagrams/pdf/02-classes.pdf)
+[원본](diagrams/02-classes.puml)
 
 ### D-03 영역 캡처와 파일 저장의 흐름
 
@@ -590,7 +590,7 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 
 캡처는 원본을 읽고 상대 생존 모양을 만든다. 파일 저장이 성공해야 목록과 배치 모드를 갱신한다. 중복 이름은 실제 파일 쓰기 전에 거부한다. 원자 이동 미지원 시 일반 이동으로 대체하며 전원 장애 안전성 전체를 보장하지는 않는다.
 
-[원본](diagrams/03-capture-save.puml) · [확대 SVG](diagrams/svg/03-capture-save.svg) · [개별 PDF](diagrams/pdf/03-capture-save.pdf)
+[원본](diagrams/03-capture-save.puml)
 
 ### D-04 연속 배치와 작업 단위 Undo
 
@@ -598,7 +598,7 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 
 많은 찍기를 하나의 작업에 합치고 변경 완료를 한 번 알린다. Undo는 그 작업이 추가한 좌표만 되돌린다. UI가 범위·guard를 먼저 검사하고 모델에서도 재검사한다. 무변경 찍기·빈 작업·빈 Undo는 이력과 알림을 만들지 않는다.
 
-[원본](diagrams/04-stroke-undo.puml) · [확대 SVG](diagrams/svg/04-stroke-undo.svg) · [개별 PDF](diagrams/pdf/04-stroke-undo.pdf)
+[원본](diagrams/04-stroke-undo.puml)
 
 ### D-05 편집 모드와 누른 작업의 상태
 
@@ -606,7 +606,7 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 
 편집 종료는 셀 복원이 아니다. 반복 입력을 끝내고 DRAW로 돌아가며, 복원은 Undo가 담당한다. 실제 Mode enum은 DRAW/CAPTURE/PLACE의 3개다. 내부 두 상태는 stamping 값의 설명이며 State 패턴 클래스가 아니다.
 
-[원본](diagrams/05-edit-states.puml) · [확대 SVG](diagrams/svg/05-edit-states.svg) · [개별 PDF](diagrams/pdf/05-edit-states.pdf)
+[원본](diagrams/05-edit-states.puml)
 
 ### D-06 타 기능과의 설계 접점
 
@@ -614,9 +614,8 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 
 캡처는 모델 guard와 완료 알림으로 연결한다. 프리징·통계 구현을 직접 소유하거나 세대 이벤트를 만들어내지 않는다. Universe가 PatternTools를 통해 guard를 주입하고 BoardChangeEvent를 구독자에게 전달한다. guard true는 차단이며 완료 이벤트는 세대 진행과 구분된다.
 
-[원본](diagrams/06-integration.puml) · [확대 SVG](diagrams/svg/06-integration.svg) · [개별 PDF](diagrams/pdf/06-integration.pdf)
+[원본](diagrams/06-integration.puml)
 
-[도식 합본 PDF](diagrams/capture-diagrams.pdf)는 표지와 같은 개별 PDF 6쪽을 묶은 7쪽 자료다.
 
 <a id="traceability"></a>
 
@@ -656,48 +655,41 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 | 모델 guard·완료 알림 | 프리징 제한과 통계 구독을 UI 입력 방식에 독립적으로 연결 |
 
 초기 JUnit 70회·Swing 14회, PR #13 이후 JUnit 145회·Swing 17회는 당시 단계의 기록이다. 최신 통합 결과는 [검증 결과](#verification)의 384회·17 checks다.
-PR #13 당시 충돌 파일·시험 병합 head·세부 커밋은 [당시 설계 기록](https://github.com/mckimR1972/DP_team_project/blob/cfba2ed27be43eb09cff295154960fb8a276fa7e/docs/capture-drag-design.md)에 보존돼 있다. 그때의 미병합 상태나 프리징→통계 예정 순서를 현재 상태로 적용하지 않는다.
+PR #13 당시 충돌 파일·시험 병합 head·세부 커밋은 [당시 설계 기록](https://github.com/mckimR1972/DP_team_project/blob/cfba2ed27be43eb09cff295154960fb8a276fa7e/docs/capture/capture-drag-design.md)에 보존돼 있다. 그때의 미병합 상태나 프리징→통계 예정 순서를 현재 상태로 적용하지 않는다.
 
 <a id="artifacts"></a>
 
 ## 문서와 그림 관리
 
-원본은 PlantUML `.puml`이다. 각 그림은 같은 이름의 **개별 한 페이지 PDF**로 만들고 내용 단위로 함께 커밋한다. Markdown 본문에 표시할 PNG와 SVG도 함께 보관해 발표 자료에서 확대·편집할 수 있다. 도식 ID와 요구/검사 연결은 `diagrams/manifest.json`이 관리한다.
+그림 산출물은 PlantUML `.puml` 원본과 PNG 6쌍이다. `theme.puml`은 공통 흑백 설정이다. `diagrams/manifest.json`은 도식과 요구사항·검사 연결을, `diagrams/artifacts.json`은 재생성한 입력·PNG의 해시와 크기를 관리한다. SVG·PDF와 인쇄용 합본은 관리하지 않는다.
 
-기준 dev의 실제 통합 구조를 각 그림의 범례에 따라 표시한다. `Mode`의 파생 상태와 실제 Java enum 값을 혼동하지 않는다.
+[팀 UML 통일안](https://github.com/mckimR1972/DP_team_project/blob/4c71598/docs/uml-conventions.md)을 따른다. 유스케이스는 담당 범위·경계 하나·영어 동사형 이름·`(E)`·확장 지점과 조건을 통일한다. 클래스는 아이콘과 패턴 역할 스테레오타입을 빼고 타입·가시성·다중성·합성을 표시한다. GoF 역할은 본문 표에서 설명한다.
 
-### 다시 생성하기
+### PNG 다시 생성하기
 
-JDK 17+, Python의 `reportlab`, `pypdf`, PlantUML 1.2026.10 JAR, 한글 TTF 폰트가 필요하다. 도구 바이너리는 저장소에 넣지 않는다. [공식 배포](https://github.com/plantuml/plantuml/releases/tag/v1.2026.10)에서 받은 JAR의 SHA-256:
+JDK 17+, Python 3.10+ 표준 라이브러리, PlantUML 1.2026.10 JAR, 설치된 한글 폰트가 필요하다. 도구 바이너리는 저장소에 넣지 않는다. [공식 배포](https://github.com/plantuml/plantuml/releases/tag/v1.2026.10)에서 받은 JAR의 SHA-256:
 
 ```text
 e9bc9e6b2eb715e8c0c929f3dcb5fc1923be13f37599b09c293c66d354e88686
 ```
 
-저장소 루트에서 실행한다. `C:\tools\plantuml-1.2026.10.jar`는 자신의 설치 경로로 바꾼다. Windows 기본 폰트는 Malgun Gothic이며 다른 OS에서는 한글 TTF 경로를 지정한다.
+저장소 루트에서 실행한다. 아래 JAR 경로는 자신의 설치 경로로 바꾼다.
 
 ```powershell
-python docs/capture/tools/build_diagrams.py --jar C:\tools\plantuml-1.2026.10.jar --id D-01
 python docs/capture/tools/build_diagrams.py --jar C:\tools\plantuml-1.2026.10.jar --all
-python docs/capture/tools/build_diagrams.py --atlas
 ```
 
-다른 OS에서는 PDF 제목용 `--font`뿐 아니라 `theme.puml`의 `defaultFontName`도 설치된 한글 폰트로 맞춘다. 최종 검증에는 `pypdfium2`도 필요하다. 검증 도구는 파일 해시·로컬 링크·기준 소스·PDF 페이지 수를 확인하고, 합본의 각 그림 페이지가 개별 PDF와 같은 이미지로 렌더링되는지 비교한다.
+공통 테마 변경이 일부 그림에만 반영되지 않도록 항상 6개를 모두 다시 만든 뒤 해시를 기록한다. PNG가 렌더러의 크기 제한에 닿으면 잘림 가능성으로 실패한다. 다른 OS에서는 `theme.puml`의 `defaultFontName`을 설치된 한글 폰트로 바꾼다.
 
-Smetana 내장 레이아웃을 사용하므로 별도 Graphviz 설치가 필요 없다. 내용은 로컬에서 렌더링하며 원본을 외부 서버에 보내지 않는다. [PlantUML의 Smetana 설명](https://plantuml.com/smetana02)
+Smetana 내장 레이아웃을 사용하므로 별도 Graphviz가 필요 없다. 내용은 로컬에서 렌더링한다. [PlantUML의 Smetana 설명](https://plantuml.com/smetana02)
 
-각 PDF는 A4이며 도식 비율에 맞춰 가로·세로를 선택한다. 한글 폰트가 포함된 제목·설명과 고해상도 도식으로 구성한다. 원본 수정 → 해당 PNG/PDF/SVG 재생성 → 페이지 검토 → manifest 연결 확인 → 커밋 순서를 따른다. 합본은 개별 PDF를 묶으므로 개별 파일과 내용이 다르지 않다.
-
-폴더 규칙: 공유 문서는 `capture.md`, 상세 문서는 `README.md`, `.puml`과 `.png`는 `diagrams/` 바로 아래, 실행 증거는 `evidence/<실행일>/`에 둔다. SVG·PDF는 보조 산출물이며 최종 제출본의 그림은 팀 안내대로 PNG를 사용한다.
-
-본문 변경은 이 상세 문서를 기준으로 반영한다. 공유 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다. 실제 확인한 범위를 넘어 회의·대안 구현·성능 실험을 수행한 것으로 쓰지 않는다. 그림을 바꾸면 원본, PNG, SVG, PDF와 합본을 함께 갱신한다.
-
+폴더 규칙: 공유 문서는 `capture.md`, 상세 문서는 `README.md`, 원본·PNG는 `diagrams/` 바로 아래, 실행 증거는 `evidence/<실행일>/`에 둔다. 원본 수정 → PNG 전체 재생성 → 그림 검토 → 문서 검증 → 커밋 순서로 관리한다. 두 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다.
 
 ### Markdown·링크·증거 다시 검증하기
 
-이 단계는 기록된 JUnit 결과의 원본 XML·실행 로그와 현재 소스의 일치를 확인한다. JUnit 자체를 새로 실행하는 명령은 [검증 방법](#verification)에 있다.
+이 단계는 기록된 JUnit XML·실행 로그·스크린샷과 현재 소스의 일치를 확인한다. JUnit을 새로 실행하지는 않는다. 기능 검사 명령은 [검증 방법](#verification)에 있다.
 
-Node.js와 `marked` 17.0.5, `playwright` 1.62.1을 준비한다. 다음 예시는 의존성을 Git에서 제외되는 `build` 폴더에 설치한다. Chrome 또는 Edge를 사용하며, 다른 브라우저 실행 파일은 `CAPTURE_BROWSER`로 지정한다. Python에는 `pypdf`, `pypdfium2`가 필요하다.
+Python 검증기는 표준 라이브러리만 사용한다. 브라우저 검증은 Node.js, `marked` 17.0.5, `playwright` 1.62.1과 Chrome 또는 Edge가 필요하다. 다른 브라우저 실행 파일은 `CAPTURE_BROWSER`로 지정한다.
 
 ```powershell
 npm install --no-save --prefix build/capture-docs/deps marked@17.0.5 playwright@1.62.1
@@ -706,31 +698,21 @@ node docs/capture/tools/verify_markdown.cjs
 python docs/capture/tools/verify_documents.py
 ```
 
-검사 범위는 다음과 같다.
+- 저장소 README와 `docs`의 로컬 파일·그림·문서 앵커 링크를 확인한다. 외부 웹사이트 전체의 가용성은 검사하지 않는다.
+- 두 문서의 연산 계약 6개·유스케이스 이름 5개, 구현 심볼·Java 인용·대표 JUnit 8개를 대조한다.
+- 유스케이스의 범위·경계·이름·확장 표기, 클래스의 인터페이스·합성·다중성·표시한 멤버의 실제 Java 타입을 확인한다.
+- 두 Markdown을 GFM으로 변환한 브라우저에서 본문 그림 12개의 로딩·목차·가로 잘림을 검사한다. GitHub 서버 화면과 동일하다고 가정하지 않는다.
+- 원본 XML 30개의 JUnit 384회, 별도 Swing 17 checks 로그·결과 화면 해시와 기준 코드 유지 여부를 검사한다.
+- PNG 6개와 원본·테마·생성기의 해시, 기록된 PNG 크기와 렌더러 제한을 검사한다. 제거한 형식이 다이어그램 폴더에 다시 생기면 실패한다.
 
-- 저장소 README와 `docs` 안 모든 Markdown의 로컬 파일·그림·문서 앵커 링크. 외부 웹사이트의 가용성은 검사하지 않는다.
-- 공유용·상세 문서의 6개 operation contract 일치, 같은 그림 6개씩 인용, 구현 심볼 및 대표 JUnit 8개와 원본 실행 결과의 대응.
-- 두 Markdown을 GFM으로 변환한 브라우저 화면에서 그림 로딩·목차·가로 잘림 확인. GitHub 서버에서 렌더링한 화면과 동일하다고 가정하지 않는다.
-- 원본 JUnit XML 30개와 JSON의 384회 결과, 별도 Swing 17 checks 로그·스크린샷 해시, 기준 코드 유지 여부.
-- 도식 산출물 해시, PNG와 SVG 전체 크기 비교로 잘림 확인, 개별 PDF 6개와 7쪽 합본의 해당 페이지 렌더링 일치.
+미리보기와 화면 기록은 `build/capture-docs/preview/`, 검사 결과는 `build/capture-docs/verification.json`에 생성한다. 재생성 가능한 미리보기는 Git에 넣지 않는다. 자동 검사 뒤에도 PNG 6개와 본문 그림의 한글·겹침·가독성을 직접 확인한다.
 
-미리보기는 `build/capture-docs/preview/shared.html`과 `detailed.html`, 화면 기록은 같은 폴더에 생성한다. PDF 검토 이미지는 `build/capture-docs/pdf-review`, 전체 검사 결과는 `build/capture-docs/verification.json`에 생성한다. Git에는 문서·그림·원본 테스트 근거·검증 도구를 남기고, 재생성 가능한 미리보기는 넣지 않는다. 검증 성공 후에도 PDF 전 페이지와 Markdown 그림의 한글·겹침·가독성은 눈으로 확인한다.
+### 2026-11-25 UML 통일 및 정합성 점검
 
-
-### 2026-11-23 최종 정합성 점검
-
-- 기준: dev `cfba2ed27be43eb09cff295154960fb8a276fa7e`. 폴더 정리 #24를 반영했다. 게임 소스·테스트·build.gradle은 이 기준과 동일하다.
-- 문서 경로: 공유용 `capture.md`, 상세 `README.md`, 도식 원본·PNG는 `diagrams/`, 날짜별 증거는 `evidence/`. 통합으로 없앤 사용법·드래그 기록·테스트 목록은 본문의 사용법·개발 이력·전체 테스트 절에 보존한다.
-- 캡처 유스케이스 5개의 본문·그림 명칭과 끝의 E 표기를 일치시켰다. 다른 담당 기능은 아래 문서의 대표 명칭과 대조했다. `(E)`와 ` E`는 이 문서에서 ` E`로 통일한다.
-- 코드·그림: `BoardEditor`의 guard·이력·완료 알림, `PlacePatternCommand`의 추가 좌표 Undo, `PatternTools`의 모드·Timer·저장 순서, `Universe`·`Life`의 Freezing·통계·사운드 조립을 대조했다. D-04의 후속 Command 병합과 빈 Undo 조건, D-06의 guard 주입 경로와 실제 알림 발행 주체를 보완했다.
-- 인용한 Java 조각은 현재 소스와 공백을 제외하고 일치한다. 원본 `cdcedf3`의 Composite·Memento와 초기 캡처 `cd2fdb1`, 변경 좌표 Undo `ffbea9c`, 작업 묶음 `9b1e8f0`의 이력을 확인했다. 사후 대안 비교를 당시 실험 결과로 쓰지 않는다.
-- 전체 JUnit 384회와 별도 Swing 17 checks를 새로 실행했다. 원본 XML·로그와 날짜·기준 커밋을 표시한 결과 화면은 위 실행 증거에 있다. 대표 JUnit 8개가 이번 XML에 실제로 존재한다.
-- 자동 검사: 로컬 링크·문서 앵커, 공유/상세의 연산 계약 6개·유스케이스 5개, 구현 심볼·Java 인용, 두 문서의 그림 12개 로딩, PDF 7쪽·개별 6쪽의 동일 렌더링, 산출물·원본 증거 해시를 확인한다.
-- 범위 밖: 실제 OS 마우스의 창 밖 해제·Alt-Tab·배율·장시간 사용·오디오 청취는 별도 수동 검사다. GitHub 서버의 Markdown 화면 자체는 이번 로컬 GFM 검사 범위에 포함하지 않는다. 팀 전체 유스케이스 최종 취합과 제출용 PNG 구성은 팀 마감 작업이다.
-
-| 명칭 대조 자료 | 확인한 내용 |
-|---|---|
-| [색상·공통 그림](https://github.com/mckimR1972/DP_team_project/blob/82b058500ebe1d5184a4cc69fb85000a0856017c/docs/color-gen/diagrams/usecase.gv) | Edit Cells, Run / Halt Game, Step One Generation, Advance Generation, Clear Board, Store / Load Board, Exit Game; Capture Template, Place Template, Undo Placement; 색상·드래그 명칭 |
-| [사운드](https://github.com/mckimR1972/DP_team_project/blob/c0f8f5cfaab05de9a5c6ee91e45290a0f345f59e/docs/sound-effects-spec.md) | Toggle Sound E 및 공통 기존 유스케이스 명칭 |
-| [Freezing](https://github.com/mckimR1972/DP_team_project/blob/63aacfc939b8a24b9d0beafa9ae20048decc6c3e/docs/freezing/diagram/usecase-freezing.puml) | Install Freezing E 및 세대 진행 명칭 |
-| [통계](https://github.com/mckimR1972/DP_team_project/blob/79d4cab792ae525a87fc25dc396ee6771e5d3afc/docs/statistics/diagrams/statistics-use-cases.puml) | 기본 통계 확인 E |
+- 기준 코드는 dev `cfba2ed27be43eb09cff295154960fb8a276fa7e`다. 게임 소스·테스트·build.gradle은 동일하다.
+- D-01은 캡처 기능과 원본 Edit Cells로 범위를 줄였다. 앞 번호는 본문 추적 ID로만 남기고 이름 끝을 `(E)`로 통일했다. 확장 대상 안의 `extension points`와 선 옆 조건을 표시했다.
+- D-02는 실제 멤버 타입·반환 타입·가시성, 인터페이스, 연관 다중성, Neighborhood–Cell의 합성을 반영했다. `PatternPath.visit`의 static 밑줄은 유지한다. 그림 안에 커밋·PR 이력을 넣지 않는다.
+- D-03~D-06의 실행 흐름·상태·통합 계약은 유지하고 공통 흑백 테마로 PNG를 다시 생성한다. D-06의 다른 담당 객체는 연결 지점의 이름만 표시한다.
+- 코드와 대조한 내용은 guard·작업 묶음·Undo·완료 알림·저장 순서·편집 종료·Freezing/통계/사운드 연결이다. 원본 기준은 `cdcedf3`이며 초기 캡처 `cd2fdb1`, 변경 좌표 Undo `ffbea9c`, 작업 묶음 `9b1e8f0`의 이력과 구분한다.
+- 최신 기능 검사 근거는 **2026-11-23**의 JUnit 384회·Swing 17 checks다. 이번 문서·도구 정리에서는 그 원본 XML·로그·화면을 변경하지 않고 기준 코드 및 해시를 재검증한다. 이번 날짜에 기능 테스트를 새로 실행한 것으로 쓰지 않는다.
+- 실제 OS 마우스의 창 밖 해제·Alt-Tab·배율·장시간 사용·오디오 청취와 팀 전체 유스케이스 최종 취합은 별도 확인 범위다.

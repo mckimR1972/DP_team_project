@@ -1,66 +1,28 @@
 @startuml
 !include theme.puml
-top to bottom direction
-skinparam nodesep 25
-skinparam ranksep 40
+left to right direction
+skinparam nodesep 30
+skinparam ranksep 45
 actor "게임 사용자" as User
 rectangle "Life Game" {
- rectangle "기존 시스템 기능" as Legacy #F3F4F6 {
-  usecase "Edit Cells" as Draw
-  usecase "Run / Halt Game" as Run
-  usecase "Step One Generation" as Tick
-  usecase "Clear Board" as Clear
-  usecase "Store / Load Board" as Store
-  usecase "Advance Generation" as Load
-  usecase "Exit Game" as Exit
- }
- rectangle "추가 시스템 기능" as Added #EFF7FA {
-  rectangle "캡처 담당" as CaptureGroup {
-   usecase "E-01 Capture Template E" as Capture
-   usecase "E-02 Place Template E" as Place
-   usecase "E-03 Place Template Continuously E" as Stroke
-   usecase "E-04 Undo Placement E" as Undo
-   usecase "E-05 Finish Template Editing E" as End
-   Stroke ..> Place : <<extend>>\n버튼 유지·이동
-  }
-  rectangle "다른 담당 대표 유스케이스" as OtherGroup #F2F6ED {
-   usecase "Draw Cells by Dragging E" as Brush
-   usecase "Turn On Color Cycling E" as Color
-   usecase "Toggle Sound E" as Sound
-   usecase "기본 통계 확인 E" as Stats
-   usecase "Install Freezing E" as Freeze
-  }
- }
+  usecase "Edit Cells" as Edit
+  usecase "Capture Template(E)" as Capture
+  usecase Place as "Place Template(E)
+--
+extension points
+반복 배치"
+  usecase "Place Template Continuously(E)" as Stroke
+  usecase "Undo Placement(E)" as Undo
+  usecase "Finish Template Editing(E)" as Finish
 }
-Draw -[hidden]down-> Run
-Run -[hidden]down-> Tick
-Tick -[hidden]down-> Clear
-Clear -[hidden]down-> Store
-Store -[hidden]down-> Load
-Load -[hidden]down-> Exit
-Capture -[hidden]down-> Place
-Place -[hidden]down-> Stroke
-Stroke -[hidden]down-> Undo
-Undo -[hidden]down-> End
-Brush -[hidden]down-> Color
-Color -[hidden]down-> Sound
-Sound -[hidden]down-> Stats
-Stats -[hidden]down-> Freeze
-User -- Draw
-User -- Run
-User -- Tick
-User -- Clear
-User -- Store
-Run ..> Load : <<include>>
-Tick ..> Load : <<include>>
-User -- Exit
+User -- Edit
 User -- Capture
 User -- Place
 User -- Undo
-User -- End
-User -- Brush
-User -- Color
-User -- Sound
-User -- Stats
-User -- Freeze
+User -- Finish
+Place <.. Stroke : <<extend>>
+note top on link
+  condition: {왼쪽 버튼을 유지하거나 드래그함}
+  extension point: 반복 배치
+end note
 @enduml

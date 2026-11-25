@@ -14,9 +14,6 @@ import subprocess
 from urllib.parse import unquote, urlsplit
 import xml.etree.ElementTree as ET
 
-from pypdf import PdfReader
-import pypdfium2 as pdfium
-
 ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parents[1]
 BUILD = REPO / 'build/capture-docs'
@@ -74,6 +71,78 @@ def contracts(text):
             re.findall(r'^### (OC-\d\d)[^\n]*\n(.*?)(?=^### |^## |\Z)', text, re.M | re.S)}
 
 
+def uml_conventions(diagram, classes, theme):
+    names = ['Capture Template(E)', 'Place Template(E)', 'Place Template Continuously(E)',
+             'Undo Placement(E)', 'Finish Template Editing(E)']
+    labels = re.findall(r'^\s*usecase (?:\w+ as )?"([^"\n]+)', diagram, re.M)
+    require(len(labels) == 6 and set(labels) == {'Edit Cells', *names},
+            'Use-case scope/names differ from the capture convention')
+    require(re.findall(r'^\s*rectangle "([^"]+)"', diagram, re.M) == ['Life Game'],
+            'Use-case diagram must have one system boundary')
+    require('actor "게임 사용자"' in diagram and not re.search(r'#[0-9A-Fa-f]{6}', diagram),
+            'Use the UML actor and monochrome use cases')
+    require('Place Template(E)\n--\nextension points\n반복 배치"' in diagram
+            and 'Place <.. Stroke : <<extend>>' in diagram
+            and 'note top on link\n  condition: {' in diagram
+            and 'extension point: 반복 배치' in diagram,
+            'Missing extension point or linked condition')
+    require('skinparam monochrome true' in theme and 'hide circle' in theme,
+            'Shared theme must be monochrome with class circles hidden')
+    declarations = re.findall(r'^(?:class|interface) .*$', classes, re.M)
+    require(all('<<' not in line or line.startswith('interface Cell <<interface>>')
+                for line in declarations), 'Move class role stereotypes to prose')
+    require('interface Cell <<interface>>' in classes, 'Cell interface marker missing')
+    require('Neighborhood "1" *-- "64" Cell' in classes and 'o--' not in classes,
+            'Neighborhood composition/multiplicity differs')
+    for line in classes.splitlines():
+        if '-->' in line or '*--' in line:
+            require(re.fullmatch(r'\w+ "[^"]+" (?:-->|\*--) "[^"]+" \w+(?: : \w+)?', line),
+                    'Association/composition lacks multiplicity: ' + line)
+        if '..>' in line:
+            require(re.fullmatch(r'\w+ \.\.> \w+ : <<(?:use|create)>>', line),
+                    'Dependency needs a use/create label: ' + line)
+    require('{static} ~visit(' in classes, 'Static operation must be underlined')
+    require(not re.search(r'\b(?:PR\s*#\d+|[a-f0-9]{7,40})\b', classes),
+            'Keep development history outside the class diagram')
+
+    members = 0
+    for kind, cls, body in re.findall(
+            r'^(class|interface) (\w+)(?: <<interface>>)? \{\n(.*?)^\}', classes, re.M | re.S):
+        source = (REPO / 'src/com/holub/life' / (cls + '.java')).read_text(encoding='utf-8')
+        source = re.sub(r'/\*.*?\*/|//[^\n]*', '', source, flags=re.S)
+        source = re.sub(r'\bfinal\s+', '', source).replace('java.util.function.', '')
+        source = re.sub(r'\s+', '', source)
+        for member in body.splitlines():
+            member = member.strip()
+            static = member.startswith('{static} ')
+            if static:
+                member = member[len('{static} '):]
+            method = re.fullmatch(r'([+~#-])(\w+)\((.*)\) : (.+)', member)
+            field = re.fullmatch(r'([+~#-])(\w+) : (.+)', member)
+            require(method or field, 'Use one fully typed member per line: ' + member)
+            symbol, name = (method or field).group(1, 2)
+            access = {'+': 'public', '~': '', '#': 'protected', '-': 'private'}[symbol]
+            if kind == 'interface':
+                require(symbol == '+', 'Interface operations must be public')
+                access = ''
+            if method:
+                params = []
+                for param in method[3].split(',') if method[3] else []:
+                    pair = re.fullmatch(r'\s*(\w+)\s*:\s*(.+?)\s*', param)
+                    require(pair, 'Missing parameter type: ' + member)
+                    params.append(pair[2] + pair[1])
+                signature = access + ('static' if static else '') + method[4] + name + '(' + ','.join(params) + ')'
+                require(re.sub(r'\s+', '', signature) in source,
+                        f'Java operation signature differs: {cls}.{name}')
+            else:
+                signature = access + ('static' if static else '') + field[3] + name
+                require(re.search(re.escape(re.sub(r'\s+', '', signature)) + r'[=;]', source),
+                        f'Java field declaration differs: {cls}.{name}')
+            members += 1
+    require(members > 0, 'No class members checked')
+    return members
+
+
 def main():
     manifest = json.loads((ROOT / 'diagrams/manifest.json').read_text(encoding='utf-8'))
     items = manifest['diagrams']
@@ -88,17 +157,16 @@ def main():
     texts = [p.read_text(encoding='utf-8') for p in capture_docs]
     require(len(contracts(texts[0])) == 6 and contracts(texts[0]) == contracts(texts[1]),
             'Shared/detailed operation contracts disagree')
-    usecases = ['Capture Template E', 'Place Template E', 'Place Template Continuously E',
-                'Undo Placement E', 'Finish Template Editing E']
+    usecases = ['Capture Template(E)', 'Place Template(E)', 'Place Template Continuously(E)',
+                'Undo Placement(E)', 'Finish Template Editing(E)']
     diagram = (ROOT / 'diagrams/01-use-cases.puml').read_text(encoding='utf-8')
+    typed_members = uml_conventions(
+        diagram, (ROOT / 'diagrams/02-classes.puml').read_text(encoding='utf-8'),
+        (ROOT / 'diagrams/theme.puml').read_text(encoding='utf-8'))
     for number, name in enumerate(usecases, 1):
         label = f'E-{number:02} {name}'
         require(all(re.search(r'^#{3,4} ' + re.escape(label) + r'$', text, re.M) for text in texts),
                 f'Use-case name differs between documents: {label}')
-        require(f'usecase "{label}"' in diagram, f'Use-case diagram label differs: {label}')
-    extended = diagram.split('rectangle "추가 시스템 기능"', 1)[1]
-    require(all(label.endswith(' E') for label in re.findall(r'usecase "([^"\n]+)"', extended)),
-            'An extended use-case name lacks its trailing E')
     expected_images = {(ROOT / 'diagrams' / (d['slug'] + '.png')).resolve() for d in items}
     for path, body in zip(capture_docs, texts):
         for snippet in re.findall(r'```java\n(.*?)```', body, re.S):
@@ -118,14 +186,6 @@ def main():
     for item in items:
         path, fragment = item['document'].split('#')
         require(fragment in anchors((ROOT / path).read_text(encoding='utf-8')), f'Manifest link: {item["id"]}')
-        png = (ROOT / 'diagrams' / (item['slug'] + '.png')).read_bytes()
-        require(png[:8] == b'\x89PNG\r\n\x1a\n', f'Invalid PNG: {item["id"]}')
-        png_size = struct.unpack('>II', png[16:24])
-        svg = ET.parse(ROOT / 'diagrams/svg' / (item['slug'] + '.svg')).getroot()
-        svg_size = tuple(float(x) for x in svg.attrib['viewBox'].split()[2:])
-        # PlantUML rounds raster/vector bounds differently by up to three pixels.
-        require(all(abs(p - s) <= 4 for p, s in zip(png_size, svg_size)),
-                f'PNG is cropped or differs from SVG bounds: {item["id"]}')
 
     evidence_path = ROOT / manifest['evidence']
     evidence = json.loads(evidence_path.read_text(encoding='utf-8'))
@@ -167,27 +227,27 @@ def main():
 
     artifacts = json.loads((ROOT / 'diagrams/artifacts.json').read_text(encoding='utf-8'))
     require(artifacts['source_commit'] == baseline, 'Diagram baseline differs')
+    require(artifacts['format'] == 'png' and artifacts['date'] == manifest['date'],
+            'Diagram format/date differs')
+    diagram_dir = ROOT / 'diagrams'
+    require(not list(diagram_dir.rglob('*.svg')) and not list(diagram_dir.rglob('*.pdf')),
+            'Removed diagram formats are still present')
+    require({p.resolve() for p in diagram_dir.glob('*.png')} == expected_images,
+            'Expected exactly the six diagram PNGs')
+    expected_artifacts = {'diagrams/manifest.json', 'diagrams/theme.puml', 'tools/build_diagrams.py'}
+    for item in items:
+        expected_artifacts.update(f'diagrams/{item["slug"]}{ext}' for ext in ['.puml', '.png'])
+        relative = 'diagrams/' + item['slug'] + '.png'
+        png = (ROOT / relative).read_bytes()
+        require(png[:8] == b'\x89PNG\r\n\x1a\n', 'Invalid PNG: ' + relative)
+        dimensions = struct.unpack('>II', png[16:24])
+        require(list(dimensions) == artifacts['png_dimensions'][relative]
+                and all(0 < size < artifacts['png_limit'] for size in dimensions),
+                'PNG size differs or hits the renderer limit: ' + relative)
+    require(set(artifacts['sha256']) == expected_artifacts, 'Artifact inventory differs')
     for relative, expected in artifacts['sha256'].items():
         path = ROOT / relative
-        require(digest(path, binary=path.suffix in ['.pdf', '.png']) == expected, f'Stale artifact hash: {relative}')
-    atlas_path = ROOT / 'diagrams/capture-diagrams.pdf'
-    reader = PdfReader(atlas_path)
-    require(len(reader.pages) == len(items) + 1 == artifacts['pdf_pages'], 'Atlas page count differs')
-    require('캡처' in reader.pages[0].extract_text(), 'Missing Korean title text')
-    pdf_output = BUILD / 'pdf-review'
-    pdf_output.mkdir(parents=True, exist_ok=True)
-    with pdfium.PdfDocument(atlas_path) as atlas:
-        atlas[0].render(scale=1.5).to_pil().save(pdf_output / '00-cover.png')
-        for page_number, item in enumerate(items, 1):
-            pdf_path = ROOT / 'diagrams/pdf' / (item['slug'] + '.pdf')
-            standalone = PdfReader(pdf_path)
-            require(len(standalone.pages) == 1, f'Expected one page: {item["id"]}')
-            require(item['id'] in standalone.pages[0].extract_text(), f'Missing diagram ID: {item["id"]}')
-            with pdfium.PdfDocument(pdf_path) as individual:
-                a = atlas[page_number].render(scale=1.5).to_pil()
-                b = individual[0].render(scale=1.5).to_pil()
-                require(a.size == b.size and a.tobytes() == b.tobytes(), f'Atlas differs: {item["id"]}')
-                a.save(pdf_output / (item['slug'] + '.png'))
+        require(digest(path, binary=path.suffix == '.png') == expected, f'Stale artifact hash: {relative}')
 
     browser_path = BUILD / 'preview/verification.json'
     require(browser_path.exists(), 'Run node docs/capture/tools/verify_markdown.cjs first')
@@ -205,13 +265,13 @@ def main():
                   matching_operation_contracts=6, matching_usecase_names=5, selected_junit_methods=len(selected),
                   recorded_junit=totals, recorded_junit_suites=30, recorded_swing_checks=swing['checks'],
                   test_execution_date=evidence['date'], note='Recorded test evidence verified; JUnit was not rerun by this tool.',
-                  inline_diagrams=12, browser=browser, pdf_pages=7, matching_pdf_pages=6,
+                  inline_diagrams=12, browser=browser, png_diagrams=6, typed_uml_members=typed_members,
                   artifact_hashes=len(artifacts['sha256']),
                   document_sha256={p.relative_to(REPO).as_posix(): digest(p) for p in capture_docs})
     output = BUILD / 'verification.json'
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(f'PASS: {links} local links ({link_anchors} anchors); 6 matching contracts; 384 recorded JUnit + 17 Swing checks; '
-          '12 rendered diagrams; 6 matching PDF pages + cover; artifact hashes; unchanged source baseline')
+          f'12 rendered diagrams; {typed_members} typed UML members; PNG artifact hashes; unchanged source baseline')
     print(output)
 
 

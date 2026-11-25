@@ -3,7 +3,7 @@
 Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 추가 기능을 설명한다. 팀 전체 보고서에 포함할 캡처 담당 장으로, 기능 유스케이스·GoF 적용과 대안·UML·Operation Contract·대표 JUnit 목적과 결과를 함께 담는다.
 
 - 코드 기준: dev `cfba2ed27be43eb09cff295154960fb8a276fa7e` (통계·프리징 통합 완료).
-- 문서 확인일: 2026-11-23 / 기능 검사 실행일: 2026-11-23 (Asia/Seoul).
+- 문서 확인일: 2026-11-25 / 기능 검사 실행일: 2026-11-23 (Asia/Seoul).
 - 전체 JUnit **384**회 중 Pattern 계열 **39**회 포함. 실패·오류·건너뜀 0. 별도 Swing **17 checks** 통과.
 - 상세 구현 결정·전체 테스트·개발 이력: [캡처 상세 문서](README.md).
 
@@ -16,7 +16,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 | 일부 JUnit 선정 및 테스트 내용 명시 | [대표 검사 8개와 실행 결과](#tests) |
 | 클래스·State·Sequence 다이어그램 | [본문 UML](#uml) |
 | Operation Contract | [OC-01~OC-06](#contracts) |
-| 기존 기능과 추가 기능을 구분한 유스케이스 그림 | [팀 통합 유스케이스 초안](#system-use-cases) |
+| 기존 기능과 추가 기능을 구분한 유스케이스 그림 | [캡처 관련 원본·확장 유스케이스](#system-use-cases) |
 
 <a id="spec"></a>
 
@@ -52,16 +52,16 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 
 | ID | 이름 | 사용자 관점의 의미 |
 |---|---|---|
-| E-01 | Capture Template E | 선택 영역의 생존 모양을 템플릿으로 저장 |
-| E-02 | Place Template E | 선택한 템플릿 배치 |
-| E-03 | Place Template Continuously E | 누른 채 연속 배치 |
-| E-04 | Undo Placement E | 마지막 배치 작업 되돌리기 |
-| E-05 | Finish Template Editing E | 캡처·배치 편집 종료 |
+| E-01 | Capture Template(E) | 선택 영역의 생존 모양을 템플릿으로 저장 |
+| E-02 | Place Template(E) | 선택한 템플릿 배치 |
+| E-03 | Place Template Continuously(E) | 누른 채 연속 배치 |
+| E-04 | Undo Placement(E) | 마지막 배치 작업 되돌리기 |
+| E-05 | Finish Template Editing(E) | 캡처·배치 편집 종료 |
 
-`E-01` 등의 ID와 이름 끝의 `E`는 별개다. 앞의 ID는 요구사항 추적용이고, 끝의 `E`는 확장 기능 표기다. 팀 공통 그림의 Capture Template·Place Template·Undo Placement 명칭을 사용하며 연속 배치와 편집 종료를 별도 상세 유스케이스로 명시한다.
+`E-01` 등의 ID는 본문의 요구사항 추적용이며 유스케이스 이름의 일부가 아니다. 그림에서는 앞 번호를 빼고 이름 끝의 `(E)`로 확장 기능을 표시한다. Capture Template·Place Template·Undo Placement 명칭을 유지하고 연속 배치와 편집 종료를 별도 상세 유스케이스로 명시한다.
 
 
-### E-01 Capture Template E
+### E-01 Capture Template(E)
 
 - 목표/전제: 화면의 생존 모양을 재사용한다. 보드가 열려 있다.
 - 기본 흐름: 영역 캡처 선택 → 시계 정지 → 드래그로 영역 선택 → 선택 영역 저장 → 이름 입력 → 생존 모양 추출 → 파일 저장 → 목록 선택 → 배치 모드 진입.
@@ -69,7 +69,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 - 사후 조건: 성공 시 `.lifepattern` 파일과 목록 항목이 생긴다. 원본 셀은 바뀌지 않는다.
 - 연결: R-01, R-02, R-08.
 
-### E-02 Place Template E
+### E-02 Place Template(E)
 
 - 전제: 기본 또는 사용자 템플릿이 선택돼 있다.
 - 기본 흐름: 배치 버튼/목록 더블클릭 → 시계 정지 → 미리보기 이동 → 왼쪽 버튼 누름 → 범위·guard 검사 → 죽어 있던 대상 셀만 살림 → 해제하여 작업 확정.
@@ -77,7 +77,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 - 사후 조건: 새 셀은 나이 0이며 기존 셀의 나이·색은 유지된다. Undo 가능한 실제 변경만 기록된다.
 - 연결: R-03, R-05, R-06, R-09.
 
-### E-03 Place Template Continuously E
+### E-03 Place Template Continuously(E)
 
 - 관계: E-02의 확장이다. 버튼을 유지하거나 끌 때 추가되는 선택적 흐름이다.
 - 기본 흐름: 최초 배치 후 같은 위치를 주기적으로 재시도 → 이동하면 이전 기준점부터 현재 기준점까지 보간 → 각 기준점을 별도로 검사·배치 → 버튼 해제로 전체 작업 확정.
@@ -85,7 +85,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 - 사후 조건: 허용된 위치의 변경만 한 작업에 묶인다. 금지 위치를 통과해도 허용된 위치의 배치를 모두 취소하지는 않는다.
 - 연결: R-04, R-05, R-06, R-07, R-09.
 
-### E-04 Undo Placement E
+### E-04 Undo Placement(E)
 
 - 전제: 배치 이력이 있다. 버튼 또는 Ctrl+Z로 실행한다.
 - 기본 흐름: 활성 드래그 종료 → 시계 정지 → 마지막 Command가 기록한 추가 셀만 제거 → Undo 완료 알림 → 화면 갱신.
@@ -93,7 +93,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 - 사후 조건: 그 작업 전부터 있던 셀은 보존되고, 같은 작업의 중복 좌표는 한 번만 복원된다.
 - 연결: R-06, R-08, R-09.
 
-### E-05 Finish Template Editing E
+### E-05 Finish Template Editing(E)
 
 - 전제: 캡처 또는 배치 모드다. Esc, 오른쪽 클릭, 편집 끝내기로 요청한다.
 - 기본 흐름: 활성 반복과 전역 리스너 종료 → 작업 확정 → 선택/미리보기 초기화 → DRAW로 복귀.
@@ -132,19 +132,15 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 
 <a id="system-use-cases"></a>
 
-## 4. 기존 시스템과 추가 시스템 유스케이스
+## 4. 캡처 관련 원본·확장 유스케이스
 
-주 액터는 게임 사용자다. 기존 기능은 Edit Cells, Run / Halt Game, Step One Generation, Advance Generation, Clear Board, Store / Load Board, Exit Game으로 구분한다. 추가 기능 구역 안에서 캡처 E-01~E-05와 다른 담당 기능을 구별한다. 일반 셀 드래그도 원본 클릭 편집에 추가된 기능으로 표시한다.
+캡처 담당의 다섯 유스케이스와 직접 연결되는 원본 셀 편집만 표시한다. 시스템 경계는 Life Game 하나이며 다른 담당 기능은 넣지 않는다. 기존 Edit Cells와 확장 기능은 이름 끝의 (E)로 구분한다. Place Template Continuously(E)는 Place Template(E)의 반복 배치 확장 지점에 연결하고, 버튼 유지·드래그 조건은 선 옆 노트에 적는다.
 
-![D-01 기존 기능과 추가 기능의 통합 유스케이스](diagrams/01-use-cases.png)
+![D-01 캡처·템플릿 유스케이스](diagrams/01-use-cases.png)
 
-기존 시스템과 추가 시스템을 구역으로 구별한다. 캡처 E-01~E-05와 다른 팀 기능을 같은 경계 안에 배치한다. 캡처 E-01~E-05와 다른 담당의 대표 유스케이스를 표시한다. 다른 기능의 전체 목록·세부 관계는 담당 문서를 따른다. E-03은 E-02의 선택적 확장이다.
+[편집 원본](diagrams/01-use-cases.puml)
 
-[확대 SVG](diagrams/svg/01-use-cases.svg) · [편집 원본](diagrams/01-use-cases.puml) · [PDF](diagrams/pdf/01-use-cases.pdf)
-
-이 그림은 캡처 담당의 통합 개요이며 팀 전체 기능의 완전한 목록은 아니다. 최종 공통 그림은 담당별 세부 유스케이스를 취합해 확정한다. 다른 기능의 세부 명세는 [색상](../color-gen/feature-color-gen-changes.md), [일반 드래그 구현](../../src/com/holub/life/Universe.java), [사운드](../sound-effects/sound-effects.md), [통계](../statistics/statistics.md), [프리징](../freezing/FREEZING.md)에서 확인한다.
-
-
+Edit Cells는 배치·Undo가 재사용하는 기존 Cell 편집의 기준이다. 원본 일반 입력과 템플릿 입력은 서로 다른 모드이며, 이 사이에 임의의 include·extend 관계를 추가하지 않는다. 연속 배치의 확장 관계만 표시한다. 전체 기능을 모은 유스케이스는 팀 공통 문서에서 별도로 취합한다.
 
 <a id="uml"></a>
 
@@ -154,9 +150,9 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 
 ![D-02 캡처 객체의 책임과 협력](diagrams/02-classes.png)
 
-입력·저장·편집 이력을 분리하고 기존 Cell Composite를 공개 계약으로 재사용한다. 현재 배치 Undo는 변경 좌표 Command다. 캡처 조회에만 기존 Memento를 사용한다. 일부 메서드는 가독성을 위해 생략했다.
+입력·저장·편집 이력을 분리하고 기존 Cell Composite를 공개 계약으로 재사용한다. 현재 배치 Undo는 변경 좌표 Command다. 캡처 조회에만 기존 Memento를 사용한다. 일부 메서드는 가독성을 위해 생략했다. 표시한 속성·연산에는 실제 코드의 가시성, 매개변수 타입과 반환 타입을 적었다. 패턴 역할은 위 GoF 표에서 설명하고, Cell은 인터페이스로 표시한다. Neighborhood–Cell은 합성이며 현재 게임의 8×8 구성에 맞춰 1–64로 표시한다. Neighborhood 생성자는 다른 gridSize도 지원한다.
 
-[확대 SVG](diagrams/svg/02-classes.svg) · [편집 원본](diagrams/02-classes.puml) · [PDF](diagrams/pdf/02-classes.pdf)
+[편집 원본](diagrams/02-classes.puml)
 
 ### 편집 State 다이어그램
 
@@ -164,7 +160,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 
 편집 종료는 셀 복원이 아니다. 반복 입력을 끝내고 DRAW로 돌아가며, 복원은 Undo가 담당한다. 실제 Mode enum은 DRAW/CAPTURE/PLACE의 3개다. 내부 두 상태는 stamping 값의 설명이며 State 패턴 클래스가 아니다.
 
-[확대 SVG](diagrams/svg/05-edit-states.svg) · [편집 원본](diagrams/05-edit-states.puml) · [PDF](diagrams/pdf/05-edit-states.pdf)
+[편집 원본](diagrams/05-edit-states.puml)
 
 ### 캡처와 저장 Sequence 다이어그램
 
@@ -172,7 +168,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 
 캡처는 원본을 읽고 상대 생존 모양을 만든다. 파일 저장이 성공해야 목록과 배치 모드를 갱신한다. 중복 이름은 실제 파일 쓰기 전에 거부한다. 원자 이동 미지원 시 일반 이동으로 대체하며 전원 장애 안전성 전체를 보장하지는 않는다.
 
-[확대 SVG](diagrams/svg/03-capture-save.svg) · [편집 원본](diagrams/03-capture-save.puml) · [PDF](diagrams/pdf/03-capture-save.pdf)
+[편집 원본](diagrams/03-capture-save.puml)
 
 ### 연속 배치와 Undo Sequence 다이어그램
 
@@ -180,7 +176,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 
 많은 찍기를 하나의 작업에 합치고 변경 완료를 한 번 알린다. Undo는 그 작업이 추가한 좌표만 되돌린다. UI가 범위·guard를 먼저 검사하고 모델에서도 재검사한다. 무변경 찍기·빈 작업·빈 Undo는 이력과 알림을 만들지 않는다.
 
-[확대 SVG](diagrams/svg/04-stroke-undo.svg) · [편집 원본](diagrams/04-stroke-undo.puml) · [PDF](diagrams/pdf/04-stroke-undo.pdf)
+[편집 원본](diagrams/04-stroke-undo.puml)
 
 ### 타 기능 연결
 
@@ -188,7 +184,7 @@ Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 �
 
 캡처는 모델 guard와 완료 알림으로 연결한다. 프리징·통계 구현을 직접 소유하거나 세대 이벤트를 만들어내지 않는다. Universe가 PatternTools를 통해 guard를 주입하고 BoardChangeEvent를 구독자에게 전달한다. guard true는 차단이며 완료 이벤트는 세대 진행과 구분된다.
 
-[확대 SVG](diagrams/svg/06-integration.svg) · [편집 원본](diagrams/06-integration.puml) · [PDF](diagrams/pdf/06-integration.pdf)
+[편집 원본](diagrams/06-integration.puml)
 
 배치 제약은 BoardEditor에서 검사하고, 완료 알림은 PatternTools를 거쳐 Universe의 통계·사운드 구독자에 전달한다. 프리징 영역 선택 시작은 캡처 이력을 비우며, 단순 탭 전환은 진행 중 작업을 끝내되 Undo 이력을 유지한다.
 
@@ -347,4 +343,4 @@ Glider의 빈 모서리만 실제 동결 영역과 겹치도록 배치한다. �
 | 다른 기능과의 조립 | [Universe](../../src/com/holub/life/Universe.java), [Life](../../src/com/holub/life/Life.java) |
 | 테스트 소스 | [캡처 테스트](../../test/capture/com/holub/life) · [통합 테스트](../../test/integration/com/holub/life) |
 
-이 공유용 문서와 [상세 문서](README.md)는 같은 계약·도식·코드 기준을 사용한다. 상세 문서에서 변경 내용을 확인한 뒤 공유용에도 반영한다. 그림 원본을 수정할 때 PNG·SVG·PDF를 함께 재생성한다. Markdown을 파일로 전달할 때는 같은 폴더의 `diagrams/`와 인용한 `evidence/`를 함께 전달한다.
+이 공유용 문서와 [상세 문서](README.md)는 같은 계약·도식·코드 기준을 사용한다. 상세 문서에서 변경 내용을 확인한 뒤 공유용에도 반영한다. 그림 원본을 수정할 때 PNG를 다시 생성하고 입력·산출물 해시를 갱신한다. Markdown을 파일로 전달할 때는 같은 폴더의 `diagrams/`와 인용한 `evidence/`를 함께 전달한다.
