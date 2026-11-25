@@ -11,70 +11,70 @@ skinparam ranksep 110
 skinparam nodesep 90
 
 interface Cell <<interface>> {
-  + figureNextState()
-  + transition()
-  + holdNextState()
-  + redraw()
-  + colorAt()
-  + userClicked()
-  + transfer()
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + colorAt(row : int, column : int) : Color
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(memento : Storable, upperLeftCorner : Point, doLoad : boolean) : boolean
   + clear()
 }
 
 class Neighborhood {
-  + figureNextState()
-  + transition()
-  + holdNextState()
-  + redraw()
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
 }
 
 class Resident {
-  ~ {static} LIVE_COLOR
-  - {static} DEAD_COLOR
-  - amAlive
-  - willBeAlive
-  - age
-  - heldThisGeneration
-  ~ {static} setColorPolicy()
-  ~ {static} colorChangesWithAge()
-  + figureNextState()
-  + transition()
-  + holdNextState()
-  + redraw()
-  + colorAt()
-  + userClicked()
-  + transfer()
+  ~ {static} LIVE_COLOR : Color
+  - {static} DEAD_COLOR : Color
+  - amAlive : boolean
+  - willBeAlive : boolean
+  - age : int
+  - heldThisGeneration : boolean
+  ~ {static} setColorPolicy(policy : CellColorPolicy)
+  ~ {static} colorChangesWithAge() : boolean
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + colorAt(row : int, column : int) : Color
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(blob : Storable, upperLeft : Point, doLoad : boolean) : boolean
   + clear()
 }
 
 interface CellColorPolicy <<interface>> {
-  + colorOf()
-  + changesWithAge()
+  + colorOf(age : int) : Color
+  + changesWithAge() : boolean
 }
 
 class FixedColorPolicy {
-  - color
-  + FixedColorPolicy()
-  + colorOf()
-  + changesWithAge()
+  - color : Color
+  + FixedColorPolicy(color : Color)
+  + colorOf(age : int) : Color
+  + changesWithAge() : boolean
 }
 
 class CyclingColorPolicy {
-  - period
-  - colors
-  + CyclingColorPolicy()
-  + colorOf()
-  + changesWithAge()
+  - period : int
+  - colors : Color[]
+  + CyclingColorPolicy(period : int, colors : Color...)
+  + colorOf(age : int) : Color
+  + changesWithAge() : boolean
 }
 
 class Universe {
   - Universe()
-  + liveCells()
-  + notifyBoardChanged()
-  - notifyBoardChanged()
-  # paintComponent()
+  + liveCells() : boolean[][]
+  + notifyBoardChanged(kind : BoardChangeEvent.Kind)
+  - notifyBoardChanged(kind : BoardChangeEvent.Kind, before : boolean[][])
+  # paintComponent(g : Graphics)
   - refreshNow()
-  - useColorPolicy()
+  - useColorPolicy(policy : CellColorPolicy)
 }
 
 class Clock {
@@ -89,7 +89,7 @@ Universe .left.> Clock : <<use>>
 Universe ..> Resident : <U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><<create, use>>
 CellColorPolicy <|.right. FixedColorPolicy
 CellColorPolicy <|.. CyclingColorPolicy
-Resident --> "\n1" CellColorPolicy
+Resident "*" --> "\n1" CellColorPolicy
 Universe ..> FixedColorPolicy : <U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><<create>>
 Universe ..> CyclingColorPolicy : <<create>>
 Resident ..> FixedColorPolicy : <<create>>

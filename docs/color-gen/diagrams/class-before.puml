@@ -11,36 +11,36 @@ skinparam ranksep 80
 skinparam nodesep 70
 
 interface Cell <<interface>> {
-  + figureNextState()
-  + transition()
-  + redraw()
-  + userClicked()
-  + transfer()
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(memento : Storable, upperLeftCorner : Point, doLoad : boolean) : boolean
   + clear()
 }
 
 class Neighborhood {
-  + figureNextState()
-  + transition()
-  + redraw()
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
 }
 
 class Resident {
-  - {static} LIVE_COLOR
-  - {static} DEAD_COLOR
-  - amAlive
-  - willBeAlive
-  + figureNextState()
-  + transition()
-  + redraw()
-  + userClicked()
-  + transfer()
+  - {static} LIVE_COLOR : Color
+  - {static} DEAD_COLOR : Color
+  - amAlive : boolean
+  - willBeAlive : boolean
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(blob : Storable, upperLeft : Point, doLoad : boolean) : boolean
   + clear()
 }
 
 class Universe {
   - Universe()
-  + paint()
+  + paint(g : Graphics)
   - refreshNow()
 }
 

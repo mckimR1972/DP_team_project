@@ -33,4 +33,9 @@ opt willChange
     U ->> U : refreshNow()
   end
 end
+note over N, R
+  Holub 코드의 Resident.transition()은 생사가 바뀌지 않았을 때 true를
+  돌려주는 오류가 있었다(색 기능을 붙이기 전에 고침).
+  그림의 changed는 고친 뒤의 뜻(생사가 바뀌었는가)으로 적었다
+end note
 @enduml
