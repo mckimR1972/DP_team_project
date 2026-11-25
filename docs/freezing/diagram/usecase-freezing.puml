@@ -19,11 +19,11 @@ extension points
   }
 
   rectangle "추가 시스템 기능 (Freezing)" as Extended {
-    usecase "Install Freezing E" as Install
-    usecase "Select Region E" as Region
-    usecase "Set Duration E" as Duration
-    usecase "Release Freezing E" as Release
-    usecase "Auto Release E" as Auto
+    usecase "Install Freezing (E)" as Install
+    usecase "Select Region (E)" as Region
+    usecase "Set Duration (E)" as Duration
+    usecase "Release Freezing (E)" as Release
+    usecase "Auto Release (E)" as Auto
   }
 }
 
@@ -37,7 +37,7 @@ Install ..> Duration : <<include>>
 Run ..> Advance : <<include>>
 Step ..> Advance : <<include>>
 Advance <.. Auto : <<extend>>
-note on link
+note top on link
   condition: {남은 세대가 0}
   extension point: 세대 확정 후
 end note
