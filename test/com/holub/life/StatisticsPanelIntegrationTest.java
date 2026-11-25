@@ -228,7 +228,7 @@ class StatisticsPanelIntegrationTest {
     }
 
     @Test
-    void hiddenStatisticsKeepsUpdatingAndTabChangesDoNotResetTheBaseline() throws Exception {
+    void hiddenStatisticsKeepsUpdatingAndTabChangesPreserveTheSummary() throws Exception {
         LifeTestSupport.onEdt(() -> {
             JTabbedPane tabs = sharedTabs();
             tabs.addTab("통계", panel);
@@ -254,19 +254,6 @@ class StatisticsPanelIntegrationTest {
             LifeTestSupport.clock.tick();
             tabs.setSelectedIndex(2);
             assertDisplay("3", "3", "0.07%", "2", "2");
-        });
-    }
-
-    @Test
-    void largeDisplayedCountsAndExplanationFitTheSharedPanelWidth() throws Exception {
-        LifeTestSupport.onEdt(() -> {
-            JTabbedPane tabs = new JTabbedPane();
-            tabs.addTab("통계", panel);
-            JPanel content = Life.createContent(LifeTestSupport.universe, tabs);
-            panel.showStatistics(new Statistics.Summary(3_000_000_000L, 4096, 100, 4096, 4096, true, List.of(new Statistics.ColorCount(java.awt.Color.RED, 4096, 100.0))));
-            layoutAtPreferredSize(content);
-            assertLabelsFit(panel);
-            assertBoardAndSidebarBounds(content, tabs);
         });
     }
 

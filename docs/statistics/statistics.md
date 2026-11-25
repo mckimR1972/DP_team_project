@@ -520,113 +520,215 @@ Statistics는 이벤트를 집계하여 `Summary`를 만들고, StatisticsPanel�
 
 ### 5.1 테스트 구성과 실행 환경
 
-통계와 밀접한 6개 테스트 클래스에서 **대표 메서드 4개씩, 총 24개**를 선정했다. 정상 집계뿐 아니라 빈 판·좌표 경계·데이터 보호·색 변화 경계·실제 게임 연결을 설명한다. 매개변수 테스트는 한 메서드가 여러 입력으로 실행되므로 대표 메서드 수와 전체 실행 수는 구분한다.
+통계 기능의 주요 동작을 검증하는 대표 테스트 메서드 18개를 선정했다. 각 메서드의 작성 목적, 입력·조작, 기대 결과와 실행 결과를 정리하고, 전체 테스트 결과는 5.5에 제시한다.
 
-| 테스트 클래스 | 검증 대상 | 클래스 전체 실행 수 | 대표 메서드 수 |
-| --- | --- | ---: | ---: |
-| StatisticsTest | 기본 집계·변화량 의미 | 22 | 4 |
-| BoardChangeEventTest | 입력 계약·좌표·방어적 복사 | 23 | 4 |
-| ColorStatisticsTest | 색상별 계산·정책 변경 | 13 | 4 |
-| StatisticsPanelTest | 숫자 서식·색상 행·표시 상태 | 14 | 4 |
-| StatisticsPanelIntegrationTest | 실제 보드·Clock·이벤트·기본 통계 화면 | 14 | 4 |
-| ColorStatisticsIntegrationTest | 실제 셀 나이·색상 정책·색 통계 화면 | 5 | 4 |
-| 합계 | 통계 핵심 검증 | **91** | **24** |
+| 테스트 클래스 | 검증 대상 | 실행 수 |
+| --- | --- | ---: |
+| StatisticsTest | 생존 수·비율·변화량·결과 전달 | 16 |
+| BoardChangeEventTest | 입력 조건·좌표·방어적 복사 | 21 |
+| ColorStatisticsTest | 색상별 집계·정책 변경 후 변화량 | 13 |
+| StatisticsPanelTest | 숫자 서식·변화량 표시·색상 행 | 14 |
+| StatisticsPanelIntegrationTest | 실제 게임 진행·편집·복원과 통계 화면 연결 | 13 |
+| ColorStatisticsIntegrationTest | 셀 나이·색상 정책과 색 통계 연결 | 5 |
+| 합계 | 통계 핵심 6개 클래스 | **82** |
 
-실행 환경은 Gradle 9.5.1, Java toolchain 17, JUnit Jupiter 6.0.3이다. 기본 테스트는 headless 모드에서 실행하며, 싱글턴 초기화가 클래스 사이에 영향을 주지 않도록 테스트 클래스마다 JVM을 분리한다. Mockito는 메뉴 등록·파일 선택 등 필요한 외부 경계를 대체할 때 사용한다.
-
-```bash
-./gradlew test --rerun-tasks --no-daemon --console=plain
-```
-
-기본 HTML 결과는 `build/reports/tests/test/index.html`, XML 결과는 `build/test-results/test/`에 생성된다. 별도 데스크톱 실행이 필요한 `patternUiTest`는 아래 JUnit 실행 수에 포함하지 않는다.
+Gradle 9.5.1, Java 17, JUnit Jupiter 6.0.3 환경에서 실행했다. 집계 로직은 UI 없이 독립적으로 검증하고, 화면 표시와 게임 연결은 창을 띄우지 않는 headless 환경에서 검사했다.
 
 ### 5.2 기본 집계와 이벤트 계약 검증
 
-#### 기본 집계 — StatisticsTest
+#### StatisticsTest — 기본 집계
 
-테스트 코드: [StatisticsTest](../../test/com/holub/life/StatisticsTest.java)
+이벤트를 직접 만들어 Statistics에 전달하며 실제 Universe·Clock·템플릿·Undo는 실행하지 않는다. 배열은 [행][열], Point는 (x=열, y=행)이다.
 
-이벤트를 직접 만들어 Statistics에 전달하는 계산 단위 테스트다. 실제 Clock·Universe·템플릿·Undo는 실행하지 않는다. 아래 셀 번호 n은 한 변의 길이가 size일 때 행=n/size(정수 나눗셈), 열=n%size인 0부터 시작하는 번호다.
+**TC01. 초기 상태 집계**
 
-| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
-| --- | --- | --- | --- |
-| `initialSnapshotReportsPopulationAndSuppliedGeneration` | 초기 이벤트에 담긴 세대와 생존 수·비율을 집계한다. | INITIAL, 세대 12, 4×4 판의 셀 0·5·10·15 생존. | 세대 12, 생존 4, 비율 25%. 변화량은 미제공 상태이며 내부 탄생·사망 값은 0. |
-| `emptyBoardHasZeroPopulationAndPercentage` | 빈 판의 집계와 변화량 상태를 확인한다. | INITIAL, 세대 0, 빈 4×4 판. | 생존 0, 비율 0%, 변화량 미제공. |
-| `firstGenerationAlreadyContainsItsOwnDelta` | 이전 이벤트 없이도 전달된 변화 좌표를 집계한다. | 첫 입력으로 GENERATION 9. 3×3 판의 셀 1·4 생존. 탄생 목록에는 셀 번호 1, 사망 목록에는 셀 번호 0을 각각 1개 전달. | 생존 2, 유효한 변화량 탄생 1·사망 1. |
-| `nonGenerationUpdatesPopulationAndClearsDisplayedDelta` | 비세대 이벤트 후에는 이전 변화량을 지우고 이후 세대의 새 변화량을 사용한다. | 6회: INITIAL·EDIT·TEMPLATE·TEMPLATE_UNDO·CLEAR·LOAD. 먼저 탄생 2·사망 1인 세대 이벤트를 보내고, 각 종류로 세대 0·생존 2를 전달한 뒤 다음 세대 이벤트를 보낸다. | 중간 결과는 세대 0·생존 2·변화량 미제공. 다음 GENERATION의 탄생 1·사망 1을 정상 집계한다. |
+`initialSnapshotReportsPopulationAndSuppliedGeneration()`
 
-#### 이벤트 계약 — BoardChangeEventTest
+- **작성 목적:** 통계 연결 시 받은 현재 세대와 생존 상태를 집계하고, 아직 계산하지 않은 세대 변화량을 구분하기 위해 작성했다.
+- **입력·조작:** INITIAL, 세대 12, 4×4 판의 대각선 4셀을 살아 있는 상태로 전달한다.
+- **기대 결과:** 세대 12·생존 4·생존 비율 25%. hasGenerationDelta는 false, 내부 탄생·사망 값은 0이다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
 
-테스트 코드: [BoardChangeEventTest](../../test/com/holub/life/BoardChangeEventTest.java)
+**TC02. 이전 이벤트 없이 변화량 집계**
 
-이벤트 객체의 좌표 계약과 방어적 복사, 잘못된 변화 목록의 거부를 확인한다. 배열은 [행][열], Point는 (x=열, y=행)이다. 예외 검사는 지정한 예외가 발생해야 통과한다.
+`firstGenerationAlreadyContainsItsOwnDelta()`
 
-| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
-| --- | --- | --- | --- |
-| `retainsMetadataAndRowColumnCoordinates` | 세대 정보와 배열·Point 좌표의 방향을 보존한다. | GENERATION 42, 3×3 판의 [1][2] 생존, 탄생 Point(2,1), 사망 Point(0,2). | 종류·세대 42·판 크기 3과 생존 배열·두 좌표 목록이 입력과 같다. |
-| `returnedRowsListsAndPointsAreIndependentForEveryObserver` | 한 수신자가 조회한 복사본을 바꾸어도 다음 조회에 영향을 주지 않는다. | 조회한 배열의 값·행을 바꾸고, 반환 목록의 Point를 이동하거나 목록을 비운다. | 다시 조회한 배열과 탄생·사망 좌표는 원래 값이다. |
-| `rejectsCoordinatesOutsideEitherAxis` | 좌표가 판 밖이면 거부한다. | 2회: 3×3 판에서 사망 Point의 x 또는 y를 각각 -1·3으로 설정. | 두 축의 범위 초과 입력 모두 IllegalArgumentException. |
-| `rejectsDuplicateOrInconsistentChanges` | 중복 좌표와 완료 상태에 모순되는 변화 좌표를 거부한다. | 탄생 좌표 중복, 사망 좌표 중복, 완료 후 죽은 셀을 탄생으로 지정, 살아 있는 셀을 사망으로 지정. | 네 경우 모두 IllegalArgumentException. |
+- **작성 목적:** Statistics가 이전 판을 보관하거나 이전 이벤트를 받아야만 탄생·사망을 계산하는 구조가 되지 않았는지 확인한다.
+- **입력·조작:** 첫 입력으로 GENERATION 9를 전달한다. 3×3 판의 [0][1]·[1][1]이 생존하고, 탄생 Point(1,0)·사망 Point(0,0)을 각각 1개 전달한다.
+- **기대 결과:** 생존 2, 유효한 변화량 탄생 1·사망 1을 얻는다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+**TC03. 편집·복원 후 변화량 초기화**
+
+`editingOrRestoringUpdatesPopulationAndClearsDelta()`
+
+- **작성 목적:** 편집·템플릿·복원 결과에 이전 세대의 탄생·사망 수가 남지 않도록 확인한다.
+- **입력·조작:** 먼저 탄생 2·사망 1인 GENERATION 5를 보낸다. 이어 EDIT·TEMPLATE·TEMPLATE_UNDO는 세대 5·생존 2, CLEAR는 세대 0·생존 0, LOAD는 세대 0·생존 2로 각각 실행한다.
+- **기대 결과:** 각 입력의 세대·생존 수가 반영되고, 모든 경우 hasGenerationDelta=false·탄생 0·사망 0이 된다.
+- **실행 결과:** 5개 입력 모두 기대 결과와 일치하여 통과.
+
+#### BoardChangeEventTest — 이벤트 계약
+
+입력 조건 검사와 외부 변경 방지를 구분한다. 예외 검사는 지정한 예외가 발생해야 통과한다.
+
+**TC04. 이벤트 생성 시 복사**
+
+`sourceRowsListsAndPointsCannotChangeEvent()`
+
+- **작성 목적:** 이벤트를 만든 코드가 원본 데이터를 수정하더라도 이미 발행할 이벤트가 바뀌지 않는지 확인한다.
+- **입력·조작:** 3×3 판의 [1][2] 생존, 탄생 Point(2,1)·사망 Point(0,2)로 이벤트를 만든다. 원본 배열의 값·행을 바꾸고 Point를 이동한 뒤 원본 목록을 비운다.
+- **기대 결과:** 이벤트의 [1][2]는 생존 상태이고 원래 행 길이 3과 탄생·사망 좌표가 유지된다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+**TC05. 조회 결과의 외부 변경 방지**
+
+`returnedRowsListsAndPointsAreIndependentForEveryObserver()`
+
+- **작성 목적:** 한 구독자가 조회한 데이터를 수정해도 다른 구독자가 읽는 공통 이벤트에는 영향이 없는지 확인한다.
+- **입력·조작:** 앞 사례와 같은 판·좌표로 이벤트를 만든다. 조회한 배열의 값·행과 반환된 Point·목록을 수정한 뒤 다시 조회한다.
+- **기대 결과:** 생존 배열 전체와 탄생 Point(2,1)·사망 Point(0,2)가 원래 값과 같다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+**TC06. 잘못된 변화 좌표 거부**
+
+`rejectsDuplicateOrInconsistentChanges()`
+
+- **작성 목적:** 중복 좌표로 변화량이 부풀려지거나 완료된 판과 모순되는 이벤트가 집계에 사용되는 것을 막기 위해 작성했다.
+- **입력·조작:** 2×2 판의 [0][1]만 생존시킨다. 탄생 중복, 사망 중복, 죽은 셀을 탄생으로 지정, 살아 있는 셀을 사망으로 지정하는 네 경우를 검사한다.
+- **기대 결과:** 네 경우 모두 BoardChangeEvent 생성 시 IllegalArgumentException이 발생한다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
 
 ### 5.3 색상 집계와 화면 표시 검증
 
-#### 색상 집계 — ColorStatisticsTest
+#### ColorStatisticsTest — 색상 집계
 
-테스트 코드: [ColorStatisticsTest](../../test/com/holub/life/ColorStatisticsTest.java)
+색 목록을 담은 이벤트를 직접 만든다. 실제 셀의 나이 증가나 색상 정책 실행은 포함하지 않는다.
 
-색 목록을 가진 이벤트를 직접 구성하여 집계와 입력 검증을 확인한다. 실제 셀 나이·색상 정책·화면은 실행하지 않는다. 단위 테스트의 Color.BLUE·Color.GREEN 같은 임의 색과 실제 순환 정책의 파랑·초록 값은 구분한다.
+**TC07. 전체 생존 비율과 색상 비율 구분**
 
-| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
-| --- | --- | --- | --- |
-| `calculatesEachColorAgainstLivingCellsInsteadOfBoardArea` | 전체 생존 비율과 색상별 비율의 분모를 구분한다. | 4×4 판에 빨강 2·파랑 1·초록 1의 생존 셀. | 생존 4·전체 비율 25%. 색 비율은 50%·25%·25%, 색별 개수 합 4·비율 합 100%. |
-| `emptyBoardRemovesPreviousColorsWithoutDividingByZero` | 빈 판으로 바뀌면 이전 색을 지우고 안전하게 집계한다. | 파랑 1개 INITIAL 이후 빈 색 목록의 CLEAR. | 생존 수·전체 비율 0, 색상별 결과는 빈 목록. |
-| `rejectsColorCountDifferentFromTheLivingCellCount` | 생존 수와 색 목록 길이가 일치해야 한다. | 2회: 생존 1개인데 색을 0개 또는 2개 전달. | 각각 IllegalArgumentException. |
-| `policyChangePreservesTheLastGenerationDeltaWhileReplacingColors` | 같은 세대의 정책 변경은 기존 변화량을 보존한다. | GENERATION 10에 파랑 2개·탄생 1·사망 1을 전달한 뒤, 같은 세대의 COLOR_POLICY_CHANGED로 빨강 2개 전달. | 세대 10·유효한 탄생 1·사망 1 유지, 색은 빨강 2개·100%로 변경. |
+`calculatesEachColorAgainstLivingCellsInsteadOfBoardArea()`
 
-#### 화면 표시 — StatisticsPanelTest
+- **작성 목적:** 전체 생존 비율은 전체 칸 수, 색상 비율은 전체 생존 셀 수를 분모로 사용하는지 확인한다.
+- **입력·조작:** 4×4 판에 빨강 2·파랑 1·초록 1의 색 목록을 가진 INITIAL 이벤트를 전달한다.
+- **기대 결과:** 생존 4·전체 생존 비율 25%, 색상별 개수 2·1·1과 비율 50%·25%·25%. 색별 개수 합은 4, 비율 합은 100%이다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
 
-테스트 코드: [StatisticsPanelTest](../../test/com/holub/life/StatisticsPanelTest.java)
+**TC08. 빈 판의 색상 집계**
 
-직접 구성한 Summary를 실제 Swing 패널에 전달하고 JLabel의 문자열·순서·색을 읽는다. 패널 생성과 갱신은 EDT에서 실행하며, Universe와 통계 계산은 연결하지 않는다. 비율 서식 검사의 Summary는 문자열 표시를 위한 입력이므로 생존 수로부터 해당 비율을 다시 계산하지 않는다.
+`emptyBoardRemovesPreviousColorsWithoutDividingByZero()`
 
-| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
-| --- | --- | --- | --- |
-| `formatsPercentageToTwoDecimalPlaces` | 생존 비율을 소수 둘째 자리로 일관되게 표시한다. | 4회: 비율 0, 100, 12.3456, 0.0244140625를 Summary에 넣어 전달. | 각각 0.00%, 100.00%, 12.35%, 0.02%로 표시. |
-| `unavailableDeltaReplacesPreviouslyDisplayedCounts` | 편집 등으로 변화량이 무효화되면 이전 탄생·사망 수를 지운다. | 탄생 2·사망 2·hasGenerationDelta=true인 결과 이후, 생존 4·hasGenerationDelta=false인 결과 전달. | 탄생·사망은 모두 —로 교체되고 생존 수는 4로 갱신. |
-| `measuredZeroDeltaIsDisplayedAsZero` | 측정된 변화량 0과 변화량 미제공 표시를 구분한다. | 생존 4, 탄생·사망 0, hasGenerationDelta=true인 Summary. | 탄생·사망 모두 숫자 0으로 표시. |
-| `keepsRedBlueGreenOrderAsColorsAppearAndCountsChange` | 색의 등장 순서·개수가 바뀌어도 빨강→파랑→초록 순서를 유지한다. | 빨강 4 → 목록 순서가 파랑 1·빨강 3 → 목록 순서가 초록 2·파랑 1·빨강 1인 결과를 차례로 전달. | 빨강이 첫 행이고 파랑·초록은 그 아래에 표시. 마지막 빨강 1개·25.00%, 초록 2개·50.00%. 파랑 견본 색과 전체 생존 셀 기준 안내도 일치. |
+- **작성 목적:** 생존 수가 0일 때 색상 비율 계산에 오류가 생기거나 이전 색상 결과가 남지 않는지 확인한다.
+- **입력·조작:** 파랑 1셀의 INITIAL 이후 빈 판·빈 색 목록의 CLEAR를 전달한다.
+- **기대 결과:** 생존 수·생존 비율은 0이고 색상별 결과 목록은 비어 있다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+**TC09. 색상만 바뀔 때 변화량 유지**
+
+`policyChangePreservesTheLastGenerationDeltaWhileReplacingColors()`
+
+- **작성 목적:** 같은 세대에서 색상 정책만 바꾼 경우 기존 세대의 탄생·사망을 초기화하지 않는지 확인한다.
+- **입력·조작:** GENERATION 10에 파랑 2셀·탄생 1·사망 1을 전달한 뒤, 같은 세대의 COLOR_POLICY_CHANGED로 빨강 2셀을 전달한다.
+- **기대 결과:** 세대 10·유효한 탄생 1·사망 1을 유지하고, 빨강 2개·100%로 갱신한다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+#### StatisticsPanelTest — 화면 표시
+
+직접 만든 Summary를 실제 Swing 패널에 전달하고 레이블의 값·순서·색을 읽는다. 패널 생성과 갱신은 EDT에서 실행하며 Universe와 집계 계산은 연결하지 않는다.
+
+**TC10. 변화량 미제공 표시**
+
+`unavailableDeltaReplacesPreviouslyDisplayedCounts()`
+
+- **작성 목적:** 편집 후에도 이전 탄생·사망 숫자가 화면에 남아 실제 세대 변화량으로 오해되지 않는지 확인한다.
+- **입력·조작:** 생존 3·탄생 2·사망 2·hasGenerationDelta=true인 Summary 이후, 생존 4·hasGenerationDelta=false인 Summary를 전달한다.
+- **기대 결과:** 생존 수는 4로, 탄생·사망 표시는 모두 —로 바뀐다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+**TC11. 측정된 0 표시**
+
+`measuredZeroDeltaIsDisplayedAsZero()`
+
+- **작성 목적:** 실제로 변화가 없었던 세대를 변화량 미제공 상태와 구분해서 표시하는지 확인한다.
+- **입력·조작:** 생존 4·탄생 0·사망 0·hasGenerationDelta=true인 Summary를 전달한다.
+- **기대 결과:** 탄생·사망 레이블에 모두 숫자 0이 표시된다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+**TC12. 색상 행 순서와 표시 갱신**
+
+`keepsRedBlueGreenOrderAsColorsAppearAndCountsChange()`
+
+- **작성 목적:** 집계 결과 목록의 순서나 색상 수가 바뀌어도 화면의 빨강→파랑→초록 순서를 유지하는지 확인한다.
+- **입력·조작:** 빨강 4 → 파랑 1·빨강 3 → 초록 2·파랑 1·빨강 1 순서의 목록을 차례로 전달한다.
+- **기대 결과:** 행은 빨강→파랑→초록 순서다. 두 번째 결과는 빨강 3개·75%, 파랑 1개·25%; 마지막은 빨강 1개·25%, 초록 2개·50%로 표시된다. 파랑 견본 색과 비율 기준 안내도 일치한다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
 
 ### 5.4 실제 게임판과 연결한 통합 검증
 
-#### 기본 통계 연결 — StatisticsPanelIntegrationTest
+#### StatisticsPanelIntegrationTest — 게임 진행과 통계 화면
 
-테스트 코드: [StatisticsPanelIntegrationTest](../../test/com/holub/life/StatisticsPanelIntegrationTest.java)
+실제 Universe·Clock·Statistics·StatisticsPanel을 연결한다. 64×64 판에서 LifeTestSupport가 EDT로 마우스 이벤트를 전달하고 등록된 메뉴 ActionListener를 호출한다. Load는 파일 선택만 대체하고 임시 파일의 읽기·복원은 실제로 수행한다.
 
-실제 Universe·Clock·Statistics·StatisticsPanel을 연결한다. 기본 판은 64×64이며, LifeTestSupport가 EDT에서 실제 마우스 이벤트와 등록된 메뉴 ActionListener를 호출한다. MenuSite의 메뉴 등록은 테스트용으로 대체하고 화면 값은 Swing 컴포넌트에서 읽는다. Load 검사에서는 파일 선택만 대체하며 임시 파일의 읽기·복원은 실제 경로를 사용한다.
+**TC13. 단일 세대 진행과 화면 연결**
 
-| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
-| --- | --- | --- | --- |
-| `startupConnectionDisplaysInitialStateSynchronously` | 게임을 진행하기 전 등록 시점의 INITIAL이 화면까지 즉시 반영된다. | 빈 게임판에 Life.connectStatistics()로 통계와 패널 연결. | 연결 반환 직후 세대 0, 생존 0, 비율 0.00%, 탄생·사망 —. |
-| `singleStepDisplaysActualBlinkerBirthsAndDeaths` | 실제 단일 세대 진행의 변화량이 패널까지 전달된다. | 정지 상태에서 (행,열)=(7,7),(7,8),(7,9)에 블링커를 놓고 Go → Tick (Single Step) 실행. | 세대 1, 생존 3, 비율 0.07%, 탄생 2·사망 2. 실행 중 Single Step의 정지 동작은 별도 Clock 테스트 범위다. |
-| `loadDisplaysRestoredBoardAndNextGenerationDelta` | 복원 직후의 통계와 복원된 판을 기준으로 한 다음 세대 변화량을 확인한다. | 임시 파일에 Point(7,7),(8,7),(9,7)을 저장. 기존 블록을 한 세대 진행한 뒤 Grid → Load로 복원하고 tick 1회. | Load 직후 세대 0·생존 3·0.07%·변화량 —, 빨강 3개·100.00%. 다음 tick 후 세대 1·생존 3·탄생 2·사망 2. |
-| `automaticTimerReachesTheDisplayOnEdt` | 자동 Timer의 세대 진행도 통계 화면까지 연결된다. | 안정된 4셀 블록과 패널을 연결해 15ms 설정으로 자동 실행. 세대 레이블이 3이 되면 정지하고 EDT 밖에서 최대 5초 대기. | 대기 시간 안에 도달하며 최종 세대 3·생존 4·0.10%·탄생 0·사망 0. 15ms 간격의 정확도를 측정하는 검사는 아니다. |
+`singleStepDisplaysActualBlinkerBirthsAndDeaths()`
 
-#### 색상 통계 연결 — ColorStatisticsIntegrationTest
+- **작성 목적:** 기존 Single Step이 실제 판을 한 세대 진행하고, 완료 이벤트가 통계 화면까지 전달되는지 확인한다.
+- **입력·조작:** 정지 상태에서 (행,열)=(7,7),(7,8),(7,9)에 블링커를 놓고 Go → Tick (Single Step)을 실행한다.
+- **기대 결과:** 패널에 세대 1·생존 3·생존 비율 0.07%·탄생 2·사망 2가 표시된다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
 
-테스트 코드: [ColorStatisticsIntegrationTest](../../test/com/holub/life/ColorStatisticsIntegrationTest.java)
+**TC14. Load 직후와 다음 세대 통계**
 
-실제 보드·Clock·색상 정책·이벤트·Statistics·패널을 연결하며 보드 이벤트를 직접 만들지 않는다. 기본 순환 정책의 파랑은 #0072B2, 초록은 #009E73이다. 프리즈를 설치하지 않은 보드에서 나이 증가와 색상 집계를 확인한다.
+`loadDisplaysRestoredBoardAndNextGenerationDelta()`
 
-| 테스트 메서드 | 목적 | 입력·조작 | 기대 결과 |
-| --- | --- | --- | --- |
-| `stablePopulationStillUpdatesColorsAtEachTenGenerationBoundary` | 생존 수가 일정해도 나이 경계에서 색상 집계가 바뀐다. | Color → Cycle by Generation 선택 후 안정된 2×2 블록을 놓고 0~30세대의 결과 확인. | 이벤트에는 해당 색 4개, Summary에는 그 색 4개·100%가 담긴다. 0~9세대 빨강, 10~19 파랑, 20~29 초록, 30세대 빨강. 마지막 패널은 빨강 4개·100.00%. |
-| `cellsWithDifferentAgesProduceThreeIndependentCounts` | 서로 다른 나이의 셀을 동시에 색별 집계한다. | 0세대에 블록 1개, 10세대에 두 번째 블록, 20세대에 세 번째 블록 배치. 블록들은 서로 떨어져 있다. | 세대 20·생존 12. 나이 20의 초록, 나이 10의 파랑, 나이 0의 빨강이 각 4개·100/3%. 패널은 각 4개·33.33%. |
-| `switchingPolicyWhilePausedPublishesOnceWithoutAdvancingOrLosingDelta` | 정지 중 정책 변경이 색상만 갱신하고 같은 세대의 변화량을 유지한다. | 고정 빨강 정책에서 안정 블록을 10세대 진행한 뒤 순환 → 단색 → 순환 메뉴 선택. | 첫 변경은 COLOR_POLICY_CHANGED 1회이며 이벤트 변화 목록은 비어 있다. 세대 10 유지, 파랑 4→빨강 4→파랑 4로 집계. 기존 탄생 0 표시 유지, 단색 전환 시 파랑 행 제거. |
-| `newbornsAndSurvivorsAreCountedAfterTransitionAndClickRemovesOldColor` | 전이 후 새 셀과 생존 셀의 색을 구분하고 편집·Clear도 반영한다. | 검사용 1세대 주기 빨강/파랑 정책으로 블링커를 한 세대 진행. 이어 파란 중앙 셀을 클릭해 삭제하고 Grid → Clear 실행. | 진행 후 탄생·사망 각 2, 빨강 2개·66.67%, 파랑 1개·33.33%. 클릭 후 빨강 2개·100%와 탄생 —, 파랑 행 제거. Clear 후 색 목록이 비고 빈 판 안내 표시. |
+- **작성 목적:** 기존 파일 복원 기능이 유지되면서 통계가 즉시 갱신되고, 다음 세대는 복원된 판을 기준으로 집계되는지 확인한다.
+- **입력·조작:** 임시 파일에 Point(7,7),(8,7),(9,7)을 저장한다. 기존 블록을 한 세대 진행한 뒤 Grid → Load로 파일을 읽고 tick을 한 번 실행한다.
+- **기대 결과:** Load 직후 세대 0·생존 3·0.07%·탄생과 사망 —·빨강 3개 100%. 다음 tick 후 세대 1·생존 3·탄생 2·사망 2이다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+**TC15. 자동 진행과 EDT 화면 갱신**
+
+`automaticTimerReachesTheDisplayOnEdt()`
+
+- **작성 목적:** 자동 타이머의 세대 진행이 EDT에서 통계 화면까지 반영되는지 확인한다.
+- **입력·조작:** 안정된 4셀 블록을 놓고 15ms 설정으로 자동 진행한다. 세대 레이블이 3이 되면 정지하며, 테스트 스레드는 최대 5초 기다린다.
+- **기대 결과:** 제한 시간 안에 세대 3·생존 4·0.10%·탄생 0·사망 0을 표시한다. 타이머 간격의 정밀도는 검사 대상이 아니다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+#### ColorStatisticsIntegrationTest — 색상 정책과 통계 화면
+
+실제 보드·색상 정책·이벤트·통계·패널을 연결한다. 순환 정책의 파랑은 #0072B2, 초록은 #009E73이다. 아래 검사는 프리즈를 설치하지 않은 판에서 수행한다.
+
+**TC16. 생존 배치가 같은 경우의 색상 갱신**
+
+`stablePopulationStillUpdatesColorsAtEachTenGenerationBoundary()`
+
+- **작성 목적:** 셀의 생사 변화가 없더라도 나이에 따른 색 변화가 이벤트와 통계에 반영되는지 확인한다.
+- **입력·조작:** 순환 정책을 선택하고 안정된 2×2 블록을 놓은 뒤 0~30세대를 진행하며 매 세대 확인한다.
+- **기대 결과:** 0~9세대 빨강, 10~19 파랑, 20~29 초록, 30세대 빨강. 이벤트에는 해당 색 4개, 집계 결과에는 해당 색 4개·100%가 담긴다. 마지막 패널도 빨강 4개·100.00%이다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+**TC17. 여러 색상이 공존하는 경우의 집계**
+
+`cellsWithDifferentAgesProduceThreeIndependentCounts()`
+
+- **작성 목적:** 서로 다른 나이의 셀이 섞인 실제 판에서 세 색상의 수와 비율을 각각 계산하고 표시하는지 확인한다.
+- **입력·조작:** 0·10·20세대에 서로 떨어진 4셀 블록을 하나씩 배치한다.
+- **기대 결과:** 20세대·생존 12, 빨강·파랑·초록 각 4개·100/3%. 패널에는 각각 4개·33.33%가 표시된다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
+
+**TC18. 정지 중 정책 변경 알림**
+
+`switchingPolicyWhilePausedPublishesOnceWithoutAdvancingOrLosingDelta()`
+
+- **작성 목적:** 실제 메뉴에서 색상 정책을 바꾸면 세대를 진행하지 않고 색상 통계가 즉시 갱신되는지 확인한다.
+- **입력·조작:** 고정 빨강 정책에서 안정 블록을 10세대 진행하고, 정지 상태에서 순환 → 단색 → 순환 메뉴를 선택한다.
+- **기대 결과:** 세대 10 유지, 파랑 4→빨강 4→파랑 4로 집계한다. 첫 변경은 COLOR_POLICY_CHANGED 1회이고 변화 좌표는 비어 있다. 탄생 0 표시를 유지하며 단색 전환 시 파랑 행을 제거한다.
+- **실행 결과:** 기대 결과와 일치하여 통과.
 
 ### 5.5 대표 JUnit 코드와 실행 결과
 
-**UI와 분리한 집계 검사.** 다음은 StatisticsTest의 초기 상태 검사다. `event()`는 4×4 판의 지정 위치를 살아 있게 구성하는 테스트 도우미이며, 0·5·10·15는 행 우선으로 매긴 셀 번호다. `current()`는 마지막 Summary를 조회하고 `assertNoDelta()`는 변화량 미제공 상태를 확인한다. Statistics의 콜백에는 `updates::add`를 전달하므로 Universe·Clock·패널을 만들지 않고 검증한다.
+**TC01 — UI와 분리한 집계 검사.** 패널 대신 `updates::add` 콜백으로 결과를 수집한다.
 
 ```java
 @Test void initialSnapshotReportsPopulationAndSuppliedGeneration() {
@@ -638,7 +740,7 @@ Statistics는 이벤트를 집계하여 `Summary`를 만들고, StatisticsPanel�
 }
 ```
 
-**실제 단일 세대 진행과 화면 연결 검사.** 다음은 StatisticsPanelIntegrationTest의 블링커 검사다. `connect()`는 실제 통계와 패널을 연결하고, `click()`은 실제 마우스 처리 경로를 사용한다. `select()`는 테스트에서 기록한 메뉴 ActionListener를 실행한다. `assertDisplay()`의 순서는 세대·생존 수·생존 비율·탄생·사망이다.
+**TC13 — 실제 게임과 화면 연결 검사.** `assertDisplay()`의 인수는 세대·생존 수·생존 비율·탄생·사망 순서다.
 
 ```java
 @Test
@@ -654,19 +756,19 @@ void singleStepDisplaysActualBlinkerBirthsAndDeaths() throws Exception {
 }
 ```
 
-**검증 결과.** 2026-11-22의 프리즈 포함 전체 코드 검증 기록은 **30개 클래스, 384회 실행, 실패·오류·건너뜀 0**이다. 위 6개 통계 핵심 클래스의 91회 실행과 대표 24개 메서드는 이 결과에 포함된다. 전체 실행 수는 통계에서 작성한 테스트만의 수가 아니라 기존 기능과 팀 기능의 회귀 검증을 합한 수다.
+**실행 결과.** 2026-11-25 전체 JUnit을 재실행한 결과, **30개 클래스·375회 실행 모두 통과**했다. 실패·오류·건너뜀은 모두 0이며, 통계 핵심 6개 클래스의 82회 실행이 포함되어 있다.
 
 | 검증 범위 | 실행 수 | 확인 내용 |
 | --- | ---: | --- |
-| 기본 기능 | 64 | 기본 규칙·저장·Clock·Universe 이벤트 — 기존 생사 규칙, 저장, 자동·단일 진행, 완료 알림과 등록·해제. |
-| 색상 | 42 | 기존 색상 정책·나이·색 조회 — 나이 경계·색상 선택·조회가 상태를 변경하지 않는지 확인. |
-| 패턴 | 39 | 패턴·템플릿·Undo — 캡처·배치·드래그·복원과 기존 게임 규칙. |
-| 사운드 | 46 | 사운드 계산·공통 이벤트 연결 — 음 선택·재생 상태 입력·공통 구독의 정상 동작. |
-| 통계 | 91 | 통계 핵심 6개 클래스 — 계산·계약·표시·실제 보드와의 연결. |
-| 통계 연결 | 12 | 기존 기능과 통계 연결 — 실제 템플릿 배치·Undo·탭 전환·Clear/Load 후 통계 반영. |
-| 프리즈 | 90 | 프리즈 모델·기존 기능과의 연결 — 고정·해제·나이 유지, 통계·색상·사운드와의 연결. |
-| 합계 | **384** | **모두 통과** |
+| 기본 기능 | 64 | 기본 생사 규칙·저장·Universe 이벤트·자동 진행·배속 변경·Single Step. |
+| 색상 | 42 | 기존 색상 정책·나이 경계·색 조회. |
+| 패턴 | 39 | 캡처·템플릿 배치·드래그·Undo. |
+| 사운드 | 46 | 음 선택·재생 상태·공통 이벤트 연결. |
+| 통계 | 82 | 위 6개 클래스의 계산·데이터 계약·화면·게임 연결. |
+| 기존 기능과 통계 연결 | 12 | 실제 템플릿 배치·Undo·탭 전환·Clear/Load 후 통계. |
+| 프리즈 | 90 | 고정·해제·나이 유지와 통계·색상·사운드 연결. |
+| 합계 | **375** | **모두 통과** |
 
-대표 단위 테스트의 `TEMPLATE`·`TEMPLATE_UNDO` 입력은 **직접 구성한 이벤트**다. 실제 배치·Undo 실행은 별도의 MergedFeaturesIntegrationTest에서 검증한다. 또한 ColorStatisticsIntegrationTest는 프리즈 없는 보드의 색상 경계를 검사하며, 고정 셀의 생존 수·색상과 해제 후 변화량은 FreezingIntegrationTest에서 확인한다.
+![전체 JUnit 실행 요약과 클래스별 결과](screenshots/test-results.png)
 
-이 검증은 계산 결과와 컴포넌트 상태, 실제 보드 처리 경로를 확인한다. headless 테스트가 운영체제별 창 외형이나 실제 MIDI 음질까지 확인했다는 의미는 아니다. 자동 Timer 검사는 정해진 시간 안에 화면 갱신에 도달하는지를 확인하며 타이머의 정밀도를 측정하지 않는다.
+*그림 5-1. 전체 JUnit 실행 결과.*
