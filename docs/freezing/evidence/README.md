@@ -8,7 +8,7 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 
 | 화면 | 내용 | 결과 |
 | --- | --- | --- |
-| [test-all.png](test-all.png) | Freezing JUnit 테스트를 포함한 전체 테스트 | 384개 통과, 실패 0 |
+| [test-all.png](test-all.png) | 회귀 확인: 기존 테스트 294개와 Freezing 테스트 90개를 함께 실행 | 384개 통과, 실패 0 |
 | test-freezing-model-1~7 | `FreezingModelTest` (모델만, Universe와 Swing 없이). 아래 표처럼 7개로 나눠 캡처 | 50개 통과 |
 | [test-freezing-integration.png](test-freezing-integration.png) | `FreezingIntegrationTest` (실제 Universe에서 다른 기능과 함께) | 37개 통과 |
 | [test-freezing-sound.png](test-freezing-sound.png) | `FreezingSoundIntegrationTest` (실제 SoundEffects와 함께) | 3개 통과 |
