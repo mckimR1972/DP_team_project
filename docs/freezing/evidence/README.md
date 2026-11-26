@@ -4,11 +4,12 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 
 - 실행: 2026-11-21, `.\gradlew.bat clean test --rerun-tasks --console=plain`
 - 코드: main `4dc39e6`. 그 뒤 dev(`cfba2ed`, PR #24)는 테스트 파일을 기능별 폴더로 옮기기만 했고 테스트 클래스와 메서드는 같다
+- `test-all.png`만 2026-11-26에 dev `ec7b7c3`(#27, #28 병합 뒤)에서 같은 명령으로 다시 실행해 캡처했다. 통계 테스트 정리(#27)로 전체가 384개에서 375개가 됐고, Freezing 테스트 90개는 그대로다
 - 환경: Windows 11, JDK 17, Gradle 9.5.1
 
 | 화면 | 내용 | 결과 |
 | --- | --- | --- |
-| [test-all.png](test-all.png) | 회귀 확인: 기존 테스트 294개와 Freezing 테스트 90개를 함께 실행 | 384개 통과, 실패 0 |
+| [test-all.png](test-all.png) | 회귀 확인: 다른 기능의 테스트 285개와 Freezing 테스트 90개를 함께 실행 | 375개 통과, 실패 0 |
 | test-freezing-model-1~7 | `FreezingModelTest` (모델만, Universe와 Swing 없이). 아래 표처럼 7개로 나눠 캡처 | 50개 통과 |
 | [test-freezing-integration.png](test-freezing-integration.png) | `FreezingIntegrationTest` (실제 Universe에서 다른 기능과 함께) | 37개 통과 |
 | [test-freezing-sound.png](test-freezing-sound.png) | `FreezingSoundIntegrationTest` (실제 SoundEffects와 함께) | 3개 통과 |

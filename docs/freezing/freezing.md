@@ -409,7 +409,7 @@ Grid > Clear와 Load는 보드를 바꾼 뒤 Freezing을 초기화하고, 그리
 | `FreezingManager` | 활성 영역 목록. 설치 검사(빈 영역, 겹침, 지속 세대), 해제, 초기화, 세대 처리 단계를 맡는다. Swing 코드가 없다 |
 | `FreezingTools` | Freezing 탭 화면, 영역 선택(끌기), 보드 위 표시 |
 
-**핵심 코드** (새 파일 536줄 중 State 패턴과 세대 처리 부분 발췌)
+**핵심 코드** (새 파일 529줄 중 State 패턴과 세대 처리 부분 발췌)
 
 `FreezingRegion`(Context)은 세대 처리를 현재 상태 객체에 그대로 넘기고, 상태를 바꾸는 곳은 `changeState()` 하나다.
 
@@ -950,7 +950,7 @@ Strategy와 State는 구조가 비슷하지만 전환의 주체가 다르다. �
 ./gradlew test
 ```
 
-지금 코드 기준으로 전체 384개 테스트가 모두 통과한다. 이 중 Freezing 기능의 테스트는 90개다. 결과 화면은 [evidence/](evidence/README.md)에 있다.
+지금 코드 기준으로 전체 375개 테스트가 모두 통과한다. 이 중 Freezing 기능의 테스트는 90개다. 결과 화면은 [evidence/](evidence/README.md)에 있다.
 
 | 테스트 클래스 | 메서드 수 | 실행 수 | 대상 |
 | --- | --- | --- | --- |
@@ -961,7 +961,7 @@ Strategy와 State는 구조가 비슷하지만 전환의 주체가 다르다. �
 
 실행 수는 입력값을 바꿔 여러 번 돌리는 테스트를 입력값마다 따로 센 수다.
 
-Freezing을 붙이기 전부터 있던 테스트 294개는 모두 통과한다. 기존 테스트 코드에서 고친 것은 `MergedFeaturesIntegrationTest`의 탭 개수 단언 한 곳(2 → 3, Freezing 탭 확인 한 줄 추가)뿐이다.
+Freezing 외 다른 기능의 테스트 285개도 모두 통과한다. 기존 테스트 코드에서 고친 것은 `MergedFeaturesIntegrationTest`의 탭 개수 단언 한 곳(2 → 3, Freezing 탭 확인 한 줄 추가)뿐이다.
 
 ![전체 테스트 결과](evidence/test-all.png)
 
