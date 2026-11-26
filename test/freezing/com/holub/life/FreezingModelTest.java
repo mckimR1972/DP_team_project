@@ -113,8 +113,7 @@ class FreezingModelTest {
         for (int g = 1; g <= 10; g++) tick();                      // the lone cell dies at generation 1
         set(new int[] {10, 10});                                   // put it back at generation 10
         FreezingRegion region = freezing.install(new Rectangle(10, 10, 1, 1), 5);
-        assertEquals(10, region.startGeneration());
-        assertEquals(5, region.duration());
+        assertEquals(5, region.remainingGenerations());
         for (int g = 11; g <= 15; g++) {
             assertTrue(region.isFrozen());
             assertEquals(16 - g, region.remainingGenerations());
@@ -123,7 +122,7 @@ class FreezingModelTest {
             assertTrue(alive(10, 10), "must be frozen during generation " + g);
         }
         assertFalse(region.isFrozen(), "released after the 15th generation update");
-        assertSame(NormalState.INSTANCE, region.state());
+        assertSame(NormalState.INSTANCE, stateOf(region));
         assertTrue(freezing.regions().isEmpty());
         tick();
         assertEquals(16, freezing.generation());
@@ -163,26 +162,25 @@ class FreezingModelTest {
     @Test
     void stateObjectsDriveTheRegion() {
         FreezingRegion region = new FreezingRegion(new Rectangle(1, 1, 2, 2));
-        assertSame(NormalState.INSTANCE, region.state());
+        assertSame(NormalState.INSTANCE, stateOf(region));
         assertFalse(region.isFrozen());
         assertEquals(0, region.remainingGenerations());
         assertFalse(region.beforeTransition(board), "NormalState must not touch the board");
         region.afterGeneration();
-        assertSame(NormalState.INSTANCE, region.state());
+        assertSame(NormalState.INSTANCE, stateOf(region));
 
-        region.freeze(board, 2, 7);
-        assertInstanceOf(FrozenState.class, region.state());
+        region.freeze(board, 2);
+        assertInstanceOf(FrozenState.class, stateOf(region));
         assertEquals(2, region.remainingGenerations());
-        assertEquals(7, region.startGeneration());
         region.afterGeneration();
         assertTrue(region.isFrozen());
         assertEquals(1, region.remainingGenerations());
         region.afterGeneration();
-        assertSame(NormalState.INSTANCE, region.state(), "FrozenState switches the context itself");
+        assertSame(NormalState.INSTANCE, stateOf(region), "FrozenState switches the context itself");
 
-        region.freeze(board, 3, 9);
+        region.freeze(board, 3);
         region.release();
-        assertSame(NormalState.INSTANCE, region.state());
+        assertSame(NormalState.INSTANCE, stateOf(region));
         region.afterGeneration();                                  // a released region ignores later updates
         assertFalse(region.isFrozen());
     }
@@ -191,10 +189,10 @@ class FreezingModelTest {
     void normalStateIsStatelessAndShared() {
         FreezingRegion one = new FreezingRegion(new Rectangle(0, 0, 1, 1));
         FreezingRegion two = new FreezingRegion(new Rectangle(5, 5, 1, 1));
-        assertSame(one.state(), two.state());
-        one.freeze(board, 1, 0);
-        two.freeze(board, 1, 0);
-        assertNotSame(one.state(), two.state(), "each frozen region counts down on its own state object");
+        assertSame(stateOf(one), stateOf(two));
+        one.freeze(board, 1);
+        two.freeze(board, 1);
+        assertNotSame(stateOf(one), stateOf(two), "each frozen region counts down on its own state object");
     }
 
     @ParameterizedTest
@@ -543,6 +541,17 @@ class FreezingModelTest {
     }
 
     private boolean alive(int x, int y) { return board.isAliveAt(y, x); }
+
+    /** The region's current state object. The game reads this field itself. */
+    private static FreezingState stateOf(FreezingRegion region) {
+        try {
+            java.lang.reflect.Field state = FreezingRegion.class.getDeclaredField("state");
+            state.setAccessible(true);
+            return (FreezingState) state.get(region);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
 
     private boolean[][] cells() {
         boolean[][] cells = new boolean[SIZE][SIZE];
