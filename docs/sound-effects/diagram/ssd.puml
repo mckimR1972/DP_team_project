@@ -1,0 +1,42 @@
+@startuml ssd
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd 소리를 듣고, 설정을 바꾸고, 껐다 켜기
+
+actor "사용자" as User
+participant ":LifeGame" as System
+
+User -> System : startUp()
+System --> User : 빈 판, 재생선이 돌기 시작
+
+User -> System : editCell(row, column)
+System --> User : 셀이 그려진 판
+loop 150ms마다
+  [o-> System : sweepStep()
+  note left : 사운드 타이머의 시간 이벤트
+  System --> User : 재생선 이동, 지나가는 산 셀의 소리, 패드
+end
+
+User -> System : selectSpeed(Fast)
+loop 틱 간격마다, halt() 전까지
+  [o-> System : tick()
+  note left : 시계의 시간 이벤트
+  System --> User : 다음 세대의 판, 생성 화음과 소멸 타악기
+end
+User -> System : halt()
+
+User -> System : openSoundSettings()
+System --> User : 설정 창 (9개 항목)
+User -> System : setFeature(STRUM, false)
+User -> System : setInstrument(SWEEP, 하프)
+System --> User : 재생선이 하프 소리로 바뀜
+
+User -> System : selectSoundOff()
+System --> User : 다음 재생선 스텝에서 재생선이 사라지고 패드가 꺼짐\n(이미 예약된 음은 끝까지 울림)
+User -> System : selectSoundOn()
+System --> User : 재생선이 다시 돌며 현재 판을 연주
+@enduml

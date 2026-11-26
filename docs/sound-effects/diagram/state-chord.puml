@@ -1,0 +1,35 @@
+@startuml state-chord
+!pragma layout smetana
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+hide empty description
+mainframe stm 코드 진행 (SoundEffects.chord)
+
+state "C" as C
+C : 생성음, 재생선 = C 코드의 5음
+C : 패드 = C2, G2, E3
+
+state "Am" as Am
+Am : 패드 = A1, A2, E3
+
+state "F" as F
+F : 패드 = F2, C3, A3
+
+state "G" as G
+G : 패드 = G2, D3, B3
+
+[*] --> C : 프로그램 시작 (chord = 0)
+C --> Am : 한 바퀴 끝 [enabled]\n/ chord++
+Am --> F : 한 바퀴 끝 [enabled]\n/ chord++
+F --> G : 한 바퀴 끝 [enabled]\n/ chord++
+G --> C : 한 바퀴 끝 [enabled]\n/ chord++
+
+note bottom of G
+  한 바퀴 = playStep 16번 (약 2.4초).
+  설정에서 코드 진행(1번)을 끄면 chord는 계속 바뀌지만
+  소리는 항상 C 코드로 낸다 (currentChord() == 0).
+  소리를 끈 동안에는 playStep이 일찍 끝나서 진행이 멈춘다.
+end note
+@enduml

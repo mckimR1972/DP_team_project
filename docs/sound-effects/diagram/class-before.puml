@@ -1,0 +1,106 @@
+@startuml class-before
+!pragma layout smetana
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam classAttributeIconSize 0
+hide circle
+hide empty members
+skinparam ranksep 60
+skinparam nodesep 50
+title 사운드를 붙이기 전 (원본 Holub 코드)
+
+class Life {
+  - Life()
+}
+
+class Universe {
+  - {static} theInstance : Universe
+  - outermostCell : Cell
+  + {static} instance() : Universe
+  - refreshNow()
+  - doLoad()
+  - doStore()
+}
+
+class Clock {
+  - publisher : Publisher
+  + {static} instance() : Clock
+  + startTicking(millisecondsBetweenTicks : int)
+  + stop()
+  + addClockListener(observer : Clock.Listener)
+  + tick()
+}
+
+interface "Clock.Listener" as ClockListener <<interface>> {
+  + tick()
+}
+
+class Publisher {
+  - subscribers : Publisher.Node
+  + subscribe(subscriber : Object)
+  + cancelSubscription(subscriber : Object)
+  + publish(deliveryAgent : Publisher.Distributor)
+}
+
+interface Cell <<interface>> {
+  + figureNextState(north : Cell, south : Cell, east : Cell, west : Cell, northeast : Cell, northwest : Cell, southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + isAlive() : boolean
+  + widthInCells() : int
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(memento : Storable, upperLeftCorner : Point, doLoad : boolean) : boolean
+  + createMemento() : Storable
+}
+
+class Neighborhood {
+  - grid : Cell[][]
+  - gridSize : int
+}
+
+class Resident {
+  - amAlive : boolean
+  - willBeAlive : boolean
+}
+
+class MenuSite {
+  + {static} addLine(requester : Object, toThisMenu : String, name : String, listener : ActionListener)
+}
+
+Life ..> Universe : <<use>>
+Universe "1" --> "1" Cell : outermostCell
+Cell <|.. Neighborhood
+Cell <|.. Resident
+Neighborhood "1" *-- "64" Cell : grid
+
+Universe ..> MenuSite : <<use>>
+Clock "1" --> "1" Publisher : publisher
+Clock +-- ClockListener
+Universe ..> ClockListener : <<create>>
+
+note left of Life
+  Life는 Universe를 창에 붙인다.
+  Universe는 Grid 메뉴를 MenuSite에 등록하고,
+  Clock.Listener를 익명 클래스로 만들어
+  Clock에 등록한다.
+end note
+
+note right of Universe
+  tick()마다 transition() 후 다시 그리기만 한다.
+  어떤 셀이 생기고 사라졌는지
+  밖에서 알 방법이 없다.
+end note
+
+note bottom of Cell
+  Cell 주석에 따르면 isAlive()는
+  "이 블록 안에 산 셀이 있는가"를 묻는다.
+  좌표 하나의 생사를 묻는 연산은 없다.
+end note
+note bottom of Publisher
+  subscribe()는 새 구독자를 subscribers 맨 앞에 넣고,
+  publish()는 앞에서부터 차례로 알린다.
+  Clock.tick()은 각 구독자를 Clock.Listener로 바꿔
+  tick()을 부른다.
+end note
+@enduml

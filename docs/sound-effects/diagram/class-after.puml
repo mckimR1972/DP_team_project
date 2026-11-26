@@ -1,0 +1,135 @@
+@startuml class-after
+!pragma layout smetana
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam classAttributeIconSize 0
+hide circle
+set separator none
+hide empty members
+skinparam ranksep 60
+skinparam nodesep 45
+title 사운드를 붙인 뒤: 게임과 사운드의 연결
+
+package "com.holub.life" {
+  class Life {
+    - universe : Universe
+    - Life()
+  }
+
+  class Universe {
+    - outermostCell : Cell
+    - boardListeners : Set<BoardChangeListener>
+    - generation : long
+    - playhead : int = -1
+    + {static} instance() : Universe
+    + addBoardChangeListener(listener : BoardChangeListener)
+    + removeBoardChangeListener(listener : BoardChangeListener)
+    + **liveCells() : boolean[][]**
+    + **setPlayhead(column : int)**
+    - notifyBoardChanged(kind : BoardChangeEvent.Kind, before : boolean[][])
+  }
+
+  interface BoardChangeListener <<interface>> {
+    + onBoardChanged(event : BoardChangeEvent)
+  }
+
+  class BoardChangeEvent {
+    - kind : BoardChangeEvent.Kind
+    - generation : long
+    - aliveCells : boolean[][]
+    - births : List<Point>
+    - deaths : List<Point>
+    - aliveColors : List<Color>
+    + kind() : BoardChangeEvent.Kind
+    + generation() : long
+    + copyAliveCells() : boolean[][]
+    + copyBirths() : List<Point>
+    + copyDeaths() : List<Point>
+  }
+
+  enum "BoardChangeEvent.Kind" as Kind <<enumeration>> {
+    INITIAL
+    GENERATION
+    EDIT
+    TEMPLATE
+    TEMPLATE_UNDO
+    CLEAR
+    LOAD
+    COLOR_POLICY_CHANGED
+  }
+
+  class Statistics
+
+  interface Cell <<interface>> {
+    + isAlive() : boolean
+    + **isAliveAt(row : int, column : int) : boolean**
+    + widthInCells() : int
+    + transition() : boolean
+  }
+
+  class Neighborhood {
+    - grid : Cell[][]
+    + **isAliveAt(row : int, column : int) : boolean**
+  }
+
+  class Resident {
+    - amAlive : boolean
+    + **isAliveAt(row : int, column : int) : boolean**
+  }
+}
+
+package "com.holub.life.sound" {
+  class SoundEffects {
+    - universe : Universe
+    + {static} install(universe : Universe)
+    + onBoardChanged(event : BoardChangeEvent)
+  }
+}
+
+Life "1" --> "1" Universe : universe
+Life ..> SoundEffects : <<use>>
+
+Universe "1" --> "0..*" BoardChangeListener : boardListeners
+Universe ..> BoardChangeEvent : <<create>>
+BoardChangeEvent +-- Kind
+BoardChangeListener <|.. Statistics
+BoardChangeListener <|.. SoundEffects
+SoundEffects ..> BoardChangeEvent : <<use>>
+SoundEffects "0..1" --> "1" Universe : universe
+
+Universe "1" --> "1" Cell : outermostCell
+Cell <|.. Neighborhood
+Cell <|.. Resident
+Neighborhood "1" *-- "64" Cell : grid
+
+note top of Universe
+  Observer 역할
+  Subject: Universe
+  Observer: BoardChangeListener
+  ConcreteObserver: Statistics, SoundEffects
+  Universe는 BoardChangeListener만 알고
+  사운드 패키지는 import하지 않는다.
+end note
+
+note bottom of Neighborhood
+  Composite 역할
+  Component: Cell
+  Composite: Neighborhood
+  Leaf: Resident
+  isAliveAt()은 좌표를 하위 격자 위치와
+  나머지로 나눠 해당 하위 셀에 넘긴다.
+end note
+
+note bottom of SoundEffects
+  Life는 install(universe)로 사운드를 설치한다.
+  SoundEffects는 판 복사본과 생성·소멸 좌표를
+  BoardChangeEvent에서 읽고, Universe에는
+  재생선 위치(setPlayhead)만 알린다.
+end note
+
+legend right
+  굵은 글씨: 사운드 작업에서 추가한 연산
+endlegend
+@enduml
