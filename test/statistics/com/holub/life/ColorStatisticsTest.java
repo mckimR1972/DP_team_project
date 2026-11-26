@@ -14,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Event and aggregation tests with synthetic data; no actual board or UI. */
 class ColorStatisticsTest {
-    private final Statistics statistics = new Statistics(summary -> { });
+    private final List<Statistics.Summary> summaries = new ArrayList<>();
+    private final Statistics statistics = new Statistics(summaries::add);
 
     @Test void eventCopiesTheSourceColorListAndExposesOnlyAnImmutableList() {
         List<Color> colors = new ArrayList<>(List.of(Color.RED, Color.BLUE));
@@ -113,7 +114,7 @@ class ColorStatisticsTest {
         assertCount(Color.RED, 2, 100.0);
     }
 
-    private Statistics.Summary current() { return statistics.current().orElseThrow(); }
+    private Statistics.Summary current() { return summaries.get(summaries.size() - 1); }
     private void assertCount(Color color, int cells, double ratio) {
         Statistics.ColorCount count = current().colorCounts().stream()
                 .filter(item -> item.color().equals(color)).findFirst().orElseThrow();

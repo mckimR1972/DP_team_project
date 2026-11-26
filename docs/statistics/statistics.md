@@ -57,7 +57,7 @@
 <a id="use-cases"></a>
 ### 1.4 유스케이스와 기능 요구사항
 
-통계 탭에서 사용자가 확인하는 두 기능을 나타낸다. 세대 진행·편집·복원에 따른 갱신 조건은 1.3절에서 설명한다.
+통계 탭에서 확인하는 두 기능과 세대 진행의 연결을 나타낸다. 자동 진행과 한 단계 진행은 공통 `Advance Generation`을 포함하며, 통계 구독 중에는 “세대 확정 후” 확장 지점에서 기본 통계와 색상 분포를 갱신한다.
 
 ![통계 기능 유스케이스](diagrams/statistics-use-cases.png)
 
@@ -68,7 +68,7 @@
 | View Basic Statistics(E) | 현재 세대·생존 수·전체 판 대비 비율·해당 세대 탄생과 사망 수를 확인한다. |
 | View Color Distribution(E) | 표시 색별 생존 수·전체 생존 셀 대비 비율과 빈 판 안내를 확인한다. |
 
-두 유스케이스는 같은 통계 탭에서 함께 제공된다. 내부의 자동 갱신 흐름은 3장의 시퀀스 다이어그램으로 설명한다.
+두 통계 기능은 같은 탭에서 함께 제공되며, 탭이 숨겨져 있어도 구독과 갱신은 유지된다. 최초 연결과 정지 중 편집·복원·색상 정책 변경에 따른 갱신은 1.3절에서, 세대 진행 후 내부 처리 순서는 3장의 시퀀스 다이어그램에서 설명한다.
 
 <a id="changes"></a>
 ## 2. 기존 코드에서 변경된 부분
@@ -304,10 +304,9 @@ int deaths = hasGenerationDelta ? event.copyDeaths().size() : 0;
 
 | 메서드·필드 | 입력·처리·결과 |
 |---|---|
-| `onBoardChanged()` | 받은 이벤트를 calculate에 전달하고, 반환된 Summary를 저장한 뒤 결과 콜백을 실행한다. 콜백에서 current를 조회해도 같은 최신 결과를 볼 수 있도록 저장을 먼저 한다. |
+| `onBoardChanged()` | 받은 이벤트를 calculate에 전달하고, 반환된 Summary를 currentSummary에 저장한 뒤 `onUpdated.accept(summary)`로 전달한다. |
 | `calculate()` | 이벤트의 생존 배열·판 크기·변화 좌표·색 목록을 읽어 기본 통계와 색상별 통계를 계산하고 Summary를 반환한다. 이벤트 종류에 따라 세대 변화량의 유효 여부도 정한다. |
 | `currentSummary` | 가장 최근의 집계 결과 하나를 보관한다. 색상 정책만 바뀐 경우 직전 세대 변화량을 유지하는 데도 사용한다. 게임판 배열이나 Undo 이력을 보관하지 않는다. |
-| `current()` | 최근 결과를 Optional로 반환한다. 첫 이벤트를 받기 전에는 비어 있다. 테스트나 결과 조회에서 패널을 거치지 않고 계산값을 확인할 수 있다. |
 | `onUpdated` | 생성자로 받은 Consumer 콜백을 보관하는 필드다. Life는 패널의 showStatistics를 연결하고, 계산 테스트는 결과 수집 동작을 연결한다. `accept(summary)`가 준비된 집계 결과를 전달한다. |
 
 계산 결과는 Statistics 내부의 `Summary`와 `ColorCount` record에 담는다. 별도 최상위 클래스 파일이 아니라 집계 결과를 구성하는 내부 타입이다.
@@ -364,7 +363,7 @@ public void showStatistics(Statistics.Summary summary) {
 
 ### 3.1 클래스 다이어그램
 
-통계 연결, 이벤트 전달, 집계 결과의 보관·표시에 필요한 클래스와 주요 멤버를 나타낸다. 속성과 연산에는 타입을 적고, 참조를 보관하는 연관에는 다중성을 표시했다. 점선의 «create»와 «use»는 각각 생성과 사용 의존을, 인터페이스로 향하는 빈 삼각형 점선은 구현 관계를 나타낸다.
+통계 연결, 이벤트 전달, 집계 결과의 보관·표시에 필요한 클래스와 주요 멤버를 나타낸다. 속성과 연산에는 타입을 적고, 참조를 보관하는 연관에는 양 끝의 다중성과 대상 필드 이름을 표시했다. 점선의 «create»와 «use»는 각각 생성과 사용 의존을, 인터페이스로 향하는 빈 삼각형 점선은 구현 관계를 나타낸다.
 
 ![통계 기능 클래스 다이어그램](diagrams/statistics-classes.png)
 
@@ -531,6 +530,8 @@ Statistics는 이벤트를 집계하여 `Summary`를 만들고, StatisticsPanel�
 | 합계 | 통계 핵심 6개 클래스 | **82** |
 
 Gradle 9.5.1, Java 17, JUnit Jupiter 6.0.3 환경에서 실행했다. 집계 로직은 UI 없이 독립적으로 검증하고, 화면 표시와 게임 연결은 창을 띄우지 않는 headless 환경에서 검사했다.
+
+집계 결과는 테스트 내부에서 콜백으로 수집한다. 화면 통합 테스트는 실제 `Life.connectStatistics()` 연결을 유지하며, Mockito spy로 패널의 `showStatistics()`를 실제 실행하면서 전달된 Summary를 기록한다.
 
 ### 5.2 기본 집계와 이벤트 계약 검증
 
@@ -726,9 +727,16 @@ Gradle 9.5.1, Java 17, JUnit Jupiter 6.0.3 환경에서 실행했다. 집계 로
 
 ### 5.5 대표 JUnit 코드와 실행 결과
 
-**TC01 — UI와 분리한 집계 검사.** 패널 대신 `updates::add` 콜백으로 결과를 수집한다.
+**TC01 — UI와 분리한 집계 검사.** 패널 대신 `updates::add` 콜백으로 결과를 수집한다. 아래 `current()`는 테스트 클래스 안에서 수집 결과를 읽는 보조 메서드다.
 
 ```java
+private final List<Statistics.Summary> updates = new ArrayList<>();
+private final Statistics statistics = new Statistics(updates::add);
+
+private Statistics.Summary current() {
+    return updates.get(updates.size() - 1);
+}
+
 @Test void initialSnapshotReportsPopulationAndSuppliedGeneration() {
     statistics.onBoardChanged(event(INITIAL, 12, 4, 0, 5, 10, 15));
     assertEquals(12, current().generation());
@@ -754,7 +762,7 @@ void singleStepDisplaysActualBlinkerBirthsAndDeaths() throws Exception {
 }
 ```
 
-**실행 결과.** 2026-11-25 전체 JUnit을 재실행한 결과, **30개 클래스·375회 실행 모두 통과**했다. 실패·오류·건너뜀은 모두 0이며, 통계 핵심 6개 클래스의 82회 실행이 포함되어 있다.
+**실행 결과.** 2026-11-26 전체 JUnit을 재실행한 결과, **30개 클래스·375회 실행 모두 통과**했다. 실패·오류·건너뜀은 모두 0이며, 통계 핵심 6개 클래스의 82회 실행이 포함되어 있다.
 
 | 검증 범위 | 실행 수 | 확인 내용 |
 | --- | ---: | --- |
@@ -769,4 +777,4 @@ void singleStepDisplaysActualBlinkerBirthsAndDeaths() throws Exception {
 
 ![전체 JUnit 실행 요약과 클래스별 결과](screenshots/test-results.png)
 
-*그림 5-1. 전체 JUnit 실행 결과. 검증 대상 커밋: `9f99029` · 실행일: 2026-11-25 (보고서 생성 21:24:29, KST).*
+*그림 5-1. 전체 JUnit 실행 결과. 실행일: 2026-11-26.*

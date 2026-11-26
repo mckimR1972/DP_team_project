@@ -14,7 +14,6 @@ class StatisticsTest {
     private final Statistics statistics = new Statistics(updates::add);
 
     @Test void hasNoSummaryBeforeFirstEvent() {
-        assertTrue(statistics.current().isEmpty());
         assertTrue(updates.isEmpty());
     }
 
@@ -88,19 +87,20 @@ class StatisticsTest {
 
     @Test void publishesOneSummaryForEachEvent() {
         statistics.onBoardChanged(event(INITIAL, 0, 3, 0));
-        Statistics.Summary initial = current();
         assertEquals(1, updates.size());
-        assertSame(initial, updates.get(0));
+        Statistics.Summary initial = current();
+        assertEquals(0, initial.generation());
+        assertEquals(1, initial.livingCells());
+        assertNoDelta();
 
         statistics.onBoardChanged(event(EDIT, 0, 3, 1, 2));
         assertEquals(2, updates.size());
-        assertSame(current(), updates.get(1));
+        assertEquals(0, current().generation());
         assertEquals(2, current().livingCells());
         assertNoDelta();
 
         statistics.onBoardChanged(event(GENERATION, 1, 3, 1, 2));
         assertEquals(3, updates.size());
-        assertSame(current(), updates.get(2));
         assertEquals(1, current().generation());
         assertEquals(2, current().livingCells());
         assertDelta(0, 0);
@@ -111,11 +111,10 @@ class StatisticsTest {
     @Test void rejectsMissingCallbackAndEvent() {
         assertThrows(NullPointerException.class, () -> new Statistics(null));
         assertThrows(NullPointerException.class, () -> statistics.onBoardChanged(null));
-        assertTrue(statistics.current().isEmpty());
         assertTrue(updates.isEmpty());
     }
 
-    private Statistics.Summary current() { return statistics.current().orElseThrow(); }
+    private Statistics.Summary current() { return updates.get(updates.size() - 1); }
     private void assertDelta(int births, int deaths) {
         assertTrue(current().hasGenerationDelta());
         assertEquals(births, current().births());

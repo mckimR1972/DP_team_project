@@ -392,7 +392,7 @@ class UniverseEventsTest {
     }
 
     private BoardChangeEvent last() { return events.get(events.size() - 1); }
-    private Statistics.Summary summary() { return statistics.current().orElseThrow(); }
+    private Statistics.Summary summary() { return summaries.get(summaries.size() - 1); }
 
     private void assertDelta(int births, int deaths) {
         assertTrue(summary().hasGenerationDelta());

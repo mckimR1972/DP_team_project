@@ -1,7 +1,7 @@
 @startuml statistics-classes
 !pragma layout elk
 top to bottom direction
-skinparam defaultFontName "Apple SD Gothic Neo"
+skinparam defaultFontName "Malgun Gothic"
 skinparam defaultFontSize 15
 skinparam dpi 150
 skinparam monochrome true
@@ -12,9 +12,11 @@ skinparam linetype ortho
 skinparam nodesep 70
 skinparam ranksep 65
 skinparam classAttributeIconSize 0
+skinparam minClassWidth 400
 skinparam classBackgroundColor white
 skinparam classBorderColor black
 skinparam ArrowColor black
+skinparam ArrowFontSize 13
 hide circle
 hide empty members
 
@@ -22,22 +24,22 @@ class Life {
     -universe : Universe
     -statistics : Statistics
     {static} ~connectStatistics(universe : Universe, panel : StatisticsPanel) : Statistics
-    +dispose() : void
+    +dispose()
 }
 
 class Universe {
     -boardListeners : Set<BoardChangeListener>
     -outermostCell : Cell
     -generation : long
-    +addBoardChangeListener(listener : BoardChangeListener) : void
-    +removeBoardChangeListener(listener : BoardChangeListener) : void
-    +notifyBoardChanged(kind : BoardChangeEvent.Kind) : void
+    +addBoardChangeListener(listener : BoardChangeListener)
+    +removeBoardChangeListener(listener : BoardChangeListener)
+    +notifyBoardChanged(kind : BoardChangeEvent.Kind)
     +liveCells() : boolean[][]
     -createBoardChangeEvent(kind : BoardChangeEvent.Kind, before : boolean[][]) : BoardChangeEvent
 }
 
 interface BoardChangeListener <<interface>> {
-    +onBoardChanged(event : BoardChangeEvent) : void
+    +onBoardChanged(event : BoardChangeEvent)
 }
 
 class BoardChangeEvent {
@@ -51,15 +53,14 @@ class BoardChangeEvent {
 }
 
 class Statistics {
-    -onUpdated : Consumer<Summary>
-    -currentSummary : Summary
-    +onBoardChanged(event : BoardChangeEvent) : void
-    +current() : Optional<Summary>
-    -calculate(event : BoardChangeEvent) : Summary
+    -onUpdated : Consumer<Statistics.Summary>
+    -currentSummary : Statistics.Summary
+    +onBoardChanged(event : BoardChangeEvent)
+    -calculate(event : BoardChangeEvent) : Statistics.Summary
 }
 
 class StatisticsPanel {
-    +showStatistics(summary : Statistics.Summary) : void
+    +showStatistics(summary : Statistics.Summary)
 }
 
 class "Statistics.Summary" as Summary <<record>> {
@@ -69,7 +70,7 @@ class "Statistics.Summary" as Summary <<record>> {
     +births() : int
     +deaths() : int
     +hasGenerationDelta() : boolean
-    +colorCounts() : List<ColorCount>
+    +colorCounts() : List<Statistics.ColorCount>
 }
 
 class "Statistics.ColorCount" as ColorCount <<record>> {
@@ -83,15 +84,15 @@ interface Cell <<interface>> {
     +colorAt(row : int, column : int) : Color
 }
 
-Life "0..*" --> "1" Universe
-Life "0..1" --> "1" Statistics
+Life "1" --> "  universe\n  1\n " Universe
+Life "1" --> "  statistics\n  1\n " Statistics
 Life ..> StatisticsPanel : <<create>>
-Universe "0..1" --> "0..*" BoardChangeListener
+Universe "1" --> "  boardListeners\n  0..*\n " BoardChangeListener
 Statistics ..|> BoardChangeListener
-Universe "0..1" --> "1" Cell
+Universe "1" --> "  outermostCell\n  1\n " Cell
 Universe ..> BoardChangeEvent : <<create>>
 Statistics ..> BoardChangeEvent : <<use>>
-Statistics "0..1" --> "0..1" Summary
+Statistics "0..1" --> "  currentSummary\n  0..1\n " Summary
 StatisticsPanel ..> Summary : <<use>>
-Summary "0..*" --> "0..*" ColorCount
+Summary "1" --> "  colorCounts\n  0..*\n " ColorCount
 @enduml

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -58,11 +57,6 @@ public final class Statistics implements BoardChangeListener {
         currentSummary = summary;
 
         onUpdated.accept(summary);
-    }
-
-    /** 가장 최근의 집계 결과를 반환한다. 첫 이벤트를 받기 전에는 비어 있다. */
-    public Optional<Summary> current() {
-        return Optional.ofNullable(currentSummary);
     }
 
     private Summary calculate(BoardChangeEvent event) {

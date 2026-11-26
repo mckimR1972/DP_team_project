@@ -39,7 +39,8 @@ class SoundEffectsIntegrationTest {
     private final ScheduledExecutorService scheduler = mock(ScheduledExecutorService.class);
     private final Synthesizer synth = mock(Synthesizer.class);
     private final MidiChannel[] channels = new MidiChannel[16];
-    private final Statistics statistics = new Statistics(summary -> { });
+    private final List<Statistics.Summary> summaries = new ArrayList<>();
+    private final Statistics statistics = new Statistics(summaries::add);
     private BoardChangeListener sound;
     private Runnable sweepStep;
     private boolean runFirstStepImmediately;
@@ -265,5 +266,5 @@ class SoundEffectsIntegrationTest {
     }
 
     private void runNotes() { for (ScheduledNote job : List.copyOf(jobs)) job.command().run(); }
-    private Statistics.Summary summary() { return statistics.current().orElseThrow(); }
+    private Statistics.Summary summary() { return summaries.get(summaries.size() - 1); }
 }
