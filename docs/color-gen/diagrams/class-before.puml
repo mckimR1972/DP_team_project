@@ -1,0 +1,67 @@
+@startuml class-before
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam classAttributeIconSize 0
+hide circle
+left to right direction
+skinparam linetype ortho
+skinparam ranksep 80
+skinparam nodesep 70
+
+interface Cell <<interface>> {
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(memento : Storable, upperLeftCorner : Point, doLoad : boolean) : boolean
+  + clear()
+}
+
+class Neighborhood {
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+}
+
+class Resident {
+  - {static} LIVE_COLOR : Color
+  - {static} DEAD_COLOR : Color
+  - amAlive : boolean
+  - willBeAlive : boolean
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(blob : Storable, upperLeft : Point, doLoad : boolean) : boolean
+  + clear()
+}
+
+class Universe {
+  - Universe()
+  + paint(g : Graphics)
+  - refreshNow()
+}
+
+class Clock {
+  + tick()
+}
+
+Cell <|.. Neighborhood
+Cell <|.. Resident
+Neighborhood "1\n\n" *-up-> "grid\n64\n" Cell
+Resident -[hidden]right- Neighborhood
+Universe "1<U+2003>" -right-> "outermostCell\n1<U+2003>" Cell
+Universe .left.> Clock : <<use>>
+Universe ..> Resident : <<create>>
+
+note right of Resident
+  살아 있는 셀의 색은 redraw()가
+  상수 LIVE_COLOR로 정한다
+end note
+note left of Universe
+  Resident를 프로토타입으로 판을 만들고,
+  시계에 틱 리스너를 등록한다
+end note
+@enduml

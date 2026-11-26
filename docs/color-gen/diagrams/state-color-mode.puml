@@ -1,0 +1,28 @@
+@startuml state-color-mode
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+hide empty description
+mainframe stm 색 모드 (Resident.colorPolicy)
+
+state Single : tick() [편집 중이 아님 and changed] / refreshNow()
+state Cycling : tick() [편집 중이 아님] / refreshNow()
+
+[*] --> Single : / colorPolicy = new FixedColorPolicy(LIVE_COLOR)
+
+Single --> Cycling : turnOnColorCycling()\n/ setColorPolicy(new CyclingColorPolicy(...)); repaint()
+Cycling --> Single : turnOffColorCycling()\n/ setColorPolicy(new FixedColorPolicy(LIVE_COLOR)); repaint()
+Single --> Single : turnOffColorCycling()\n/ setColorPolicy(new FixedColorPolicy(LIVE_COLOR)); repaint()
+Cycling --> Cycling : turnOnColorCycling()\n/ setColorPolicy(new CyclingColorPolicy(...)); repaint()
+
+note bottom of Cycling
+  Single: colorPolicy가 FixedColorPolicy
+  Cycling: colorPolicy가 CyclingColorPolicy
+  셀의 나이는 모드와 상관없이
+  편집 중이 아닌 틱마다 센다.
+  모드를 바꿔도 나이는 그대로다
+  편집 중: 캡처·배치 편집 또는 Freezing 영역 선택 중
+  changed: 이번 틱에 생사가 바뀐 셀이 있음
+end note
+@enduml

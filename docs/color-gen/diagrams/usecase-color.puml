@@ -1,0 +1,40 @@
+@startuml usecase-color
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam usecaseBackgroundColor #F1F1F1
+left to right direction
+
+actor "사용자" as User
+
+rectangle "Life Game" {
+  usecase "Turn On Color Cycling(E)" as On
+  usecase "Turn Off Color Cycling(E)" as Off
+  usecase "Run / Halt Game" as Run
+  usecase "Step One Generation" as Step
+
+  usecase Advance as "Advance Generation
+--
+extension points
+세대 확정 후"
+
+  usecase "Recolor Cells by Age(E)" as Recolor
+  usecase "Count Cell Age(E)" as Count
+}
+
+User -- On
+User -- Off
+User -- Run
+User -- Step
+
+On ...> Recolor : <<include>>
+Run ..> Advance : <<include>>
+Step ..> Advance : <<include>>
+Advance <.. Recolor : <<extend>>
+note top on link
+  condition: {색 순환이 켜져 있음}
+  extension point: 세대 확정 후
+end note
+Advance ..> Count : <<include>>
+@enduml

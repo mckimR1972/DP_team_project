@@ -1,0 +1,114 @@
+@startuml class-after
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam classAttributeIconSize 0
+hide circle
+left to right direction
+skinparam linetype ortho
+skinparam ranksep 110
+skinparam nodesep 90
+
+interface Cell <<interface>> {
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + colorAt(row : int, column : int) : Color
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(memento : Storable, upperLeftCorner : Point, doLoad : boolean) : boolean
+  + clear()
+}
+
+class Neighborhood {
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+}
+
+class Resident {
+  ~ {static} LIVE_COLOR : Color
+  - {static} DEAD_COLOR : Color
+  - amAlive : boolean
+  - willBeAlive : boolean
+  - age : int
+  - heldThisGeneration : boolean
+  ~ {static} setColorPolicy(policy : CellColorPolicy)
+  ~ {static} colorChangesWithAge() : boolean
+  + figureNextState(north : Cell, south : Cell,\n    east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell,\n    southeast : Cell, southwest : Cell) : boolean
+  + transition() : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+  + redraw(g : Graphics, here : Rectangle, drawAll : boolean)
+  + colorAt(row : int, column : int) : Color
+  + userClicked(here : Point, surface : Rectangle)
+  + transfer(blob : Storable, upperLeft : Point, doLoad : boolean) : boolean
+  + clear()
+}
+
+interface CellColorPolicy <<interface>> {
+  + colorOf(age : int) : Color
+  + changesWithAge() : boolean
+}
+
+class FixedColorPolicy {
+  - color : Color
+  + FixedColorPolicy(color : Color)
+  + colorOf(age : int) : Color
+  + changesWithAge() : boolean
+}
+
+class CyclingColorPolicy {
+  - period : int
+  - colors : Color[]
+  + CyclingColorPolicy(period : int, colors : Color...)
+  + colorOf(age : int) : Color
+  + changesWithAge() : boolean
+}
+
+class Universe {
+  - Universe()
+  + liveCells() : boolean[][]
+  + notifyBoardChanged(kind : BoardChangeEvent.Kind)
+  - notifyBoardChanged(kind : BoardChangeEvent.Kind, before : boolean[][])
+  # paintComponent(g : Graphics)
+  - refreshNow()
+  - useColorPolicy(policy : CellColorPolicy)
+}
+
+class Clock {
+  + tick()
+}
+
+Cell <|.left. Neighborhood
+Cell <|.. Resident
+Neighborhood "<U+2003><U+2003><U+2003><U+2003>1" *-left-> "<U+2003><U+2003><U+2003><U+2003>64\ngrid" Cell
+Universe "1<U+2003>" -right-> "outermostCell\n1<U+2003>" Cell
+Universe .left.> Clock : <<use>>
+Universe ..> Resident : <<create, use>>
+CellColorPolicy <|.right. FixedColorPolicy
+CellColorPolicy <|.. CyclingColorPolicy
+Resident "<U+2003><U+2003><U+2003>*" --> "<u>colorPolicy</u>\n1" CellColorPolicy
+Universe ..> FixedColorPolicy : <U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><<create>>
+Universe ..> CyclingColorPolicy : <<create>>
+Resident ..> FixedColorPolicy : <<create>>
+Universe ..> CellColorPolicy : <<use>><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003>
+
+
+note right of Resident
+  colorPolicy는 모든 셀이 함께 쓰는 static 참조다.
+  redraw()와 colorAt()이
+  colorPolicy.colorOf(age)로 색을 받는다.
+  colorAt()은 통계 기능이,
+  holdNextState()와 heldThisGeneration은
+  Freezing 기능이 더했다
+end note
+note left of Universe
+  Resident를 프로토타입으로 판을 만들고,
+  시계에 틱 리스너를 등록한다.
+  Color 메뉴에서 규칙을 만들어
+  useColorPolicy()로 바꿔 끼우고,
+  틱마다 colorChangesWithAge()에 묻는다
+end note
+@enduml

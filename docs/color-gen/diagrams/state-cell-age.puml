@@ -1,0 +1,33 @@
+@startuml state-cell-age
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+hide empty description
+mainframe stm Resident (셀 하나)
+
+state Dead
+state Alive : entry / age = 0
+state Alive : transition() [willBeAlive and not heldThisGeneration] / age = age + 1
+
+[*] -down-> Dead : new()
+
+Dead -down-> Alive : transition() [willBeAlive]
+Dead -down-> Alive : userClicked()
+Dead -down-> Alive : transfer(LOAD) [파일에서 살아 있음]<U+2003><U+2003>
+
+Alive -up-> Dead : transition() [not willBeAlive]
+Alive -up-> Dead : userClicked()
+Alive -up-> Dead : clear()
+
+note right of Alive
+  그릴 때의 색 = colorPolicy.colorOf(age)
+  heldThisGeneration: 이번 세대에
+  Freezing이 고정했는지 나타낸다.
+  고정된 칸은 다음 생사가 지금 생사로 되돌려지므로
+  상태가 바뀌지 않고 나이도 늘지 않는다
+end note
+note right of Dead
+  나이와 상관없이 죽은 칸 색으로 그린다
+end note
+@enduml
