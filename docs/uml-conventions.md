@@ -19,7 +19,7 @@
 | 경계 안의 상자 | 시스템 경계 안에 담당별 상자를 겹쳐 넣지 않는다 | 경계는 시스템 하나를 나타낸다 |
 | 유스케이스 이름 | 영어, 동사로 시작한다 | 강의의 이름 규칙 |
 | 원본 유스케이스 이름 | Edit Cells, Run / Halt Game, Step One Generation, Advance Generation, Clear Board, Store / Load Board, Exit Game | 같은 유스케이스가 문서마다 다른 이름으로 나오지 않게 한다 |
-| 확장 유스케이스 표시 | 이름 끝에 `(E)`를 붙인다. 예: `Turn On Color Cycling(E)`, `Install Freezing(E)` | 과제 개요서는 "확장된 기능들은 유스케이스 이름에 'E'를 붙여서 명명할 것"이라고만 정한다. 지금의 `(E)`, `E`, `E-01`은 모두 이 조건을 지키지만, 괄호로 묶으면 이름의 일부가 아니라 표시라는 것이 바로 보인다 |
+| 확장 유스케이스 표시 | 이름 끝에 `(E)`를 붙인다. 예: `Switch Color Mode(E)`, `Install Freezing(E)` | 과제 개요서는 "확장된 기능들은 유스케이스 이름에 'E'를 붙여서 명명할 것"이라고만 정한다. 지금의 `(E)`, `E`, `E-01`은 모두 이 조건을 지키지만, 괄호로 묶으면 이름의 일부가 아니라 표시라는 것이 바로 보인다 |
 | 세대 진행에 붙는 기능 | Run / Halt Game과 Step One Generation이 Advance Generation을 «include»한다. 세대마다 일어나는 확장 기능은 Advance Generation의 확장 지점 "세대 확정 후"에 «extend»로 붙인다 | 색 순환, Freezing, 사운드가 이미 이 구조를 쓴다 |
 | 확장 지점과 조건 | 확장 지점은 확장 대상 타원 안에 `extension points` 칸으로 적는다. 조건은 «extend» 선 옆 노트에 `condition: {…}`으로 적는다 | 강의 표기 |
 | 색 | 흑백으로 그린다. 기존 기능과 확장 기능은 색이 아니라 이름 끝 표시로 구분한다 | 문서마다 색 뜻이 달라지지 않게 한다 |

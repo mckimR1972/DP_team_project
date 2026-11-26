@@ -10,14 +10,32 @@ mainframe sd Install Freezing(E)
 actor "사용자" as User
 participant ":LifeGame" as System
 
-ref over User, System : Set Duration(E)
-ref over User, System : Select Region(E)
+User -> System : setFreezingDuration(n)
+System -->> User : 지속 세대 n
+note right : 1~999만 받는다 (처음 값 5)
 
-User -> System : installFreezing()
-alt 설치함
-  System -->> User : 고정된 영역, 남은 세대 n,\n고정되는 세대 (g+1 ~ g+n)
-  note right : g는 지금 세대
-else 빈 영역이거나 활성 Freezing 영역과 겹침
-  System -->> User : 설치할 수 없는 이유
+User -> System : startRegionSelection()
+System -->> User : 영역 선택 모드 (게임은 멈춘다)
+
+loop 원하는 영역이 나올 때까지
+  User -> System : selectRegion(start, end)
+  alt 활성 Freezing 영역과 겹치지 않음
+    System -->> User : 선택한 사각형, 설치할 수 있음
+  else 겹침
+    System -->> User : 선택한 사각형, 설치할 수 없음
+  end
+end
+
+alt 설치한다
+  User -> System : installFreezing()
+  alt 설치함
+    System -->> User : 고정된 영역, 남은 세대 n,\n고정되는 세대 (g+1 ~ g+n)
+    note right : g는 지금 세대
+  else 빈 영역이거나 활성 Freezing 영역과 겹침
+    System -->> User : 설치할 수 없는 이유
+  end
+else 선택을 그만둔다
+  User -> System : cancelRegionSelection()
+  System -->> User : 선택 모드 끝남 (설치된 영역은 그대로)
 end
 @enduml

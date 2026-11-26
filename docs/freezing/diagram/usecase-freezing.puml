@@ -6,38 +6,82 @@ skinparam defaultFontName "Malgun Gothic"
 skinparam usecaseBackgroundColor #F1F1F1
 ' 사용자를 왼쪽에 두어 사용자에서 오는 선이 상자 제목과 겹치지 않게 한다
 left to right direction
-' 간격을 바꾸면 extend 점선이 점선의 빈 부분에서 끝나 원과 떨어져 보일 수 있다
-skinparam ranksep 64
+skinparam nodesep 26
+skinparam ranksep 70
 
 actor "사용자" as User
 
 rectangle "Life Game" {
+  usecase "Install Freezing(E)" as Install
+  usecase "Release Freezing(E)" as Release
+  usecase Edit as "Edit Cells
+--
+extension points
+셀 변경 전"
+  ' 다른 기능(캡처·템플릿)의 유스케이스라 이름과 확장 지점만 둔다
+  usecase Place as "Place Template(E)
+--
+extension points
+배치 전"
   usecase "Run / Halt Game" as Run
   usecase "Step One Generation" as Step
+  usecase Clear as "Clear Board
+--
+extension points
+판을 비운 후"
+  usecase Store as "Store / Load Board
+--
+extension points
+불러온 후"
   usecase Advance as "Advance Generation
 --
 extension points
+다음 세대 계산 후
 세대 확정 후"
-  usecase "Install Freezing(E)" as Install
-  usecase "Select Region(E)" as Region
-  usecase "Set Duration(E)" as Duration
-  usecase "Release Freezing(E)" as Release
-  usecase "Release Freezing Automatically(E)" as AutoRelease
+  ' 사용자와 Release Freezing(E)을 잇는 선이 경계 안으로 지나가게 하는 보이지 않는 점
+  usecase " " as Via #white;line:white
+  usecase "Keep Region Frozen(E)" as Keep
+  usecase "Protect Frozen Region(E)" as Protect
 }
 
+User -- Install
+User -- Via
+Via -- Release
+User -- Edit
+User -- Place
 User -- Run
 User -- Step
-User -- Install
-User -- Release
+User -- Clear
+User -- Store
 
 Run ..> Advance : <<include>>
 Step ..> Advance : <<include>>
-Install ..> Region : <<include>>
-Install ..> Duration : <<include>>
-' note left: 조건 노트를 <<extend>> 왼쪽에 둔다
-AutoRelease .up.> Advance : <<extend>>
-note left on link
-  condition: {남은 세대가 0}
-  extension point: 세대 확정 후
+
+Advance <.. Keep : <<extend>>
+note on link
+  condition: {고정 영역이 있음}
+  extension points: 다음 세대 계산 후, 세대 확정 후
+end note
+
+Edit <.. Protect : <<extend>>
+note on link
+  condition: {고른 셀이 고정 영역 안에 있음}
+  extension point: 셀 변경 전
+end note
+Place <.. Protect : <<extend>>
+note on link
+  condition: {템플릿이 고정 영역과 겹침}
+  extension point: 배치 전
+end note
+
+Clear <.. Release : <<extend>>
+note on link
+  condition: {고정 영역이 있음}
+  extension point: 판을 비운 후
+end note
+Store <.. Release : <<extend>>
+note on link
+  condition: {불러오기에 성공했고 고정 영역이 있음}
+  extension point: 불러온 후
 end note
 @enduml

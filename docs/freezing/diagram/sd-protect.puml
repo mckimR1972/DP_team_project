@@ -1,0 +1,51 @@
+@startuml sd-protect
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd editCell(row, column), placeTemplate(origin) 안의 Protect Frozen Region(E)
+
+actor "사용자" as User
+participant ":Universe" as U
+participant ":PatternTools" as P
+participant ":BoardEditor" as E
+participant ":FreezingTools" as T
+participant ":FreezingManager" as M
+
+alt editCell(row, column): 클릭 또는 끌기
+  User -> U : mousePressed(e) / mouseDragged(e)
+  note right of U : 마우스 리스너는 Universe 안의\n익명 객체라 Universe로 합쳐 그렸다
+  U -> U : setCell(cell, alive)
+  note right of U : 끌기는 지나간 칸마다 setCell()을 부른다.\n누를 때도 같은 검사를 먼저 해, 고정된 칸에서\n시작한 획은 전체를 무시한다
+  U -> T : manager()
+  T -->> U : manager(): FreezingManager
+  U -> M : isFrozen(cell)
+  M -->> U : frozen = isFrozen(cell): boolean
+  alt frozen
+    U -> T : blockedEdit()
+    note right of T : 상태줄: "Freezing 영역 안의 셀은\n해제 전까지 바꿀 수 없습니다."
+  else
+    U -> U : outermostCell.userClicked(…)
+    note right of U : 셀을 바꾸고 EDIT 이벤트를 보낸다
+  end
+else placeTemplate(origin): 배치 또는 반복 배치
+  User -> P : mousePressed(e) / mouseDragged(e)
+  P -> P : stampAt(point)
+  note right of P : 반복 배치는 지나간 자리마다\nstampAt()을 부른다
+  P -> E : canPlace(pattern, point)
+  E -> U : test(area)
+  note right of U : 배치 가드: Universe 생성자에서\nsetPlacementGuard()로 넘긴 람다
+  U -> M : overlapsFrozen(area)
+  M -->> U : overlaps = overlapsFrozen(area): boolean
+  U -->> E : blocked = test(area): boolean
+  E -->> P : ok = canPlace(pattern, point): boolean
+  alt ok
+    P -> E : place(pattern, point)
+    note right of E : place()도 canPlace()를 다시 검사한다
+  else
+    P -> P : message("Freezing 영역과 겹칩니다. …")
+  end
+end
+@enduml

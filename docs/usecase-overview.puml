@@ -1,0 +1,122 @@
+@startuml usecase-overview
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam usecaseBackgroundColor #F1F1F1
+left to right direction
+
+actor "사용자" as User
+
+rectangle "Life Game" {
+  usecase "Capture Template(E)" as Capture
+  usecase "Undo Placement(E)" as Undo
+  usecase Place as "Place Template(E)
+--
+extension points
+배치 전"
+  usecase Edit as "Edit Cells
+--
+extension points
+끌기
+셀 변경 전"
+  usecase "Run / Halt Game" as Run
+  usecase "Step One Generation" as Step
+  usecase "View Statistics(E)" as Stats
+  usecase "Switch Color Mode(E)" as ColorMode
+  usecase Clear as "Clear Board
+--
+extension points
+판을 비운 후"
+  usecase "Release Freezing(E)" as Release
+  usecase Store as "Store / Load Board
+--
+extension points
+불러온 후"
+  ' 사용자와 Release Freezing(E)을 잇는 선이 경계 안으로 지나가게 하는 보이지 않는 점
+  usecase " " as Via #white;line:white
+  usecase "Exit Game" as Exit
+  usecase "Install Freezing(E)" as Install
+  usecase "Toggle Sound(E)" as Toggle
+  usecase "Configure Sound(E)" as Config
+  usecase Advance as "Advance Generation
+--
+extension points
+다음 세대 계산 후
+세대 확정 후"
+  usecase "Recolor Cells by Age(E)" as Recolor
+  usecase "Draw Cells by Dragging(E)" as Drag
+  usecase "Keep Region Frozen(E)" as Keep
+  usecase "Protect Frozen Region(E)" as Protect
+  usecase "Hear Generation Sound(E)" as Gen
+}
+
+
+User -- Capture
+User -- Undo
+User -- Place
+User -- Edit
+User -- Run
+User -- Step
+User -- Stats
+User -- ColorMode
+User -- Clear
+User -- Store
+User -- Via
+Via -- Release
+User -- Exit
+User -- Install
+User -- Toggle
+User -- Config
+
+Run ..> Advance : <<include>>
+Step ..> Advance : <<include>>
+
+Edit <.. Drag : <<extend>>
+note on link
+  condition: {버튼을 누른 채 끎}
+  extension point: 끌기
+end note
+Edit <.. Protect : <<extend>>
+note on link
+  condition: {고른 셀이 고정 영역 안에 있음}
+  extension point: 셀 변경 전
+end note
+Place <.. Protect : <<extend>>
+note on link
+  condition: {템플릿이 고정 영역과 겹침}
+  extension point: 배치 전
+end note
+
+Stats ..> Advance : <<extend>>
+note on link
+  condition: {통계 구독 중}
+  extension point: 세대 확정 후
+end note
+Advance <.. Gen : <<extend>>
+note on link
+  condition: {소리가 켜져 있음}
+  extension point: 세대 확정 후
+end note
+Advance <.. Keep : <<extend>>
+note on link
+  condition: {고정 영역이 있음}
+  extension points: 다음 세대 계산 후, 세대 확정 후
+end note
+Advance <.. Recolor : <<extend>>
+note on link
+  condition: {색 순환이 켜져 있음}
+  extension point: 세대 확정 후
+end note
+
+Clear <.. Release : <<extend>>
+note on link
+  condition: {고정 영역이 있음}
+  extension point: 판을 비운 후
+end note
+Store <.. Release : <<extend>>
+note on link
+  condition: {불러오기에 성공했고 고정 영역이 있음}
+  extension point: 불러온 후
+end note
+@enduml

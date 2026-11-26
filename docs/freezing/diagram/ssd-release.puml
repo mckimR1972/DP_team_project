@@ -16,6 +16,16 @@ alt 영역 하나를 푼다
 else 모두 푼다
   User -> System : releaseAllFreezing()
   System -->> User : 빈 Freezing 영역 목록
+else Clear Board를 확장 (판을 비운 후)
+  User -> System : clearBoard()
+  System -->> User : 빈 판, 세대 0, 빈 Freezing 영역 목록
+else Store / Load Board를 확장 (불러온 후)
+  User -> System : loadBoard(file)
+  alt 불러오기에 성공함
+    System -->> User : 불러온 판, 세대 0, 빈 Freezing 영역 목록
+  else 취소하거나 읽지 못함
+    System -->> User : 판과 Freezing 영역 그대로
+  end
 end
 note over User, System : 풀린 영역의 셀은 지금 생사 그대로 남고, 다음 세대부터 Life 규칙을 따른다
 @enduml

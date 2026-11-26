@@ -4,6 +4,7 @@
 
 | 영역 | 현재 문서 | 성격 |
 |---|---|---|
+| 전체 유스케이스 | [usecase-overview.png](usecase-overview.png) | 원본 유스케이스와 다섯 확장 기능의 유스케이스와 관계를 한 장에 그린 다이어그램 |
 | 캡처 공유용 | [capture.md](capture/capture.md) | 팀 보고서용 기능 명세·GoF·유스케이스·UML·연산 계약·대표 테스트 |
 | 캡처 상세 | [캡처 상세 문서](capture/README.md) | 설계 결정·통합·전체 테스트·도식·검증 근거 |
 | 세대별 색상 | [color-gen/color-gen.md](color-gen/color-gen.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |

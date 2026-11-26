@@ -21,7 +21,7 @@ Idle --> Selecting : startRegionSelection()\n/ 패턴 편집 종료, 되돌리�
 Selecting --> Selecting : startRegionSelection()\n/ 선택 다시 시작
 Selecting --> Idle : installFreezing() [설치 성공]
 Selecting --> Idle : cancelRegionSelection()\n(Esc, 오른쪽 클릭, 선택 끝내기, 탭 전환)
-Selecting --> Idle : Grid > Clear,\nLoad 성공\n/ reset()
+Selecting --> Idle : clearBoard(),\nloadBoard(file) [성공]\n/ reset()
 
 note bottom of Selecting
   설치된 영역의 상태(State 패턴)와는 다른 것이다.
