@@ -11,9 +11,9 @@
 | `Cell` | 다음 상태는 `figureNextState()`만 정한다 | `holdNextState(location, alive)` 선언. `DUMMY`는 항상 `false` | +13 |
 | `Neighborhood` | — | `holdNextState()`를 좌표가 속한 하위 셀에 위임 | +13 |
 | `Resident` | `transition()`이 매 세대 나이를 센다 | `holdNextState()`가 `willBeAlive`만 바꾼다. 고정된 세대에는 나이를 세지 않는다 | +17 / −1 |
-| `Universe` | 틱: 계산 → 전이 → 세대 증가 → 이벤트 | 계산과 전이 사이, 세대 증가 뒤에 Freezing 단계. 브러시가 고정된 칸을 건너뜀. Clear·Load 때 초기화. 배치 가드·Esc 연결. 영역 표시 그리기 | +51 / −3 |
+| `Universe` | 틱: 계산 → 전이 → 세대 증가 → 이벤트 | 계산과 전이 사이, 세대 증가 뒤에 Freezing 단계. 브러시가 고정된 칸을 건너뜀. Clear·Load 때 초기화. 배치 가드·Esc 연결. 영역 표시 그리기 | +50 / −3 |
 | `Life` | 탭 2개(패턴 캡처, 통계) | Freezing 탭 추가, 탭을 떠나면 영역 선택 종료 | +3 |
-| 새 파일 6개 | — | `FreezingState`, `NormalState`, `FrozenState`, `FreezingRegion`, `FreezingManager`, `FreezingTools` | 536줄 |
+| 새 파일 6개 | — | `FreezingState`, `NormalState`, `FrozenState`, `FreezingRegion`, `FreezingManager`, `FreezingTools` | 529줄 |
 
 다른 기능의 클래스(`PatternTools`, `BoardEditor`, `PlacePatternCommand`, `Statistics`, `StatisticsPanel`, `BoardChangeEvent`, `SoundEffects`, `CellColorPolicy`와 구현들, `Clock`)는 고치지 않았다.
 
