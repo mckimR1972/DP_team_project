@@ -10,16 +10,16 @@
 
 ![사운드를 붙이기 전 클래스 다이어그램](diagram/class-before.png)
 
-원본에서 `Universe`는 `Clock.Listener`로 틱을 받아 `transition()`을 하고 다시 그리기만 한다. 어떤 셀이 생기고 사라졌는지 밖에 알리는 통로가 없고, `Cell`에는 좌표 하나의 생사를 묻는 연산도 없다. 사운드를 붙이려면 이 두 가지가 필요했다.
+원본에서 `Universe`는 `Clock.Listener`로 틱을 받아 `transition()`을 하고 다시 그리기만 한다. 어떤 셀이 생기고 사라졌는지 밖에 알리는 통로가 없고, `Cell`에는 좌표 하나의 생사를 묻는 연산도 없다. 사운드를 붙이려면 이 두 가지가 필요했다. 앞의 것은 사운드 작업에서 더했고, 뒤의 것은 드래그 그리기 기능이 더한 `isAliveAt()`을 그대로 쓴다.
 
 ### 1.2 사운드를 붙인 뒤: 게임과 사운드의 연결
 
 ![게임과 사운드의 연결 클래스 다이어그램](diagram/class-after.png)
 
-바뀐 부분은 두 곳이다.
+그림에서 볼 곳은 두 가지다.
 
 - Observer: `Universe`(Subject)가 `BoardChangeListener`(Observer) 목록을 갖고, 판이 바뀔 때마다 `BoardChangeEvent`를 만들어 보낸다. `SoundEffects`와 `Statistics`가 ConcreteObserver다. `Universe`는 사운드 패키지를 import하지 않는다. 게임 쪽에서 사운드를 아는 곳은 시작점인 `Life`가 `install()`을 부르는 한 곳뿐이다.
-- Composite 확장: `Cell`(Component)에 `isAliveAt(row, column)`을 추가하고 `Neighborhood`(Composite)와 `Resident`(Leaf)가 구현했다.
+- Composite 재사용: 사운드 작업에서 더한 `Universe.liveCells()`가 판을 복사할 때, 드래그 그리기 기능이 `Cell`(Component)에 더한 `isAliveAt(row, column)`을 쓴다. `Neighborhood`(Composite)는 좌표를 하위 칸에 넘기고 `Resident`(Leaf)가 답한다. 사운드 작업에서 더한 연산이 아니라서 굵게 쓰지 않았다.
 
 두 패턴의 역할은 그림의 노트에 적었다. `Statistics`는 통계 기능의 클래스라서 이름만 그렸다.
 

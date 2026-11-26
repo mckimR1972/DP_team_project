@@ -64,19 +64,19 @@ package "com.holub.life" {
 
   interface Cell <<interface>> {
     + isAlive() : boolean
-    + **isAliveAt(row : int, column : int) : boolean**
+    + isAliveAt(row : int, column : int) : boolean
     + widthInCells() : int
     + transition() : boolean
   }
 
   class Neighborhood {
     - grid : Cell[][]
-    + **isAliveAt(row : int, column : int) : boolean**
+    + isAliveAt(row : int, column : int) : boolean
   }
 
   class Resident {
     - amAlive : boolean
-    + **isAliveAt(row : int, column : int) : boolean**
+    + isAliveAt(row : int, column : int) : boolean
   }
 }
 
@@ -120,6 +120,8 @@ note bottom of Neighborhood
   Leaf: Resident
   isAliveAt()은 좌표를 하위 격자 위치와
   나머지로 나눠 해당 하위 셀에 넘긴다.
+  드래그 그리기 기능이 더한 연산이고,
+  사운드는 liveCells()에서 이것을 쓴다.
 end note
 
 note bottom of SoundEffects

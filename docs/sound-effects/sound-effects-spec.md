@@ -228,7 +228,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 |---|---|---|
 | Observer | `Universe` → `BoardChangeListener` → `SoundEffects` | 게임 로직이 사운드를 모르는 채로 판의 변화를 알린다 |
 | Command | `Runnable` → `ScheduledExecutorService` → `MidiChannel` | 시간차가 필요한 소리를, 화면을 맡은 스레드가 기다리지 않고 낸다 |
-| Composite (기존 구조 확장) | `Cell`, `Neighborhood`, `Resident`의 `isAliveAt()` | 여러 겹으로 나뉜 판에서 좌표 하나의 생사를 묻는다 |
+| Composite (기존 구조 재사용) | `Cell`, `Neighborhood`, `Resident`의 `isAliveAt()` (드래그 그리기 기능이 더함) | 여러 겹으로 나뉜 판에서 좌표 하나의 생사를 묻는다. 사운드는 판을 복사할 때(`Universe.liveCells()`) 이 연산을 쓴다 |
 
 ### 4.1 Observer: 판의 변화를 사운드에 알린다
 
@@ -266,23 +266,23 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 스케줄러가 바쁘면 실행 시각이 몇 ms 밀릴 수 있지만 효과음에서는 들리지 않는 정도였다. 그리고 설치할 때 악기를 처음 정하는 한 번을 빼면 `MidiChannel`과 재생선 상태는 이 스레드에서만 만지기 때문에, 채널에 잠금을 따로 걸지 않아도 됐다. 설정 창에서 악기를 바꿀 때도 채널을 직접 바꾸지 않고 `applyInstruments`를 명령으로 넣는다.
 
-### 4.3 Composite 확장: 좌표로 셀 상태를 묻는다
+### 4.3 Composite 재사용: 좌표로 셀 상태를 묻는다
 
-소리를 만들려면 r행 c열 셀이 살아 있는지 물어야 하는데, 원래 `Cell`에는 그런 연산이 없었다. 판은 8×8 `Neighborhood` 안에 다시 8×8 `Neighborhood`가 들어 있는 트리라서, 묻는 쪽이 이 구조를 몰라도 되게 해야 했다.
+소리를 만들려면 r행 c열 셀이 살아 있는지 물어야 하는데, 원본 `Cell`에는 그런 연산이 없었다. 판은 8×8 `Neighborhood` 안에 다시 8×8 `Neighborhood`가 들어 있는 트리라서, 묻는 쪽이 이 구조를 몰라도 되어야 했다. 드래그 그리기 기능이 이 Composite 구조에 `isAliveAt(row, column)`을 더해 두어서, 사운드는 이 연산을 고치지 않고 그대로 쓴다.
 
 | 역할 | 클래스 |
 |---|---|
-| Component | `Cell` (`isAliveAt(row, column)` 추가) |
+| Component | `Cell` (`isAliveAt(row, column)`, 드래그 그리기 기능이 더함) |
 | Composite | `Neighborhood` |
 | Leaf | `Resident` |
 
-그래서 기존 Composite 구조에 연산 하나를 더했다. `Neighborhood`는 좌표를 나눠 어느 하위 칸인지 찾고, 그 칸 안의 좌표로 바꿔 넘긴다. `Resident`는 자기 상태를 답한다. `Universe`는 칸마다 가장 바깥 셀에만 물으면 되고, 판이 몇 겹인지 몰라도 된다. 판 바깥의 이웃을 대신하는 `Cell.DUMMY`도 `Cell`을 구현해서 `isAliveAt()`을 갖지만(항상 `false`), 트리에 들어가지 않으므로 Leaf로 보지 않았다.
+`Neighborhood`는 좌표를 나눠 어느 하위 칸인지 찾고, 그 칸 안의 좌표로 바꿔 넘긴다. `Resident`는 자기 상태를 답한다. 그래서 사운드 작업에서 더한 `Universe.liveCells()`는 칸마다 가장 바깥 셀에만 물으면 되고, 판이 몇 겹인지 몰라도 된다. 판 바깥의 이웃을 대신하는 `Cell.DUMMY`도 `Cell`을 구현해서 `isAliveAt()`을 갖지만(항상 `false`), 트리에 들어가지 않으므로 Leaf로 보지 않았다.
 
-`Cell`을 고치지 않는 방법도 두 가지 있었다. Load/Store에 쓰는 Memento를 다시 쓰는 방법은 5장에 적었다. `Universe`가 `boolean[][]`을 따로 들고 있는 방법은 클릭·Clear·Load·세대 진행 때마다 실제 셀과 맞춰 줘야 하고, 한 곳만 빠져도 소리와 화면이 어긋난다.
+이 연산을 쓰지 않는 방법도 두 가지 있었다. Load/Store에 쓰는 Memento를 다시 쓰는 방법은 5장에 적었다. `Universe`가 `boolean[][]`을 따로 들고 있는 방법은 클릭·Clear·Load·세대 진행 때마다 실제 셀과 맞춰 줘야 하고, 한 곳만 빠져도 소리와 화면이 어긋난다.
 
-대신 `Cell` 구현 3개(`Neighborhood`, `Resident`, `Cell.DUMMY`)를 모두 고쳐야 했고, 칸 하나를 읽을 때마다 바깥 `Neighborhood`, 안쪽 `Neighborhood`, `Resident` 순서로 호출이 세 번 이어진다. 판이 64×64라 부담은 작았다.
+`isAliveAt()`으로 읽으면 칸 하나를 읽을 때마다 바깥 `Neighborhood`, 안쪽 `Neighborhood`, `Resident` 순서로 호출이 세 번 이어진다. 판이 64×64라 부담은 작았다.
 
-이 연산은 나중에 다른 기능에서도 쓰게 됐다. 드래그 그리기, 캡처·템플릿(`PatternCells`), Freezing 영역의 상태 저장(`FreezingRegion`), 공통 이벤트의 판 복사(`Universe.liveCells()`)가 모두 `isAliveAt()`으로 셀 상태를 읽는다.
+이 연산은 사운드 말고도 캡처·템플릿(`PatternCells`)과 Freezing 영역의 상태 저장(`FreezingRegion`)이 셀 상태를 읽는 데 쓴다.
 
 ### 4.4 기존 패턴을 그대로 쓴 부분
 
@@ -298,7 +298,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 | Decorator | 음 목록에 흔들림(`humanized`), 볼륨 조절(`scaled`), 대량 생성 레이어를 겹쳐 적용하는 부분 | 겹쳐 적용한다는 점은 Decorator와 비슷하다. 하지만 대상이 동작을 가진 객체가 아니라 음 값(`Note`)의 목록이고, 적용 순서도 정해져 있다. 목록을 받아 새 목록을 돌려주는 메서드로 충분했다 | 사용자가 효과를 골라 순서를 바꿔 쌓을 수 있게 할 때 |
 | Mediator | `SoundEffects`가 `NoteMapper`, `RepeatTracker`, `SoundSettings`, MIDI 채널을 조율하는 구조 | Mediator는 서로 직접 부르던 객체들이 중재자를 거쳐 주고받게 하는 패턴이다. 여기서는 `NoteMapper`와 `RepeatTracker`가 서로를 부를 일이 처음부터 없다. 조율하는 쪽이 하나일 뿐 중재할 상호작용이 없다 | 이 객체들이 서로 값을 주고받아야 할 때 |
 | Singleton | `SoundEffects` | 프로그램 시작 때 `Life`에서 한 번만 만들면 되고, 다른 곳에서 찾을 일이 없다. 전역 접근점을 두는 대신 `Universe`를 인자로 받아 무엇에 의존하는지 드러냈다 | 다른 기능이 사운드에 직접 요청해야 할 때 |
-| Memento | 판 상태를 읽을 때 Load/Store용 `createMemento()`, `transfer()`를 다시 쓰기 | `Cell`을 고치지 않아도 되는 장점이 있다. 하지만 `createMemento()`는 부를 때마다 판 전체를 산 셀 목록으로 복사하고, 칸 하나를 물을 때도 그 목록을 처음부터 찾는다. 필요한 것만 담는 Memento를 따로 만들면 `Cell.Memento`가 `Storable`을 상속해서 파일 입출력(`load`, `flush`)까지 구현해야 한다. `Neighborhood.transfer()`가 `activeEdges`를 바꾸기 때문에 저장할 때만 쓰던 경로를 매 틱 부르게 되는 문제도 있어서, `isAliveAt()`을 추가하는 쪽(4.3)을 골랐다 | 설정 저장이나 되돌리기를 넣을 때 (판 읽기가 아니라 설정 쪽) |
+| Memento | 판 상태를 읽을 때 Load/Store용 `createMemento()`, `transfer()`를 다시 쓰기 | 이미 있는 저장 경로를 그대로 쓸 수 있다. 하지만 `createMemento()`는 부를 때마다 판 전체를 산 셀 목록으로 복사하고, 칸 하나를 물을 때도 그 목록을 처음부터 찾는다. 필요한 것만 담는 Memento를 따로 만들면 `Cell.Memento`가 `Storable`을 상속해서 파일 입출력(`load`, `flush`)까지 구현해야 한다. `Neighborhood.transfer()`가 `activeEdges`를 바꾸기 때문에 저장할 때만 쓰던 경로를 매 틱 부르게 되는 문제도 있어서, 드래그 그리기 기능이 더한 `isAliveAt()`을 쓰는 쪽(4.3)을 골랐다 | 설정 저장이나 되돌리기를 넣을 때 (판 읽기가 아니라 설정 쪽) |
 
 ## 6. JUnit 테스트
 
@@ -308,7 +308,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 ![전체 테스트 결과](evidence/test-all.png)
 
-사운드와 관련된 테스트는 52개다. 사운드만 다루는 테스트 클래스 4개에 46개가 있고, 기존 클래스에 사운드용으로 더한 테스트와 Freezing과 함께 보는 테스트가 6개다.
+사운드와 관련된 테스트는 52개다. 사운드만 다루는 테스트 클래스 4개에 46개가 있고, 기존 테스트 클래스에서 사운드가 쓰는 연산을 확인하는 테스트 3개와 Freezing과 함께 보는 테스트 3개, 모두 6개가 더 있다.
 
 | 구분 | 테스트 클래스 | 개수 | 대상 |
 |---|---|---|---|
@@ -316,7 +316,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 | 사운드 | [`RepeatTrackerTest`](../../test/sound/com/holub/life/sound/RepeatTrackerTest.java) | 3 | 반복 페이드 |
 | 사운드 | [`SoundSettingsTest`](../../test/sound/com/holub/life/sound/SoundSettingsTest.java) | 3 | 설정 값 |
 | 사운드 | [`SoundEffectsIntegrationTest`](../../test/sound/com/holub/life/SoundEffectsIntegrationTest.java) | 17 | 실제 `Universe`·`Statistics`와 연결한 `SoundEffects`. MIDI, 스케줄러, 메뉴 등록은 테스트용 가짜로 바꿨다. 통계 기능을 합칠 때 추가됐다 |
-| 관련 | [`NeighborhoodTest`](../../test/original/com/holub/life/NeighborhoodTest.java) | 12개 중 1 | `isAliveAt()` |
+| 관련 | [`NeighborhoodTest`](../../test/original/com/holub/life/NeighborhoodTest.java) | 12개 중 1 | `isAliveAt()`. 드래그 그리기 기능에서 더한 테스트로, 사운드가 판을 복사할 때 이 연산을 쓴다 |
 | 관련 | [`UniverseStoreTest`](../../test/original/com/holub/life/UniverseStoreTest.java) | 8개 중 2 | 판 복사, 재생선 그리기 |
 | 관련 | [`FreezingSoundIntegrationTest`](../../test/integration/com/holub/life/FreezingSoundIntegrationTest.java) | 3 | Freezing과 함께 쓸 때. Freezing 기능을 합칠 때 추가됐다 |
 
@@ -349,7 +349,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 | 테스트 | 어떤 내용에 대한 테스트인가 | 확인 방법과 기대 결과 | 요구사항 |
 |---|---|---|---|
-| `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | Composite에 추가한 `isAliveAt()`이 여러 겹으로 나뉜 판에서 좌표를 제대로 찾는지 | 두 겹으로 나뉜 판에서 클릭한 3행 2열만 `true`이고, 행과 열을 바꾼 2행 3열은 `false`다 | F1, F7 |
+| `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 사운드가 판을 복사할 때 쓰는 `isAliveAt()`(드래그 그리기 기능이 더함)이 여러 겹으로 나뉜 판에서 좌표를 제대로 찾는지 | 두 겹으로 나뉜 판에서 클릭한 3행 2열만 `true`이고, 행과 열을 바꾼 2행 3열은 `false`다 | F1, F7 |
 | `UniverseStoreTest.playheadIsDrawnOverTheBoardAndCanBeRemoved` | 재생선이 판 위에 보이고 지워지는지 | 판을 이미지로 그려 재생선 자리의 픽셀이 초록색(0, 170, 80)이고, `-1`로 지우면 그 픽셀이 바뀐다 | F7 |
 | `SoundEffectsIntegrationTest.realBlinkerUpdatesStatisticsAndSchedulesBirthAndDeathSoundsOnce` | 실제 세대 진행이 Observer를 거쳐 소리로 이어지는지 | 블링커를 그리는 동안은 예약이 없다. 한 틱 뒤 생성 화음이 나고 타악기는 정확히 한 번 친다. 같은 이벤트로 통계도 세대 1로 바뀐다 | F1, F3 |
 | `SoundEffectsIntegrationTest.stableAndEmptyGenerationsNeverScheduleGenerationSounds` | 변화가 없는 세대는 조용한지 | 블록(2×2)만 있는 판과 빈 판에서 여러 틱을 진행해도 예약된 소리가 없다 | F5 |
