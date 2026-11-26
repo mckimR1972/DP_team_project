@@ -113,30 +113,29 @@ class FreezingIntegrationTest {
     void freezingStatisticsAndEventsShareOneGenerationCounter() throws Exception {
         LifeTestSupport.onEdt(() -> {
             for (int g = 1; g <= 10; g++) LifeTestSupport.clock.tick();
-            assertEquals(10, universe.freezing().generation());
+            assertEquals(10, LifeTestSupport.freezing().generation());
             assertEquals(10, summary().generation());
             assertEquals("현재 세대: 10", generationLabel().getText());
 
             LifeTestSupport.click(10, 10);
             tabs.setSelectedIndex(2);
             installByDragging(10, 10, 10, 10);
-            FreezingRegion region = universe.freezing().regions().get(0);
-            assertEquals(10, region.startGeneration());
-            assertEquals(5, region.duration());
+            FreezingRegion region = LifeTestSupport.freezing().regions().get(0);
+            assertEquals(5, region.remainingGenerations(), "installed at generation 10 for 5");
             events.clear();
 
             for (int g = 11; g <= 15; g++) {
                 LifeTestSupport.clock.tick();
                 BoardChangeEvent event = events.get(events.size() - 1);
                 assertEquals(g, event.generation());
-                assertEquals(g, universe.freezing().generation());
+                assertEquals(g, LifeTestSupport.freezing().generation());
                 assertEquals(g, summary().generation());
                 assertEquals("현재 세대: " + g, generationLabel().getText());
                 assertEquals(Long.toString(g), value("generation").getText());
                 assertTrue(alive(10, 10), "frozen during generation " + g);
                 assertEquals(15 - g, region.remainingGenerations());
             }
-            assertTrue(universe.freezing().regions().isEmpty(), "released by the 15th update");
+            assertTrue(LifeTestSupport.freezing().regions().isEmpty(), "released by the 15th update");
             assertEquals(0, list().getModel().getSize());
 
             LifeTestSupport.clock.tick();
@@ -151,7 +150,7 @@ class FreezingIntegrationTest {
     void singleStepMenuAdvancesExactlyOneGenerationAndOneCountdown() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(5, 5);
-            FreezingRegion region = universe.freezing().install(new Rectangle(5, 5, 1, 1), 2);
+            FreezingRegion region = LifeTestSupport.freezing().install(new Rectangle(5, 5, 1, 1), 2);
             events.clear();
             LifeTestSupport.select("Go", "Tick (Single Step)");
             assertEquals(List.of(GENERATION), kinds());
@@ -174,7 +173,7 @@ class FreezingIntegrationTest {
         };
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(30, 30);
-            universe.freezing().install(new Rectangle(30, 30, 1, 1), 3);
+            LifeTestSupport.freezing().install(new Rectangle(30, 30, 1, 1), 3);
             events.clear();
             universe.addBoardChangeListener(counter);
             LifeTestSupport.select("Go", "Fast");
@@ -196,7 +195,7 @@ class FreezingIntegrationTest {
                 assertEquals(event.generation() <= 3, event.copyAliveCells()[30][30],
                         "generation " + event.generation());
             }
-            assertTrue(universe.freezing().regions().isEmpty());
+            assertTrue(LifeTestSupport.freezing().regions().isEmpty());
         });
     }
 
@@ -234,7 +233,7 @@ class FreezingIntegrationTest {
             mouse(MouseEvent.MOUSE_PRESSED, 6, 6, MouseEvent.BUTTON3, MouseEvent.BUTTON3_DOWN_MASK);
             assertEquals(Cursor.DEFAULT_CURSOR, universe.getCursor().getType());
             assertFalse(button("Freezing 설치").isEnabled());
-            assertTrue(universe.freezing().regions().isEmpty());
+            assertTrue(LifeTestSupport.freezing().regions().isEmpty());
             assertEquals(0, LifeTestSupport.countAlive(universe.liveCells()), "selection must not draw cells");
         });
     }
@@ -246,7 +245,7 @@ class FreezingIntegrationTest {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(5, 5);                                   // lone cell: would die
             LifeTestSupport.click(10, 9); LifeTestSupport.click(10, 10); LifeTestSupport.click(10, 11);
-            universe.freezing().install(new Rectangle(5, 5, 1, 1), 4);
+            LifeTestSupport.freezing().install(new Rectangle(5, 5, 1, 1), 4);
             events.clear();
             for (int g = 1; g <= 4; g++) {
                 LifeTestSupport.clock.tick();
@@ -274,7 +273,7 @@ class FreezingIntegrationTest {
     void aFullyFrozenBoardStillPublishesGenerationsButNoSoundDeltas() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(10, 9); LifeTestSupport.click(10, 10); LifeTestSupport.click(10, 11);
-            universe.freezing().install(new Rectangle(0, 0, SIZE, SIZE), 3);
+            LifeTestSupport.freezing().install(new Rectangle(0, 0, SIZE, SIZE), 3);
             events.clear();
             for (int g = 1; g <= 3; g++) LifeTestSupport.clock.tick();
             assertEquals(List.of(GENERATION, GENERATION, GENERATION), kinds());
@@ -297,13 +296,13 @@ class FreezingIntegrationTest {
             tabs.setSelectedIndex(2);
             installByDragging(4, 4, 8, 8);
             installByDragging(20, 20, 22, 22);
-            assertEquals(2, universe.freezing().regions().size());
+            assertEquals(2, LifeTestSupport.freezing().regions().size());
             list().setSelectedIndex(0);
             button("선택한 Freezing 해제").doClick(0);
-            assertEquals(1, universe.freezing().regions().size());
-            assertEquals(new Rectangle(20, 20, 3, 3), universe.freezing().regions().get(0).area());
+            assertEquals(1, LifeTestSupport.freezing().regions().size());
+            assertEquals(new Rectangle(20, 20, 3, 3), LifeTestSupport.freezing().regions().get(0).area());
             button("모든 Freezing 해제").doClick(0);
-            assertTrue(universe.freezing().regions().isEmpty());
+            assertTrue(LifeTestSupport.freezing().regions().isEmpty());
             assertFalse(button("모든 Freezing 해제").isEnabled());
             assertFalse(button("선택한 Freezing 해제").isEnabled());
             assertTrue(events.isEmpty());
@@ -320,13 +319,13 @@ class FreezingIntegrationTest {
             block(0, 0);
             block(20, 20);
             LifeTestSupport.select("Color", "Cycle by Generation");
-            universe.freezing().install(new Rectangle(0, 0, 2, 2), 10);
+            LifeTestSupport.freezing().install(new Rectangle(0, 0, 2, 2), 10);
             for (int g = 1; g <= 10; g++) LifeTestSupport.clock.tick();
             assertEquals(RED, cells.colorAt(0, 0), "frozen block did not age");
             assertEquals(RED, cells.colorAt(1, 1));
             assertEquals(BLUE, cells.colorAt(20, 20), "free block is 10 generations old");
             assertEquals(Map.of(RED, 4, BLUE, 4), colorCounts());
-            assertTrue(universe.freezing().regions().isEmpty());
+            assertTrue(LifeTestSupport.freezing().regions().isEmpty());
 
             for (int g = 11; g <= 19; g++) LifeTestSupport.clock.tick();
             assertEquals(RED, cells.colorAt(0, 0), "9 free generations: still the first color");
@@ -344,7 +343,7 @@ class FreezingIntegrationTest {
     void switchingTheColorRuleDuringAFreezingKeepsTheRegionAndItsCountdown() throws Exception {
         LifeTestSupport.onEdt(() -> {
             block(0, 0);
-            FreezingRegion region = universe.freezing().install(new Rectangle(0, 0, 2, 2), 6);
+            FreezingRegion region = LifeTestSupport.freezing().install(new Rectangle(0, 0, 2, 2), 6);
             LifeTestSupport.clock.tick();
             LifeTestSupport.select("Color", "Cycle by Generation");
             LifeTestSupport.clock.tick();
@@ -362,7 +361,7 @@ class FreezingIntegrationTest {
     void clickingAFrozenCellChangesNothingAndPublishesNothing() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(5, 5);
-            universe.freezing().install(new Rectangle(5, 5, 2, 2), 50);
+            LifeTestSupport.freezing().install(new Rectangle(5, 5, 2, 2), 50);
             events.clear();
             LifeTestSupport.click(5, 5);                                   // try to erase a frozen live cell
             assertTrue(alive(5, 5));
@@ -380,7 +379,7 @@ class FreezingIntegrationTest {
     void draggingThroughAFrozenAreaSkipsItsCellsBothWhenDrawingAndErasing() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(3, 11);                                  // live cell that will be frozen
-            universe.freezing().install(new Rectangle(10, 3, 3, 1), 50);    // columns 10-12 of row 3
+            LifeTestSupport.freezing().install(new Rectangle(10, 3, 3, 1), 50);    // columns 10-12 of row 3
             events.clear();
 
             press(8, 3); drag(14, 3); release(14, 3);                      // draw from column 8 to 14
@@ -398,7 +397,7 @@ class FreezingIntegrationTest {
     @Test
     void aStrokeThatStartsOnAFrozenCellIsIgnoredEntirely() throws Exception {
         LifeTestSupport.onEdt(() -> {
-            universe.freezing().install(new Rectangle(10, 3, 3, 1), 50);
+            LifeTestSupport.freezing().install(new Rectangle(10, 3, 3, 1), 50);
             events.clear();
             press(11, 3); drag(20, 3); drag(20, 9); release(20, 9);
             assertEquals(0, LifeTestSupport.countAlive(universe.liveCells()));
@@ -409,7 +408,7 @@ class FreezingIntegrationTest {
     @Test
     void cellsBecomeEditableAgainRightAfterRelease() throws Exception {
         LifeTestSupport.onEdt(() -> {
-            universe.freezing().install(new Rectangle(5, 5, 1, 1), 1);
+            LifeTestSupport.freezing().install(new Rectangle(5, 5, 1, 1), 1);
             LifeTestSupport.click(5, 5);
             assertFalse(alive(5, 5));
             LifeTestSupport.clock.tick();                                  // expires
@@ -425,7 +424,7 @@ class FreezingIntegrationTest {
     @Test
     void aTemplateIsNotPlacedOnAFrozenAreaButIsPlacedNextToIt() throws Exception {
         LifeTestSupport.onEdt(() -> {
-            universe.freezing().install(new Rectangle(21, 20, 1, 1), 50);
+            LifeTestSupport.freezing().install(new Rectangle(21, 20, 1, 1), 50);
             chooseBlinker();
             events.clear();
             press(20, 20); release(20, 20);                                // would cover columns 20-22
@@ -445,7 +444,7 @@ class FreezingIntegrationTest {
     @Test
     void aHeldTemplateStrokeSkipsEveryStampThatWouldTouchTheFrozenArea() throws Exception {
         LifeTestSupport.onEdt(() -> {
-            universe.freezing().install(new Rectangle(21, 18, 1, 5), 50);   // column 21, rows 18-22
+            LifeTestSupport.freezing().install(new Rectangle(21, 18, 1, 5), 50);   // column 21, rows 18-22
             chooseBlinker();
             events.clear();
             press(14, 20); drag(17, 20); drag(20, 20); drag(24, 20); drag(27, 20);
@@ -460,7 +459,7 @@ class FreezingIntegrationTest {
 
             patternButton("배치 되돌리기").doClick(0);
             assertEquals(0, LifeTestSupport.countAlive(universe.liveCells()));
-            assertEquals(1, universe.freezing().regions().size(), "undo does not touch the Freezing");
+            assertEquals(1, LifeTestSupport.freezing().regions().size(), "undo does not touch the Freezing");
         });
     }
 
@@ -487,7 +486,7 @@ class FreezingIntegrationTest {
     void aTemplateWhoseEmptyMarginAloneOverlapsIsRejectedWhole() throws Exception {
         // capture/test-plan.md IT-01. Glider rows: ".O." "..O" "OOO": its upper-left cell is empty.
         LifeTestSupport.onEdt(() -> {
-            universe.freezing().install(new Rectangle(20, 20, 1, 1), 50);
+            LifeTestSupport.freezing().install(new Rectangle(20, 20, 1, 1), 50);
             chooseTemplate("Glider");
             events.clear();
             press(20, 20); release(20, 20);                                // only the empty corner overlaps
@@ -527,7 +526,7 @@ class FreezingIntegrationTest {
     void capturingAFrozenAreaOnlyReadsIt() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(5, 5);
-            FreezingRegion region = universe.freezing().install(new Rectangle(4, 4, 3, 3), 9);
+            FreezingRegion region = LifeTestSupport.freezing().install(new Rectangle(4, 4, 3, 3), 9);
             events.clear();
             patternButton("영역 캡처").doClick(0);
             press(3, 3); drag(8, 8); release(8, 8);
@@ -572,11 +571,11 @@ class FreezingIntegrationTest {
                 assertEquals(Cursor.DEFAULT_CURSOR, universe.getCursor().getType());
                 assertFalse(button("Freezing 설치").isEnabled());
             }
-            assertEquals(1, universe.freezing().regions().size());
+            assertEquals(1, LifeTestSupport.freezing().regions().size());
             events.clear();
             LifeTestSupport.clock.tick();
             assertEquals(List.of(GENERATION), kinds(), "the board runs again after the tab change");
-            assertEquals(4, universe.freezing().regions().get(0).remainingGenerations());
+            assertEquals(4, LifeTestSupport.freezing().regions().get(0).remainingGenerations());
         });
     }
 
@@ -599,7 +598,7 @@ class FreezingIntegrationTest {
             if (event.kind() == GENERATION) generation.countDown();
         };
         LifeTestSupport.onEdt(() -> {
-            universe.freezing().install(new Rectangle(1, 1, 3, 3), 500);
+            LifeTestSupport.freezing().install(new Rectangle(1, 1, 3, 3), 500);
             universe.addBoardChangeListener(counter);
             LifeTestSupport.clock.startTicking(20);
             tabs.setSelectedIndex(2);
@@ -627,7 +626,7 @@ class FreezingIntegrationTest {
             press(12, 12); drag(8, 8); release(8, 8);                       // reverse drag
             assertTrue(button("Freezing 설치").isEnabled());
             button("Freezing 설치").doClick(0);
-            assertEquals(new Rectangle(8, 8, 5, 5), universe.freezing().regions().get(0).area());
+            assertEquals(new Rectangle(8, 8, 5, 5), LifeTestSupport.freezing().regions().get(0).area());
             assertEquals(Cursor.DEFAULT_CURSOR, universe.getCursor().getType());
 
             button("영역 선택").doClick(0);
@@ -635,14 +634,14 @@ class FreezingIntegrationTest {
             assertFalse(button("Freezing 설치").isEnabled());
             assertTrue(statusLabel().getText().contains("겹칩니다"));
             button("Freezing 설치").doClick(0);
-            assertEquals(1, universe.freezing().regions().size());
+            assertEquals(1, LifeTestSupport.freezing().regions().size());
 
             press(20, 20);
             mouseAt(MouseEvent.MOUSE_DRAGGED, 900, 700, MouseEvent.NOBUTTON, MouseEvent.BUTTON1_DOWN_MASK);
             mouseAt(MouseEvent.MOUSE_RELEASED, 900, 700, MouseEvent.BUTTON1, 0);
             assertTrue(button("Freezing 설치").isEnabled());
             button("Freezing 설치").doClick(0);
-            assertEquals(new Rectangle(20, 20, 44, 44), universe.freezing().regions().get(1).area(),
+            assertEquals(new Rectangle(20, 20, 44, 44), LifeTestSupport.freezing().regions().get(1).area(),
                     "a drag past the edge is clamped to the board");
             assertEquals(2, list().getModel().getSize());
             assertEquals(0, LifeTestSupport.countAlive(universe.liveCells()));
@@ -656,7 +655,7 @@ class FreezingIntegrationTest {
             tabs.setSelectedIndex(2);
             spinner().setValue(2);
             installByDragging(5, 5, 5, 5);
-            assertEquals(2, universe.freezing().regions().get(0).duration());
+            assertEquals(2, LifeTestSupport.freezing().regions().get(0).remainingGenerations());
             assertTrue(statusLabel().getText().contains("1 ~ 2세대 고정"), statusLabel().getText());
             LifeTestSupport.clock.tick(); LifeTestSupport.clock.tick();
             assertTrue(alive(5, 5));
@@ -671,16 +670,16 @@ class FreezingIntegrationTest {
     void clearRemovesEveryRegionResetsTheGenerationAndPublishesOneClear() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(5, 5);
-            universe.freezing().install(new Rectangle(5, 5, 1, 1), 50);
-            universe.freezing().install(new Rectangle(30, 30, 4, 4), 50);
+            LifeTestSupport.freezing().install(new Rectangle(5, 5, 1, 1), 50);
+            LifeTestSupport.freezing().install(new Rectangle(30, 30, 4, 4), 50);
             for (int g = 1; g <= 3; g++) LifeTestSupport.clock.tick();
             tabs.setSelectedIndex(2);
             button("영역 선택").doClick(0);
             events.clear();
             LifeTestSupport.select("Grid", "Clear");
             assertEquals(List.of(CLEAR), kinds());
-            assertTrue(universe.freezing().regions().isEmpty());
-            assertEquals(0, universe.freezing().generation());
+            assertTrue(LifeTestSupport.freezing().regions().isEmpty());
+            assertEquals(0, LifeTestSupport.freezing().generation());
             assertEquals("현재 세대: 0", generationLabel().getText());
             assertEquals(0, list().getModel().getSize());
             assertEquals(Cursor.DEFAULT_CURSOR, universe.getCursor().getType());
@@ -699,7 +698,7 @@ class FreezingIntegrationTest {
             output.writeObject(new ArrayList<>(List.of(new Point(9, 10), new Point(10, 10), new Point(11, 10))));
         }
         LifeTestSupport.onEdt(() -> {
-            universe.freezing().install(new Rectangle(8, 9, 5, 3), 50);     // exactly where the blinker loads
+            LifeTestSupport.freezing().install(new Rectangle(8, 9, 5, 3), 50);     // exactly where the blinker loads
             LifeTestSupport.clock.tick();
             events.clear();
             try (MockedStatic<Files> chooser = mockStatic(Files.class)) {
@@ -708,8 +707,8 @@ class FreezingIntegrationTest {
                 LifeTestSupport.select("Grid", "Load");
             }
             assertEquals(List.of(LOAD), kinds());
-            assertTrue(universe.freezing().regions().isEmpty());
-            assertEquals(0, universe.freezing().generation());
+            assertTrue(LifeTestSupport.freezing().regions().isEmpty());
+            assertEquals(0, LifeTestSupport.freezing().generation());
             assertEquals(Set.of(9, 10, 11), liveColumnsOfRow(10));
             LifeTestSupport.clock.tick();
             assertEquals(Set.of(10), liveColumnsOfRow(10), "the loaded blinker turns: it is not frozen");
@@ -721,7 +720,7 @@ class FreezingIntegrationTest {
     void aCancelledLoadKeepsTheRegions() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(5, 5);
-            universe.freezing().install(new Rectangle(5, 5, 1, 1), 50);
+            LifeTestSupport.freezing().install(new Rectangle(5, 5, 1, 1), 50);
             LifeTestSupport.clock.tick();
             events.clear();
             try (MockedStatic<Files> chooser = mockStatic(Files.class)) {
@@ -730,8 +729,8 @@ class FreezingIntegrationTest {
                 LifeTestSupport.select("Grid", "Load");
             }
             assertTrue(events.isEmpty());
-            assertEquals(1, universe.freezing().regions().size());
-            assertEquals(1, universe.freezing().generation());
+            assertEquals(1, LifeTestSupport.freezing().regions().size());
+            assertEquals(1, LifeTestSupport.freezing().generation());
             assertTrue(alive(5, 5));
         });
     }
@@ -741,7 +740,7 @@ class FreezingIntegrationTest {
         Path target = directory.resolve("saved.life");
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(5, 5);
-            FreezingRegion region = universe.freezing().install(new Rectangle(5, 5, 1, 1), 50);
+            FreezingRegion region = LifeTestSupport.freezing().install(new Rectangle(5, 5, 1, 1), 50);
             LifeTestSupport.clock.tick();
             events.clear();
             try (MockedStatic<Files> chooser = mockStatic(Files.class)) {
@@ -768,7 +767,7 @@ class FreezingIntegrationTest {
         LifeTestSupport.onEdt(() -> {
             Color plain = pixel(40, 40);
             assertEquals(plain, pixel(50, 50));
-            universe.freezing().install(new Rectangle(38, 38, 5, 5), 7);
+            LifeTestSupport.freezing().install(new Rectangle(38, 38, 5, 5), 7);
             Color tinted = pixel(40, 40);
             assertNotEquals(plain, tinted, "a frozen dead cell is tinted");
             assertTrue(tinted.getBlue() > tinted.getRed(), "the tint is blue: " + tinted);
@@ -782,7 +781,7 @@ class FreezingIntegrationTest {
             universe.finishPatternEditing();
             universe.setPlayhead(-1);
 
-            universe.freezing().releaseAll();
+            LifeTestSupport.freezing().releaseAll();
             assertEquals(plain, pixel(40, 40));
         });
     }
@@ -794,7 +793,7 @@ class FreezingIntegrationTest {
             assertTrue(dirtyRegionsDuringTicks(5).isEmpty(),
                     "no region: an unchanged generation requests no repaint at all");
 
-            universe.freezing().install(new Rectangle(30, 30, 4, 4), 3);
+            LifeTestSupport.freezing().install(new Rectangle(30, 30, 4, 4), 3);
             List<Rectangle> dirty = dirtyRegionsDuringTicks(5);
             assertEquals(3, dirty.size(), "one request per frozen generation, none after release: " + dirty);
             Rectangle regionPixels = new Rectangle(30 * 8, 30 * 8, 4 * 8, 4 * 8);
@@ -837,9 +836,9 @@ class FreezingIntegrationTest {
                     int duration = 1 + random.nextInt(15);
                     if (areas.stream().anyMatch(area::intersects)) {
                         assertThrows(IllegalArgumentException.class,
-                                () -> universe.freezing().install(area, duration));
+                                () -> LifeTestSupport.freezing().install(area, duration));
                     } else {
-                        universe.freezing().install(area, duration);
+                        LifeTestSupport.freezing().install(area, duration);
                         areas.add(area);
                         remaining.add(new int[] {duration});
                     }
@@ -848,7 +847,7 @@ class FreezingIntegrationTest {
                     int index = random.nextInt(areas.size());
                     Rectangle target = areas.remove(index);
                     remaining.remove(index);
-                    universe.freezing().release(universe.freezing().regions().stream()
+                    LifeTestSupport.freezing().release(LifeTestSupport.freezing().regions().stream()
                             .filter(r -> r.area().equals(target)).findFirst().orElseThrow());
                 }
                 for (int i = random.nextInt(4); i > 0; i--) {               // brush clicks
@@ -905,8 +904,8 @@ class FreezingIntegrationTest {
                 assertEquals(births.size(), summary().births(), where);
                 assertEquals(deaths.size(), summary().deaths(), where);
                 assertEquals(counts, colorCounts(), where);
-                assertEquals(areas.size(), universe.freezing().regions().size(), where);
-                assertEquals(g, universe.freezing().generation(), where);
+                assertEquals(areas.size(), LifeTestSupport.freezing().regions().size(), where);
+                assertEquals(g, LifeTestSupport.freezing().generation(), where);
                 assertEquals(soundEvents, sound.size(), where);
                 if (!births.isEmpty() || !deaths.isEmpty()) {
                     assertEquals(births, sound.get(sound.size() - 1).births(), where);
