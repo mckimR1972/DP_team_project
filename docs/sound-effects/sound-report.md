@@ -303,7 +303,7 @@ void everyPitchIsInCMajor()
 
 ![전체 테스트 결과](evidence/test-all.png)
 
-그림 S-6. 전체 테스트 결과 (2026-11-26 10:42 실행, 화면 맨 위에 실행 날짜와 명령을 적었다)
+그림 S-6. 전체 테스트 결과 (2026-11-26 14:29 실행, 화면 맨 위에 실행 날짜와 명령을 적었다)
 
 ![NoteMapperTest 결과](evidence/test-notemapper.png)
 
