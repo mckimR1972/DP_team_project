@@ -83,13 +83,13 @@ class Clock {
 
 Cell <|.left. Neighborhood
 Cell <|.. Resident
-Neighborhood "<U+2003><U+2003><U+2003><U+2003>1" *-left-> "<U+2003><U+2003><U+2003><U+2003>64" Cell
-Universe "1<U+2003>" -right-> "1<U+2003>" Cell
+Neighborhood "<U+2003><U+2003><U+2003><U+2003>1" *-left-> "<U+2003><U+2003><U+2003><U+2003>64\ngrid" Cell
+Universe "1<U+2003>" -right-> "outermostCell\n1<U+2003>" Cell
 Universe .left.> Clock : <<use>>
-Universe ..> Resident : <U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><<create, use>>
+Universe ..> Resident : <<create, use>>
 CellColorPolicy <|.right. FixedColorPolicy
 CellColorPolicy <|.. CyclingColorPolicy
-Resident "*" --> "\n1" CellColorPolicy
+Resident "<U+2003><U+2003><U+2003>*" --> "<u>colorPolicy</u>\n1" CellColorPolicy
 Universe ..> FixedColorPolicy : <U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><U+2003><<create>>
 Universe ..> CyclingColorPolicy : <<create>>
 Resident ..> FixedColorPolicy : <<create>>

@@ -405,7 +405,7 @@ CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. �
 ![바꾼 후 클래스 다이어그램](diagrams/class-after.png)
 
 - 밑줄은 static 멤버다.
-- 다른 클래스를 가리키는 필드(`colorPolicy`, `outermostCell`, `grid`)는 속성 대신 연관으로 그렸다.
+- 다른 클래스를 가리키는 필드(`colorPolicy`, `outermostCell`, `grid`)는 속성 대신 연관으로 그리고, 연관 끝에 필드 이름을 적었다. `colorPolicy`는 static이라 밑줄을 그었다.
 - `LIVE_COLOR`는 Color 메뉴도 쓰므로 private(`-`)에서 package(`~`)로 바뀌었다.
 - `Cell.colorAt()`은 통계 기능이 더한 메서드다. 같은 `colorPolicy.colorOf(age)`로 색을 받으므로 함께 그렸다.
 - `holdNextState()`와 `heldThisGeneration`은 Freezing 기능이 더한 멤버다. 고정된 칸의 나이 계산을 막으므로 함께 그렸다(2.1절).

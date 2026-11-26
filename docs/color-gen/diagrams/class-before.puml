@@ -50,9 +50,9 @@ class Clock {
 
 Cell <|.. Neighborhood
 Cell <|.. Resident
-Neighborhood "1\n\n" *-up-> "64\n\n" Cell
+Neighborhood "1\n\n" *-up-> "grid\n64\n" Cell
 Resident -[hidden]right- Neighborhood
-Universe "1<U+2003>" -right-> "1<U+2003>" Cell
+Universe "1<U+2003>" -right-> "outermostCell\n1<U+2003>" Cell
 Universe .left.> Clock : <<use>>
 Universe ..> Resident : <<create>>
 
