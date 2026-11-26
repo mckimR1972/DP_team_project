@@ -1,9 +1,8 @@
 # 캡처와 템플릿 상세 문서
 
-영역의 생존 모양을 저장하고 재사용하는 캡처 기능의 기준 문서다. 기능 요구, 설계 선택, 타 기능 연결, 테스트와 개발 근거를 한곳에서 관리한다.
+영역의 생존 모양을 저장하고 재사용하는 캡처 기능의 기준 문서다. 기능 요구, 설계 선택, 타 기능 연결, 테스트 근거를 한곳에서 관리한다.
 
-- 코드 기준: dev `cfba2ed27be43eb09cff295154960fb8a276fa7e` (프리징·통계 통합 완료).
-- 문서 확인일: 2026-11-25 / 최신 기능 검사 실행일: 2026-11-23 (Asia/Seoul).
+- 문서 확인일·기능 검사 실행일: 2026-11-26 (Asia/Seoul).
 - 전체 JUnit **384**회, Pattern 계열 **39**회 포함, 실패·오류·건너뜀 0. 별도 Swing **17 checks** 통과.
 - 팀 보고서용: [캡처 기능 명세 및 설계](capture.md). 이 상세 문서는 전체 근거와 유지보수 설명을 보관한다.
 - 실행 방법: [프로젝트 README](../../README.md). 코드·테스트 기준이 바뀌면 해당 계약과 결과를 함께 갱신한다.
@@ -19,8 +18,7 @@
 7. [전체 테스트 케이스](#test-cases)
 8. [UML과 도식](#diagrams)
 9. [요구사항 추적표](#traceability)
-10. [개발 이력](#history)
-11. [문서와 그림 관리](#artifacts)
+10. [문서와 그림 관리](#artifacts)
 
 <a id="usage"></a>
 
@@ -75,7 +73,7 @@
 
 ### 3. 유스케이스 상세
 
-주 액터는 게임 사용자다. 파일 저장은 내부 협력 동작이며 별도의 인간 액터로 모델링하지 않는다. 기존 일반 그리기·시뮬레이션은 확장 기능과 구별해 도식에 표시한다.
+주 액터 이름은 사용자다. 파일 저장은 내부 협력 동작이며 별도의 인간 액터로 모델링하지 않는다. 캡처 담당 유스케이스와 직접 관련된 기존 Edit Cells만 도식에 표시한다.
 
 | ID | 이름 | 사용자 관점의 의미 |
 |---|---|---|
@@ -141,23 +139,25 @@
 | 불변 템플릿·저장 | [PatternTemplate.java](../../src/com/holub/life/PatternTemplate.java), [PatternLibrary.java](../../src/com/holub/life/PatternLibrary.java) |
 | 추가 좌표 Undo·셀 편집·보간 | [PlacePatternCommand.java](../../src/com/holub/life/PlacePatternCommand.java), [PatternCells.java](../../src/com/holub/life/PatternCells.java), [PatternPath.java](../../src/com/holub/life/PatternPath.java) |
 
-문서 기준 커밋의 [소스 폴더](https://github.com/mckimR1972/DP_team_project/tree/cfba2ed27be43eb09cff295154960fb8a276fa7e/src/com/holub/life)에서 같은 이름을 확인할 수 있다.
+[소스 폴더](../../src/com/holub/life)에서 같은 이름을 확인할 수 있다.
 
 <a id="design"></a>
 
 ## 설계와 GoF 패턴
 
-### 1. 설계가 발전한 과정
+### 1. 설계 문제와 개선 방향
 
-| 단계 | 확인 가능한 변경 | 근거 |
+| 설계 문제 | 선택한 구조 | 이유 |
 |---|---|---|
-| 초기 캡처 | 영역을 Memento로 읽고 불변 템플릿과 파일 저장을 분리했다. 배치 Command는 전체 보드를 저장·복원했다. | 초기 커밋 [cd2fdb1](https://github.com/mckimR1972/DP_team_project/commit/cd2fdb1), PR #9 |
-| dev 통합 | PR #9에서 색상 기능과 통합하며 기존 셀의 나이와 갱신 경로를 보존했다. 이후 일반 드래그(#5)·사운드(#3)가 반영된 dev를 기준으로 PR #13을 보완했다. | [PR #9](https://github.com/mckimR1972/DP_team_project/pull/9), [PR #5](https://github.com/mckimR1972/DP_team_project/pull/5), [PR #3](https://github.com/mckimR1972/DP_team_project/pull/3), [PR #13](https://github.com/mckimR1972/DP_team_project/pull/13) |
-| 템플릿 드래그 보완 | 시나리오를 독립 JUnit으로 나누고, 좌표 편집을 분리한 뒤 변경 좌표 Undo·누름 반복·보간·작업 묶음을 차례로 도입했다. | [PR #13의 10개 커밋](https://github.com/mckimR1972/DP_team_project/pull/13/commits) |
-| 입력·연계 안정화 | 해제·포커스 상실·취소를 정리하고 모델 수준 guard와 완료 알림을 추가했다. | PR #13의 `8bb9142`, `5c88c29`, `c9162b6` |
-| 현재 문서화 | 요구·결정·검사·그림을 연결하고 프리징·통계까지 통합된 접점과 검증 근거를 연결한다. | 이 문서 묶음 |
+| 읽기와 저장의 혼합 | Memento로 영역을 읽고 불변 템플릿·파일 저장을 분리 | 캡처가 원본 보드나 저장 실패의 영향을 받지 않음 |
+| 전체 보드 복원의 부작용 | 추가한 좌표만 기록하는 Command | 관련 없는 셀의 나이·색을 보존 |
+| 정지 입력과 빠른 이동의 누락 | 누름 Timer와 경로 보간을 분리 | 멈춰 누르기와 이동 중 빈 구간을 각각 처리 |
+| 한 드래그에 여러 번 필요한 Undo | 누름부터 해제까지 한 작업으로 묶음 | 사용자의 한 제스처와 한 번의 복원이 대응 |
+| 숨겨진 반복 입력과 타 기능 결합 | 종료 경로·모델 guard·완료 콜백 분리 | 포커스 상실을 처리하고 UI 입력 방식과 무관하게 제약·알림을 유지 |
 
 초기 전체 복원은 단순했지만 `Resident`의 복원 과정이 나이를 보존하지 않는다. 추가 배치의 Undo를 위해 관련 없는 셀까지 복원할 필요도 없다. 현재 설계는 실제 변경 좌표만 기록하는 쪽으로 책임과 복원 범위를 좁혔다.
+
+원본 기능·구조는 기능 확장 전 Holub 코드를 뜻한다. 현재 게임은 [기본 오류 수정](../fixes/fix-life-game-changes.md)을 포함한다. 수정된 상태 보고·저장 동작은 원본과 구분하며, 캡처의 회귀 검사는 오류를 고친 현재 셀 동작을 기준으로 한다.
 
 ### 2. 객체의 책임과 경계
 
@@ -192,7 +192,7 @@
 
 ### 다른 GoF 패턴의 고려사항
 
-다음은 현재 코드에 대한 대안 비교다. 전체 Memento에서 변경 좌표 Command로 바뀐 과정은 구현 이력으로 확인되며, 나머지 후보를 별도로 구현하거나 실험했다는 뜻은 아니다.
+다음은 현재 코드에 대한 대안 비교다. 배치 Undo는 전체 Memento 복원에서 변경 좌표 Command로 개선했다. 나머지 후보는 설계 대안이며 별도로 구현하거나 실험했다는 뜻은 아니다.
 
 | 판단 대상 | 적용 가능성 | 현재 선택과 이유 | 다시 검토할 조건 |
 |---|---|---|---|
@@ -215,11 +215,11 @@
 
 #### ADR-02 공용 Cell API를 바꾸지 않는다 (R-03, R-08)
 
-- 문제: `Cell`의 새 setter를 추가하면 Composite 모든 구현과 프리징·통계 브랜치가 함께 영향을 받는다.
+- 문제: `Cell`의 새 setter를 추가하면 Composite 모든 구현과 프리징·통계 기능이 함께 영향을 받는다.
 - 선택: `PatternCells`에서 현재 생존 상태를 조회하고 달라질 때만 기존 `userClicked`를 호출한다. 논리 좌표 한 칸을 1픽셀로 취급해 기존 재귀 경로를 재사용한다.
 - 대안: 공용 `setAliveAt`은 의도가 더 직접적이지만 변경 범위가 넓다. 내부 Resident를 직접 얻는 방법은 Composite 캡슐화를 깨뜨린다.
 - 비용: UI 명칭의 메서드에 모델 편집을 의존하는 한계가 있다. 팀이 편집 API를 공통 정리한다면 이 어댑터가 교체 지점이다.
-- 근거: `92ef1eb`, `PatternCellsTest`. 기존 Neighborhood의 재계산 경로를 유지한다.
+- 근거: `PatternCellsTest`. 기존 Neighborhood의 재계산 경로를 유지한다.
 
 #### ADR-03 추가한 좌표만 Undo한다 (R-03, R-06)
 
@@ -227,7 +227,7 @@
 - 선택: 죽음→생존으로 바뀐 좌표를 `LinkedHashSet<Point>`에 기록한다. Undo는 그 좌표만 죽인다. 공간 사용은 그 작업이 새로 만든 셀 수에 비례한다.
 - 대안: 전체 Memento는 범용 복원에는 간단하지만 전체 보드 규모의 상태를 저장한다. 셀별 이전/이후 상태 쌍은 덮어쓰기 편집까지 지원할 때 더 적합하다.
 - 비용: 세대 진행이나 외부 편집 후에는 좌표의 의미가 달라지므로 이력을 무효화한다. Redo와 범용 시간 여행을 지원하지 않는다.
-- 근거: `ffbea9c`, `PatternHistoryTest`; 실제 성능 벤치마크를 한 주장은 아니다.
+- 근거: `PatternHistoryTest`; 실제 성능 벤치마크를 한 주장은 아니다.
 
 #### ADR-04 누름 반복과 이동 보간을 분리한다 (R-04, R-05)
 
@@ -235,28 +235,28 @@
 - 대안: drag 이벤트만 쓰면 정지한 채 누르는 요구를 표현하지 못한다. Timer만 쓰면 빠른 이동에서 간격이 생긴다. 템플릿 폭만큼 띄우는 방식은 겹치는 연속 찍기와 다른 동작이다.
 - 보간: `steps=max(abs(dx),abs(dy))`로 두 끝점을 포함해 반올림한 정수 좌표를 방문한다. 한 칸 이하 간격을 보장하지만 브러시 두께나 물리 시간 기반 속도를 모델링하지 않는다.
 - 비용: 80ms는 현재 조작 정책이지 정밀 시간 보장이 아니다. 같은 위치 재시도는 무변경으로 처리한다.
-- 근거: `5ff5efb`, `9878edc`, `PatternPathTest`, `PatternToolsTest`.
+- 근거: `PatternPathTest`, `PatternToolsTest`.
 
 #### ADR-05 사용자 제스처를 Undo 한 건으로 묶는다 (R-06, R-09)
 
 - 선택: `beginStroke` 이후 최초 유효 Command를 이력에 넣고 다음 명령의 추가 좌표를 합친다. `endStroke`에서 한 번 완료 알림을 보낸다.
 - 대안: 각 찍기를 독립 이력으로 저장하면 짧은 드래그에도 Undo를 여러 번 해야 한다. 편집 전체를 한 건으로 묶으면 별도 클릭을 따로 복원할 수 없다.
 - 비용: Undo 중 활성 드래그가 있다면 먼저 끝내므로 TEMPLATE 뒤 TEMPLATE_UNDO가 순서대로 발생할 수 있다. 빈 작업은 이력·알림이 없다.
-- 근거: `9b1e8f0`, `PatternHistoryTest`, `PatternCompletionTest`.
+- 근거: `PatternHistoryTest`, `PatternCompletionTest`.
 
 #### ADR-06 편집 종료와 복원을 분리한다 (R-07, R-08)
 
 - 선택: Esc는 적용된 셀을 남기고 DRAW로 돌아간다. Undo가 셀 복원을 담당한다. 일반 DRAW에서 cancel은 즉시 반환한다.
 - 대안: Esc에서 전체 드래그를 되돌리면 모드 종료와 데이터 복원을 한 키에 결합한다. 편집 전 재생 상태를 기억해 자동 재개할 수도 있지만, 사용자가 결과를 확인할 시간을 잃을 수 있다.
 - 비용: 편집 종료 뒤 Go 메뉴에서 다시 시작해야 한다. 보드 외부 해제를 받는 전역 AWT 리스너는 활성 작업 때만 등록하고 종료 시 제거한다.
-- 근거: `8bb9142`, `5c88c29`. 상태도는 enum과 `stamping`의 조합을 표현하며 새 State 클래스가 존재한다는 뜻이 아니다.
+- 근거: `PatternToolsTest`. 상태도는 enum과 `stamping`의 조합을 표현하며 새 State 클래스가 존재한다는 뜻이 아니다.
 
 #### ADR-07 제약은 모델에서, 알림은 완료 뒤 전달한다 (R-05, R-09)
 
 - 선택: `Predicate<Rectangle>` guard를 BoardEditor가 모든 배치에서 검사한다. `Consumer<EditKind>`는 실제 변경 뒤 호출하고 UI가 PropertyChange로 외부에 전달한다.
 - 대안: mousePressed에서만 검사하면 Timer/보간이 우회한다. Command가 FreezingManager·Statistics를 직접 호출하면 다른 기능의 변경에 결합한다.
 - 비용: 문자열 속성 이름의 연결은 컴파일러가 모두 검사하지 못하므로 이벤트 이름·횟수·시점의 계약 검사가 필요하다. 외부 구독자는 콜백에서 보드를 재편집하지 않는 정책이 필요하다.
-- 근거: `c9162b6`, `PatternCompletionTest`, `PatternToolsTest`. 실제 타 기능의 조립 상태는 별도 연계 문서에서 관리한다.
+- 근거: `PatternCompletionTest`, `PatternToolsTest`. 실제 타 기능의 조립 상태는 [타 기능 통합](#integration)에서 설명한다.
 
 #### ADR-08 저장 성공 후 목록을 갱신한다 (R-02)
 
@@ -383,7 +383,7 @@ patternTools.setPlacementGuard(area -> freezingTools.manager().overlapsFrozen(ar
 - 드래그가 경계를 가로지르면 허용 위치만 추가한다. 실패한 찍기는 이력·완료 알림을 만들지 않는다.
 - Undo 뒤에 동결된 셀을 손상하지 않도록, 프리징 영역 선택을 시작할 때 캡처 작업을 종료하고 기존 이력을 비우는 조립을 유지한다.
 
-살아 있는 대상 좌표만 검사하면 공간 사용은 덜 제한되지만 #7의 영역 단위 정책과 달라진다. 정책을 바꾸려면 양쪽 명세·미리보기·테스트를 함께 바꿔야 한다. 이번 문서는 그런 변경을 결정하지 않는다.
+살아 있는 대상 좌표만 검사하면 공간 사용은 덜 제한되지만 프리징의 영역 단위 정책과 달라진다. 정책을 바꾸려면 양쪽 명세·미리보기·테스트를 함께 바꿔야 한다. 이번 문서는 그런 변경을 결정하지 않는다.
 
 현재 통합본은 Timer·보간·모델 guard와 Universe 연결을 모두 유지한다. 빈 여백 충돌, 동결 영역을 통과하는 드래그와 Undo, 영역 선택 시 이력 무효화를 FreezingIntegrationTest로 확인했다.
 
@@ -409,7 +409,7 @@ patternTools.controls().addPropertyChangeListener("TEMPLATE_UNDO",
 
 현재 `BoardChangeEvent`는 행렬을 `[row][column]`, Point를 `(column,row)`로 사용한다. 이벤트의 생존 배열과 좌표를 방어적으로 복사한다. 캡처 템플릿의 `[y][x]`와 동일한 방향인지 통합 검사로 확인한다.
 
-`MergedFeaturesIntegrationTest`에는 `templateStrokePublishesOnlyAtCompletionAndBlocksGenerationProgress`, `templateUndoRestoresStatisticsAndNextGenerationUsesTheRestoredBoard`, `captureSelectionDoesNotChangeStatisticsOrAdvanceGenerations` 검사가 있다. 이 메서드들은 기준 코드의 2026-11-23 JUnit 실행에서 모두 통과했다.
+`MergedFeaturesIntegrationTest`에는 `templateStrokePublishesOnlyAtCompletionAndBlocksGenerationProgress`, `templateUndoRestoresStatisticsAndNextGenerationUsesTheRestoredBoard`, `captureSelectionDoesNotChangeStatisticsOrAdvanceGenerations` 검사가 있다. 이 메서드들은 2026-11-26 JUnit 실행에서 모두 통과했다.
 
 ### IF-06 사운드·전체 파일 저장 (R-02, R-08, R-09)
 
@@ -444,6 +444,10 @@ IT-01~IT-06의 실제 검사 연결은 [테스트 계획](#verification)에 있�
 
 모델을 UI에서 분리했기 때문에 검사 대부분이 화면 없이 실행된다. Singleton Universe를 쓰는 클래스는 Gradle `forkEvery=1`로 서로 다른 JVM에서 실행한다. PatternTools 테스트는 EDT에서 생성·입력·검증하고, 임시 템플릿 폴더와 색상 정책·모의 Clock을 정리한다.
 
+모델 검사는 실제 게임이 쓰는 `BoardEditor(Cell, Consumer<EditKind>)` 생성 경로를 사용한다. 완료 알림이 필요한 검사는 전달한 콜백에서 결과를 수집하고, 보드 상태만 검사할 때는 동작 없는 콜백을 전달한다. 테스트에서만 쓰던 단일 인자 생성자는 두지 않으며 검사를 위해 운영 코드에 별도 접근자를 추가하지 않는다.
+
+캡처 소유 클래스 7개(`PatternTools`, `BoardEditor`, `PatternTemplate`, `PatternLibrary`, `PlacePatternCommand`, `PatternCells`, `PatternPath`)의 필드·연산을 실제 호출, 내부 상태 사용, 등록된 Swing 콜백과 대조했다. 단일 인자 생성자를 제거한 뒤 추가 테스트 전용 멤버는 발견하지 않았다. `endStroke()`는 실제 입력 종료 처리를 수행하므로 반환값을 테스트에서 관찰한다는 이유로 제거하지 않는다.
+
 ### 3. 재현 절차와 통과 조건
 
 저장소 루트, JDK 17 환경에서 실행한다. 처음에는 Wrapper와 의존성 다운로드가 필요하다.
@@ -462,11 +466,11 @@ IT-01~IT-06의 실제 검사 연결은 [테스트 계획](#verification)에 있�
 - 보드 상태 assertion과 화면을 함께 확인한다. 렌더링 이미지 한 장만으로 모든 요구가 통과했다고 판정하지 않는다.
 - 일반 코드·다른 기능이 바뀌면 전체 회귀를 실행한다. 문장 수정만으로 같은 테스트를 반복 실행할 필요는 없으며 문서 링크·기준·그림 일치 여부를 검증한다.
 
-### 4. 최신 실행 증거
+### 4. 실행 결과와 증거
 
-실행일: 2026-11-23 (Asia/Seoul). 명령: `.\gradlew.bat test patternUiTest --rerun-tasks --no-daemon --console=plain`.
+실행일: 2026-11-26 (Asia/Seoul). 명령: `.\gradlew.bat test patternUiTest --rerun-tasks --no-daemon --console=plain`.
 환경: Windows, Temurin JDK 17.0.6+10, Gradle 9.5.1, JUnit Jupiter 6.0.3, Mockito 5.23.0.
-최신 dev의 폴더 구조를 반영한 뒤 전체 검사를 새로 실행했다. 게임 소스·테스트·빌드 설정은 기준 dev와 동일하다. 이번 문서 변경 자체는 이 세 영역을 수정하지 않는다.
+아래 수치는 테스트 전용 생성자 제거 후 전체 검사를 다시 실행한 결과다. 테스트 이름·개수·기존 검증 조건을 유지했으며, 11개 생성자 호출에만 콜백 인자를 명시했다.
 
 | 결과 | 수치/상태 |
 |---|---|
@@ -476,15 +480,15 @@ IT-01~IT-06의 실제 검사 연결은 [테스트 계획](#verification)에 있�
 | 색상·캡처·통계·사운드 통합 클래스 | MergedFeaturesIntegrationTest **12** (384에 포함) |
 | 별도 Swing 실행기 | **17 checks 통과** (JUnit 수에 포함하지 않음) |
 
-[날짜·커밋을 표시한 결과 화면](evidence/2026-11-23/test-results.png), [최신 결과 JSON](evidence/2026-11-23/results.json), [전체 콘솔 기록](evidence/2026-11-23/verification.log), [원본 JUnit XML](evidence/2026-11-23/xml)에 수치·메서드·검증값을 보관한다.
-[2026-11-18의 145회 기록](evidence/2026-11-18/results.json)은 당시 코드 `a480113`의 과거 증거다. 두 실행 수를 합산하지 않는다.
+[결과 JSON](evidence/2026-11-26/results.json), [전체 콘솔 기록](evidence/2026-11-26/verification.log), [원본 JUnit XML](evidence/2026-11-26/xml)에 수치·메서드·검증값을 보관한다. 아래 화면 4개는 같은 실행에서 생성한 원본 이미지다.
+[이전 통합 검사](evidence/2026-11-23/results.json)와 [초기 145회 기록](evidence/2026-11-18/results.json)은 별도 실행의 과거 증거다. 원본을 보존하며 실행 수를 합산하지 않는다.
 
 | 같은 실행의 화면 | 확인할 내용 |
 |---|---|
-| [영역 선택](evidence/2026-11-23/life-selection.png) | 역방향 선택과 저장 활성화 |
-| [저장·재배치](evidence/2026-11-23/life-placement.png) | 저장한 모양의 재배치 |
-| [연속 배치](evidence/2026-11-23/life-template-drag.png) | 이동 경로의 추가 셀 |
-| [드래그 Undo](evidence/2026-11-23/life-template-drag-undo.png) | 이전 셀을 유지하며 한 작업 복원 |
+| [영역 선택](evidence/2026-11-26/life-selection.png) | 역방향 선택과 저장 활성화 |
+| [저장·재배치](evidence/2026-11-26/life-placement.png) | 저장한 모양의 재배치 |
+| [연속 배치](evidence/2026-11-26/life-template-drag.png) | 이동 경로의 추가 셀 |
+| [드래그 Undo](evidence/2026-11-26/life-template-drag-undo.png) | 이전 셀을 유지하며 한 작업 복원 |
 
 ### 5. 완료된 통합 검사
 
@@ -580,7 +584,7 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 
 ![D-02 캡처 객체의 책임과 협력](diagrams/02-classes.png)
 
-입력·저장·편집 이력을 분리하고 기존 Cell Composite를 공개 계약으로 재사용한다. 현재 배치 Undo는 변경 좌표 Command다. 캡처 조회에만 기존 Memento를 사용한다. 일부 메서드는 가독성을 위해 생략했다. 표시한 속성·연산에는 실제 코드의 가시성, 매개변수 타입과 반환 타입을 적었다. 패턴 역할은 위 GoF 표에서 설명하고, Cell은 인터페이스로 표시한다. Neighborhood–Cell은 합성이며 현재 게임의 8×8 구성에 맞춰 1–64로 표시한다. Neighborhood 생성자는 다른 gridSize도 지원한다.
+입력·저장·편집 이력을 분리하고 기존 Cell Composite를 공개 계약으로 재사용한다. 현재 배치 Undo는 변경 좌표 Command다. 캡처 조회에만 기존 Memento를 사용한다. 일부 메서드는 가독성을 위해 생략했다. 표시한 속성·연산에는 실제 코드의 가시성과 타입을 적되, 반환값이 없는 연산은 `void`를 생략한다. 안쪽 타입은 `PatternTools.Mode`, `Cell.Memento`처럼 바깥 타입을 붙인다. 연관과 합성에는 양끝 다중성과 코드의 필드 역할 이름을 표시한다. 패턴 역할은 위 GoF 표에서 설명하고, Cell은 인터페이스로 표시한다. Neighborhood–Cell은 합성이며 현재 게임의 8×8 구성에 맞춰 1–64로 표시한다. Neighborhood 생성자는 다른 gridSize도 지원한다.
 
 [원본](diagrams/02-classes.puml)
 
@@ -635,27 +639,7 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 | R-08 기존 기능 보존 | ADR-02,ADR-06 | Universe tick/setCell/Clear/Load | T-08,T-22,T-24,T-25 + 기존 회귀 | D-02,D-05,D-06 |
 | R-09 완료 알림 | ADR-05,ADR-07 | BoardEditor.onEdit → JPanel PropertyChange | T-14,T-23 | D-04,D-06 |
 
-소스는 [캡처 패키지](../../src/com/holub/life), 검사 메서드는 [케이스 표](#test-cases)에서 찾는다. 행 번호는 코드 이동에 따라 바뀌므로 클래스·메서드 이름과 기준 커밋으로 추적한다.
-
-
-<a id="history"></a>
-
-## 개발 이력
-
-초기 캡처(PR #9)는 전체 보드 Memento를 이용한 배치 복원에서 출발했다. 이후 색상 보존과 일반 드래그·사운드 통합을 거쳐 PR #13에서 변경 좌표만 기록하는 Command로 바꿨다.
-
-| PR #13의 단계 | 변경의 목적 |
-|---|---|
-| 시나리오의 독립 JUnit 실행 | 실패 원인을 시나리오별로 구분 |
-| PatternCells 분리 | 공용 Cell API 변경 없이 좌표 편집 연결 |
-| 변경 좌표 Command | 관련 없는 셀의 나이·색을 복원 과정에서 건드리지 않음 |
-| 누름 반복과 경로 보간 | 정지한 채 누르기와 빠른 이동을 각각 처리 |
-| 드래그 작업 묶음 | 한 제스처를 한 번의 Undo로 복원 |
-| 해제·포커스·취소 정리 | 숨겨진 입력 반복과 DRAW 모드 부작용 방지 |
-| 모델 guard·완료 알림 | 프리징 제한과 통계 구독을 UI 입력 방식에 독립적으로 연결 |
-
-초기 JUnit 70회·Swing 14회, PR #13 이후 JUnit 145회·Swing 17회는 당시 단계의 기록이다. 최신 통합 결과는 [검증 결과](#verification)의 384회·17 checks다.
-PR #13 당시 충돌 파일·시험 병합 head·세부 커밋은 [당시 설계 기록](https://github.com/mckimR1972/DP_team_project/blob/cfba2ed27be43eb09cff295154960fb8a276fa7e/docs/capture/capture-drag-design.md)에 보존돼 있다. 그때의 미병합 상태나 프리징→통계 예정 순서를 현재 상태로 적용하지 않는다.
+소스는 [캡처 패키지](../../src/com/holub/life), 검사 메서드는 [케이스 표](#test-cases)에서 찾는다. 행 번호는 코드 이동에 따라 바뀌므로 클래스·메서드 이름으로 추적한다.
 
 <a id="artifacts"></a>
 
@@ -663,7 +647,7 @@ PR #13 당시 충돌 파일·시험 병합 head·세부 커밋은 [당시 설계
 
 그림 산출물은 PlantUML `.puml` 원본과 PNG 6쌍이다. `theme.puml`은 공통 흑백 설정이다. `diagrams/manifest.json`은 도식과 요구사항·검사 연결을, `diagrams/artifacts.json`은 재생성한 입력·PNG의 해시와 크기를 관리한다. SVG·PDF와 인쇄용 합본은 관리하지 않는다.
 
-[팀 UML 통일안](https://github.com/mckimR1972/DP_team_project/blob/4c71598/docs/uml-conventions.md)을 따른다. 유스케이스는 담당 범위·경계 하나·영어 동사형 이름·`(E)`·확장 지점과 조건을 통일한다. 클래스는 아이콘과 패턴 역할 스테레오타입을 빼고 타입·가시성·다중성·합성을 표시한다. GoF 역할은 본문 표에서 설명한다.
+2026-11-26에 전달된 팀 UML 통일안을 따른다. 유스케이스는 담당 범위·경계 하나·사용자 액터·영어 동사형 이름·`(E)`·확장 지점과 조건을 통일한다. 클래스는 아이콘과 패턴 역할 스테레오타입을 빼고 타입·가시성·다중성·합성을 표시한다. `void`는 생략하고 안쪽 타입은 바깥 타입으로 한정한다. 연관의 역할 이름은 가시성 기호 없는 필드 이름을 쓴다. GoF 역할은 본문 표에서 설명한다.
 
 ### PNG 다시 생성하기
 
@@ -683,7 +667,7 @@ python docs/capture/tools/build_diagrams.py --jar C:\tools\plantuml-1.2026.10.ja
 
 Smetana 내장 레이아웃을 사용하므로 별도 Graphviz가 필요 없다. 내용은 로컬에서 렌더링한다. [PlantUML의 Smetana 설명](https://plantuml.com/smetana02)
 
-폴더 규칙: 공유 문서는 `capture.md`, 상세 문서는 `README.md`, 원본·PNG는 `diagrams/` 바로 아래, 실행 증거는 `evidence/<실행일>/`에 둔다. 원본 수정 → PNG 전체 재생성 → 그림 검토 → 문서 검증 → 커밋 순서로 관리한다. 두 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다.
+폴더 규칙: 공유 문서는 `capture.md`, 상세 문서는 `README.md`, 원본·PNG는 `diagrams/` 바로 아래, 실행 증거는 `evidence/<실행일>/`에 둔다. 원본 수정 → PNG 전체 재생성 → 그림 검토 → 문서 검증 순서로 관리한다. 두 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다.
 
 ### Markdown·링크·증거 다시 검증하기
 
@@ -707,12 +691,11 @@ python docs/capture/tools/verify_documents.py
 
 미리보기와 화면 기록은 `build/capture-docs/preview/`, 검사 결과는 `build/capture-docs/verification.json`에 생성한다. 재생성 가능한 미리보기는 Git에 넣지 않는다. 자동 검사 뒤에도 PNG 6개와 본문 그림의 한글·겹침·가독성을 직접 확인한다.
 
-### 2026-11-25 UML 통일 및 정합성 점검
+### UML과 코드의 정합성 기준
 
-- 기준 코드는 dev `cfba2ed27be43eb09cff295154960fb8a276fa7e`다. 게임 소스·테스트·build.gradle은 동일하다.
-- D-01은 캡처 기능과 원본 Edit Cells로 범위를 줄였다. 앞 번호는 본문 추적 ID로만 남기고 이름 끝을 `(E)`로 통일했다. 확장 대상 안의 `extension points`와 선 옆 조건을 표시했다.
-- D-02는 실제 멤버 타입·반환 타입·가시성, 인터페이스, 연관 다중성, Neighborhood–Cell의 합성을 반영했다. `PatternPath.visit`의 static 밑줄은 유지한다. 그림 안에 커밋·PR 이력을 넣지 않는다.
+- D-01은 캡처 기능과 원본 Edit Cells를 표시한다. 행위자 이름은 사용자이며 앞 번호는 본문 추적 ID로만 남기고 이름 끝을 `(E)`로 통일한다. 확장 대상 안의 `extension points`와 선 옆 조건을 표시한다.
+- D-02는 실제 멤버 타입·가시성, 인터페이스, 양끝 다중성·필드 역할 이름, Neighborhood–Cell의 합성을 반영한다. 반환값이 없으면 반환 타입 표기를 생략하고 안쪽 타입에는 바깥 타입 이름을 붙인다. `PatternPath.visit`의 static 밑줄을 유지한다.
 - D-03~D-06의 실행 흐름·상태·통합 계약은 유지하고 공통 흑백 테마로 PNG를 다시 생성한다. D-06의 다른 담당 객체는 연결 지점의 이름만 표시한다.
-- 코드와 대조한 내용은 guard·작업 묶음·Undo·완료 알림·저장 순서·편집 종료·Freezing/통계/사운드 연결이다. 원본 기준은 `cdcedf3`이며 초기 캡처 `cd2fdb1`, 변경 좌표 Undo `ffbea9c`, 작업 묶음 `9b1e8f0`의 이력과 구분한다.
-- 최신 기능 검사 근거는 **2026-11-23**의 JUnit 384회·Swing 17 checks다. 이번 문서·도구 정리에서는 그 원본 XML·로그·화면을 변경하지 않고 기준 코드 및 해시를 재검증한다. 이번 날짜에 기능 테스트를 새로 실행한 것으로 쓰지 않는다.
+- 코드와 대조하는 내용은 guard·작업 묶음·Undo·완료 알림·저장 순서·편집 종료·Freezing/통계/사운드 연결이다. Holub 원본과 기본 오류를 고친 현재 동작을 구분한다.
+- 테스트 증거에는 실제 실행일과 결과를 남긴다. 과거 XML·로그·화면을 변경해 새 실행 결과처럼 취급하지 않는다. 생성자나 테스트 호출을 바꾸면 변경된 코드로 기능 검사를 다시 실행한다.
 - 실제 OS 마우스의 창 밖 해제·Alt-Tab·배율·장시간 사용·오디오 청취와 팀 전체 유스케이스 최종 취합은 별도 확인 범위다.
