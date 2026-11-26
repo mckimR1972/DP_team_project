@@ -57,7 +57,7 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 
 | Child | 실행 수 | 확인하는 것 |
 | --- | --- | --- |
-| `e_installAtGenerationTenForFiveIsFrozenThroughFifteenAndFreeFromSixteen()` | 1 | 세대 10에 지속 5로 설치하면 설치 세대 10, 11~15세대 동안 고정(남은 세대 5→1), 15세대 뒤 `NormalState`로 바뀌어 목록에서 빠지고, 16세대에 원래 규칙으로 죽는다 |
+| `e_installAtGenerationTenForFiveIsFrozenThroughFifteenAndFreeFromSixteen()` | 1 | 세대 10에 지속 5로 설치하면 11~15세대 동안 고정(남은 세대 5→1), 15세대 뒤 `NormalState`로 바뀌어 목록에서 빠지고, 16세대에 원래 규칙으로 죽는다 |
 
 합계 1개.
 

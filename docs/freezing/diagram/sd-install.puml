@@ -28,10 +28,7 @@ alt area가 비었거나 활성 영역과 겹침
 else
   create participant "region : FreezingRegion" as R
   M -->> R : new(area)
-  M -> U : getAsLong()
-  note right of U : currentGeneration: Universe가\n넘긴 람다 () -> generation
-  U -->> M : g = getAsLong(): long
-  M -> R : freeze(board, generations, g)
+  M -> R : freeze(board, generations)
   create participant "frozen : FrozenState" as F
   R -->> F : new(generations)
   note right of F : generations < 1이면\nIllegalArgumentException
@@ -40,7 +37,6 @@ else
     Board -->> R : alive = isAliveAt(row, column): boolean
     note right of R : snapshot[y][x] = alive
   end
-  note right of R : startGeneration = g\nduration = generations
   R -> R : changeState(frozen)
   note right of M : regions.add(region)
   M -> T : run()

@@ -372,11 +372,10 @@ Grid > Clear와 Load는 보드를 바꾼 뒤 Freezing을 초기화하고, 그리
  		drawPlayhead( g );
 ```
 
-사이드바와 테스트가 쓰는 접근자도 더했다.
+사이드바가 쓰는 접근자도 더했다. 처음에는 테스트용 접근자 `freezing()`도 있었지만, 테스트에서만 쓰여 지웠다(5.2절).
 
 ```diff
 +	JPanel freezingControls() { return freezingTools.controls(); }	// [Freezing]
-+	FreezingManager freezing() { return freezingTools.manager(); }	// [Freezing]
 +
 +    /** [Freezing] Finish a hidden area selection when the sidebar switches to another tool. */
 +    void finishFreezingEditing() { freezingTools.cancel(); }
@@ -406,7 +405,7 @@ Grid > Clear와 Load는 보드를 바꾼 뒤 Freezing을 초기화하고, 그리
 | `FreezingState` | 영역 하나의 상태 인터페이스. 세대 처리의 두 시점(`beforeTransition`, `afterGeneration`)에 할 일과, 고정 중인지, 남은 세대를 정한다 |
 | `NormalState` | 고정 아님. 아무것도 하지 않는다. 필드가 없어 `INSTANCE` 하나를 함께 쓴다 |
 | `FrozenState` | 고정 중. 남은 세대(`remaining`)를 가지고, 확정 전에 스냅샷을 적용하며, 남은 세대가 0이 되면 영역을 `NormalState`로 바꾼다 |
-| `FreezingRegion` | 사각형 영역, 스냅샷, 설치 세대, 지속 세대, 현재 상태를 가진다. 세대 처리를 현재 상태 객체에 넘긴다 |
+| `FreezingRegion` | 사각형 영역, 스냅샷, 현재 상태를 가진다. 남은 세대는 상태 객체(`FrozenState`)가 센다. 세대 처리를 현재 상태 객체에 넘긴다 |
 | `FreezingManager` | 활성 영역 목록. 설치 검사(빈 영역, 겹침, 지속 세대), 해제, 초기화, 세대 처리 단계를 맡는다. Swing 코드가 없다 |
 | `FreezingTools` | Freezing 탭 화면, 영역 선택(끌기), 보드 위 표시 |
 
@@ -581,7 +580,6 @@ void afterGeneration() {
   - `FreezingRegion` 인스턴스 r이 생성되었다 (인스턴스 생성)
   - r.area가 area가 되었다 (속성 변경)
   - r.snapshot이 area 안 각 칸의 지금 생사(`Resident.amAlive`)가 되었다 (속성 변경)
-  - r.startGeneration이 지금 세대 g, r.duration이 n이 되었다 (속성 변경)
   - `FrozenState` 인스턴스 f가 생성되었고 f.remaining이 n이 되었다 (인스턴스 생성, 속성 변경)
   - r이 f와 연관되었다 (연관 형성, r.state)
   - `FreezingManager`가 r과 연관되었다 (연관 형성, regions)
@@ -664,7 +662,7 @@ CO6과 CO7은 셀을 바꾸지 않는다. 풀린 영역의 셀은 지금 생사 
 
 1. 설치 버튼을 누르면 `FreezingTools`가 지속 세대 입력 칸의 값을 읽어 `FreezingManager.install(selection, generations)`을 부른다.
 2. `FreezingManager`가 선택을 보드에 맞추고 빈 영역과 겹침을 검사한다. 어기면 `IllegalArgumentException`을 던지고, `FreezingTools`가 그 문구를 상태줄에 보여 준다.
-3. `FreezingRegion`을 만들고, `Universe`가 넘긴 `LongSupplier`로 지금 세대 g를 읽어 `freeze()`를 부른다.
+3. `FreezingRegion`을 만들고 `freeze(board, generations)`를 부른다.
 4. `freeze()`가 먼저 `FrozenState`를 만든다. 지속 세대가 1 미만이면 여기서 예외가 나, 스냅샷을 찍기 전에 멈춘다. 이어서 영역 안 칸마다 `isAliveAt()`으로 생사를 읽어 스냅샷에 넣고, 상태를 `FrozenState`로 바꾼다(Normal → Frozen).
 5. 목록에 넣고 `FreezingTools`에 알린 뒤, 선택 모드를 끝낸다.
 
@@ -771,7 +769,7 @@ Freezing을 만들며 내린 주요 설계 결정과, 적용한 설계 패턴과
 
 | 역할 | 클래스 | 이 코드에서 하는 일 |
 | --- | --- | --- |
-| Context | `FreezingRegion` | 영역, 스냅샷, 설치 세대, 지속 세대와 현재 상태를 가진다. `beforeTransition()`과 `afterGeneration()`을 현재 상태에 그대로 넘긴다 |
+| Context | `FreezingRegion` | 영역, 스냅샷과 현재 상태를 가진다. `beforeTransition()`과 `afterGeneration()`을 현재 상태에 그대로 넘긴다 |
 | State | `FreezingState` | 세대 처리의 두 시점에 할 일, 고정 중인지, 남은 세대를 정한다 |
 | ConcreteState | `NormalState`, `FrozenState` | `NormalState`는 아무것도 하지 않는다. `FrozenState`는 스냅샷을 적용하고 남은 세대를 세다가 0이 되면 Context를 `NormalState`로 바꾼다 |
 
@@ -893,7 +891,7 @@ Strategy와 State는 구조가 비슷하지만 전환의 주체가 다르다. �
 | `FreezingManager`와 `Universe`가 각자 센다 | 병합 전 코드 그대로 | 초기화 시점이 한 곳이라도 어긋나면 통계 탭과 Freezing 탭의 숫자가 달라진다 | 제외 |
 | `BoardChangeEvent`의 세대를 받아 기억 | 통계와 같은 방식 | 구독 등록이 필요하고, 이벤트 전에 불리는 `afterGeneration()`에서는 한 박자 늦은 값이다 | 제외 |
 
-병합 전 `FreezingManager`는 세대 카운터를 따로 가졌다. 병합 후 `Universe`에도 카운터가 생겨 둘이 어긋날 수 있었으므로, `FreezingManager`의 카운터를 없애고 `Universe`의 값을 읽게 했다(`new FreezingManager(outermostCell, () -> generation)`). 통계 탭의 세대, Freezing 탭의 현재 세대, 영역의 설치 세대가 항상 같은 숫자다.
+병합 전 `FreezingManager`는 세대 카운터를 따로 가졌다. 병합 후 `Universe`에도 카운터가 생겨 둘이 어긋날 수 있었으므로, `FreezingManager`의 카운터를 없애고 `Universe`의 값을 읽게 했다(`new FreezingManager(outermostCell, () -> generation)`). 통계 탭의 세대, Freezing 탭의 현재 세대와 설치할 때 상태줄에 보이는 고정 세대 범위(g+1 ~ g+n)가 항상 같은 숫자에서 나온다.
 
 **고정된 셀의 나이**
 
@@ -973,7 +971,7 @@ Freezing을 붙이기 전부터 있던 테스트 294개는 모두 통과한다. 
 - **나이는 간격 1인 색 규칙으로 읽는다.** `CyclingColorPolicy(1, 색 7개)`를 쓰면 살아 있는 셀의 색으로 나이를 알 수 있어, 게임 코드에 나이를 읽는 메서드를 넣지 않았다.
 - **통합 테스트는 실제 `Universe`를 쓴다.** Mockito가 `MenuSite`를 대신해 `Universe`가 등록한 메뉴 콜백을 받아 두고, 테스트가 그 콜백(Go > Tick, Grid > Clear 등)을 직접 부른다. 시계는 실제 `Clock`이다. Load와 Store의 파일 선택 창은 Mockito로 `Files`를 대신한다. Swing 조작은 이벤트 스레드에서 한다.
 - **독립 계산과 비교한다.** 무작위 비교 테스트는 고정 규칙(1.3절)을 따로 짠 계산과, 매 세대 모든 칸의 생사와 나이를 비교한다.
-- **테스트 전용 메서드를 `src/`에 넣지 않았다.** 테스트가 쓰는 `universe.freezing()`과 `universe.freezingControls()`는 게임 코드도 쓰는 접근자다.
+- **테스트 전용 메서드를 `src/`에 넣지 않았다.** 테스트는 Freezing 관리자를 `LifeTestSupport.freezing()`으로 얻는다. 이 도우미는 게임 코드가 쓰는 `Universe`의 `freezingTools` 필드와 `FreezingTools.manager()`를 거친다. 영역의 상태 객체도 게임 코드가 쓰는 `state` 필드를 리플렉션으로 읽는다. 처음 구현에 있던 테스트 전용 접근자(`Universe.freezing()`, `FreezingRegion.startGeneration()`·`duration()`·`state()`)는 점검에서 찾아 지웠다(#28).
 
 ### 5.3 테스트 케이스와 요구사항
 
@@ -1078,8 +1076,7 @@ void e_installAtGenerationTenForFiveIsFrozenThroughFifteenAndFreeFromSixteen() {
     for (int g = 1; g <= 10; g++) tick();                      // the lone cell dies at generation 1
     set(new int[] {10, 10});                                   // put it back at generation 10
     FreezingRegion region = freezing.install(new Rectangle(10, 10, 1, 1), 5);
-    assertEquals(10, region.startGeneration());
-    assertEquals(5, region.duration());
+    assertEquals(5, region.remainingGenerations());
     for (int g = 11; g <= 15; g++) {
         assertTrue(region.isFrozen());
         assertEquals(16 - g, region.remainingGenerations());
@@ -1088,7 +1085,7 @@ void e_installAtGenerationTenForFiveIsFrozenThroughFifteenAndFreeFromSixteen() {
         assertTrue(alive(10, 10), "must be frozen during generation " + g);
     }
     assertFalse(region.isFrozen(), "released after the 15th generation update");
-    assertSame(NormalState.INSTANCE, region.state());
+    assertSame(NormalState.INSTANCE, stateOf(region));
     assertTrue(freezing.regions().isEmpty());
     tick();
     assertEquals(16, freezing.generation());
@@ -1104,26 +1101,25 @@ void e_installAtGenerationTenForFiveIsFrozenThroughFifteenAndFreeFromSixteen() {
 @Test
 void stateObjectsDriveTheRegion() {
     FreezingRegion region = new FreezingRegion(new Rectangle(1, 1, 2, 2));
-    assertSame(NormalState.INSTANCE, region.state());
+    assertSame(NormalState.INSTANCE, stateOf(region));
     assertFalse(region.isFrozen());
     assertEquals(0, region.remainingGenerations());
     assertFalse(region.beforeTransition(board), "NormalState must not touch the board");
     region.afterGeneration();
-    assertSame(NormalState.INSTANCE, region.state());
+    assertSame(NormalState.INSTANCE, stateOf(region));
 
-    region.freeze(board, 2, 7);
-    assertInstanceOf(FrozenState.class, region.state());
+    region.freeze(board, 2);
+    assertInstanceOf(FrozenState.class, stateOf(region));
     assertEquals(2, region.remainingGenerations());
-    assertEquals(7, region.startGeneration());
     region.afterGeneration();
     assertTrue(region.isFrozen());
     assertEquals(1, region.remainingGenerations());
     region.afterGeneration();
-    assertSame(NormalState.INSTANCE, region.state(), "FrozenState switches the context itself");
+    assertSame(NormalState.INSTANCE, stateOf(region), "FrozenState switches the context itself");
 
-    region.freeze(board, 3, 9);
+    region.freeze(board, 3);
     region.release();
-    assertSame(NormalState.INSTANCE, region.state());
+    assertSame(NormalState.INSTANCE, stateOf(region));
     region.afterGeneration();                                  // a released region ignores later updates
     assertFalse(region.isFrozen());
 }

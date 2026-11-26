@@ -33,7 +33,6 @@ class Resident {
 class Universe {
   - generation : long
   ~ freezingControls() : JPanel
-  ~ freezing() : FreezingManager
   ~ finishFreezingEditing()
   - setCell(cell : Point, alive : boolean) : boolean
   # paintComponent(g : Graphics)
@@ -83,9 +82,7 @@ class FreezingManager {
 class FreezingRegion {
   - area : Rectangle
   - snapshot : boolean[][]
-  - startGeneration : long
-  - duration : int
-  ~ freeze(board : Cell, generations : int, currentGeneration : long)
+  ~ freeze(board : Cell, generations : int)
   ~ release()
   ~ beforeTransition(board : Cell) : boolean
   ~ afterGeneration()

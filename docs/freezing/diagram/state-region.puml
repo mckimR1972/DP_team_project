@@ -15,7 +15,7 @@ state FrozenState : beforeTransition() / holdSnapshot(board)
 
 [*] --> NormalState : new FreezingRegion(area)
 
-NormalState -down-> FrozenState : freeze(board, n, g) [n >= 1]\n/ 스냅샷 저장, remaining = n
+NormalState -down-> FrozenState : freeze(board, n) [n >= 1]\n/ 스냅샷 저장, remaining = n
 FrozenState --> FrozenState : afterGeneration() [remaining > 1]\n/ remaining--
 FrozenState -up-> NormalState : afterGeneration() [remaining == 1]\n/ remaining = 0, 자동 해제
 FrozenState -up-> NormalState : release()\n강제 해제, 전체 해제, Clear, Load
