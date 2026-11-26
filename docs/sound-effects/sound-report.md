@@ -220,7 +220,7 @@ public boolean isAliveAt(int row, int column)
 
 ### 6.1 결과
 
-2026-11-26에 `./gradlew test --rerun`으로 전체 384개가 모두 통과했다(그림 S-6). 이 중 사운드와 관련된 테스트는 52개다.
+2026-11-26에 `./gradlew test --rerun`으로 전체 375개가 모두 통과했다(그림 S-6). 이 중 사운드와 관련된 테스트는 52개다.
 
 표 S-8. 사운드 관련 테스트
 
@@ -303,7 +303,7 @@ void everyPitchIsInCMajor()
 
 ![전체 테스트 결과](evidence/test-all.png)
 
-그림 S-6. 전체 테스트 결과 (2026-11-26 14:29 실행, 화면 맨 위에 실행 날짜와 명령을 적었다)
+그림 S-6. 전체 테스트 결과 (2026-11-26 16:58 실행, 화면 맨 위에 실행 날짜와 명령을 적었다)
 
 ![NoteMapperTest 결과](evidence/test-notemapper.png)
 
@@ -355,7 +355,7 @@ void everyPitchIsInCMajor()
 
 ## 테스트 수행 내역 (사운드 부분)
 
-사운드 작업 전에 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)가 사운드 작업 뒤에도 그대로 통과했다. 사운드 관련 테스트 52개 중 46개는 사운드만 다루고, 6개는 기존 클래스(`NeighborhoodTest`, `UniverseStoreTest`)에 더한 테스트와 Freezing과 함께 보는 테스트다. 통계와의 연동은 `SoundEffectsIntegrationTest`, Freezing과의 연동은 `FreezingSoundIntegrationTest`에서 확인한다. 2026-11-26 실행에서 전체 384개가 통과했다.
+사운드 작업 전에 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)가 사운드 작업 뒤에도 그대로 통과했다. 사운드 관련 테스트 52개 중 46개는 사운드만 다루고, 6개는 기존 클래스(`NeighborhoodTest`, `UniverseStoreTest`)에 더한 테스트와 Freezing과 함께 보는 테스트다. 통계와의 연동은 `SoundEffectsIntegrationTest`, Freezing과의 연동은 `FreezingSoundIntegrationTest`에서 확인한다. 2026-11-26 실행에서 전체 375개가 통과했다.
 
 ## 결론 (사운드 부분)
 
