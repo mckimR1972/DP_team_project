@@ -1,0 +1,50 @@
+@startuml statistics-use-cases
+!pragma layout smetana
+left to right direction
+skinparam linetype polyline
+skinparam defaultFontName "Malgun Gothic"
+skinparam defaultFontSize 18
+skinparam dpi 160
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundcorner 0
+skinparam backgroundColor white
+skinparam ArrowColor black
+skinparam actorBorderColor black
+skinparam actorFontColor black
+skinparam rectangleBorderColor black
+skinparam rectangleBackgroundColor white
+skinparam usecaseBorderColor black
+skinparam usecaseBackgroundColor white
+skinparam usecaseFontColor black
+skinparam noteBackgroundColor white
+skinparam noteBorderColor black
+skinparam nodesep 45
+skinparam ranksep 65
+
+actor "사용자" as Player
+rectangle "Life Game" {
+    together {
+    usecase "Run / Halt Game" as RunGame
+    usecase "Step One Generation" as StepGame
+    usecase "View Basic Statistics(E)" as BasicStatistics
+    usecase "View Color Distribution(E)" as ColorStatistics
+    }
+    usecase "Advance Generation\n--\nextension points\n세대 확정 후" as AdvanceGeneration
+
+    RunGame ..> AdvanceGeneration : <<include>>
+    StepGame ..> AdvanceGeneration : <<include>>
+    BasicStatistics ..> AdvanceGeneration : <<extend>>
+    note on link
+      condition: {통계 구독 중}
+    end note
+    ColorStatistics ..> AdvanceGeneration : <<extend>>
+    note on link
+      condition: {통계 구독 중}
+    end note
+}
+Player -- RunGame
+Player -- StepGame
+Player -- BasicStatistics
+Player -- ColorStatistics
+@enduml

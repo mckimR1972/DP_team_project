@@ -395,7 +395,6 @@ public class Universe extends JPanel
     void finishPatternEditing() { patternTools.cancel(); }
 
 	JPanel freezingControls() { return freezingTools.controls(); }	// [Freezing]
-	FreezingManager freezing() { return freezingTools.manager(); }	// [Freezing]
 
     /** [Freezing] Finish a hidden area selection when the sidebar switches to another tool. */
     void finishFreezingEditing() { freezingTools.cancel(); }

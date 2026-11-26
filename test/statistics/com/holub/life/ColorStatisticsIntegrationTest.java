@@ -17,6 +17,7 @@ class ColorStatisticsIntegrationTest {
     private static final Color BLUE = new Color(0x0072B2);
     private static final Color GREEN = new Color(0x009E73);
     private Statistics statistics;
+    private final List<Statistics.Summary> summaries = new ArrayList<>();
     private StatisticsPanel panel;
     private final List<BoardChangeEvent> events = new ArrayList<>();
     private final BoardChangeListener recorder = events::add;
@@ -25,7 +26,7 @@ class ColorStatisticsIntegrationTest {
     @BeforeEach void connect() throws Exception {
         LifeTestSupport.resetBoard();
         LifeTestSupport.onEdt(() -> {
-            panel = new StatisticsPanel();
+            panel = recordingPanel(summaries::add);
             statistics = Life.connectStatistics(LifeTestSupport.universe, panel);
             LifeTestSupport.universe.addBoardChangeListener(recorder);
         });
@@ -130,5 +131,5 @@ class ColorStatisticsIntegrationTest {
     }
     private static void tick(int count) { for (int i = 0; i < count; i++) LifeTestSupport.clock.tick(); }
     private BoardChangeEvent last() { return events.get(events.size() - 1); }
-    private Statistics.Summary summary() { return statistics.current().orElseThrow(); }
+    private Statistics.Summary summary() { return summaries.get(summaries.size() - 1); }
 }
