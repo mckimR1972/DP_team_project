@@ -1,11 +1,11 @@
-@startuml ssd-auto-release
+@startuml ssd-keep-frozen
 skinparam monochrome true
 skinparam dpi 150
 skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd Release Freezing Automatically(E) (Step One Generation 안에서)
+mainframe sd Keep Region Frozen(E) (Step One Generation 안에서)
 
 actor "사용자" as User
 participant ":LifeGame" as System

@@ -1,0 +1,46 @@
+@startuml sd-reset
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd clearBoard(), loadBoard(file) 안의 Release Freezing(E)
+
+actor "사용자" as User
+participant ":Universe" as U
+participant "outermostCell : Cell" as B
+participant ":FreezingTools" as T
+participant ":FreezingManager" as M
+participant "region : FreezingRegion" as R
+
+alt clearBoard(): Grid > Clear
+  User -> U : actionPerformed(e)
+  note right of U : 메뉴 리스너는 Universe 안의\n익명 객체라 Universe로 합쳐 그렸다
+  U -> B : clear()
+  note right of U : generation = 0
+else loadBoard(file): Grid > Load
+  User -> U : actionPerformed(e)
+  U -> U : doLoad()
+  opt 파일을 고르지 않았거나 읽지 못함
+    U -->> User
+    note right of U : 판과 Freezing 영역은 그대로다
+  end
+  U -> B : transfer(memento, (0, 0), LOAD)
+  note right of U : generation = 0
+end
+
+U -> T : reset()
+note right of U : 확장 지점: 판을 비운 후 / 불러온 후
+T -> T : cancel()
+note right of T : 영역을 고르는 중이면 끝낸다\n(selecting = false, selection = null)
+T -> M : reset()
+loop 활성 영역마다
+  M -> R : release()
+  R -> R : changeState(NormalState.INSTANCE)
+end
+note right of M : regions.clear()
+M -> T : run()
+note right of T : refresh(): 빈 목록, 현재 세대 0
+U -> U : notifyBoardChanged(CLEAR 또는 LOAD)
+@enduml

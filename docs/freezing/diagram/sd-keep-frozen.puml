@@ -1,11 +1,11 @@
-@startuml sd-auto-release
+@startuml sd-keep-frozen
 skinparam monochrome true
 skinparam dpi 150
 skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd 한 세대 진행과 Release Freezing Automatically(E)
+mainframe sd 한 세대 진행과 Keep Region Frozen(E)
 
 participant ":Clock" as C
 participant ":Universe" as U
@@ -30,6 +30,7 @@ else
   U -->> U : before = liveCells(): boolean[][]
 
   U -> M : beforeTransition(outermostCell)
+  note right of U : 확장 지점: 다음 세대 계산 후
   loop 활성 영역마다
     M -> R : beforeTransition(board)
     R -> F : beforeTransition(region, board)
@@ -46,6 +47,7 @@ else
   note right of U : generation = generation + 1
 
   U -> M : afterGeneration()
+  note right of U : 확장 지점: 세대 확정 후
   loop 활성 영역마다
     M -> R : afterGeneration()
     R -> F : afterGeneration(region)
