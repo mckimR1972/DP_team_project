@@ -742,22 +742,36 @@ CO6과 CO7은 셀을 바꾸지 않는다. 풀린 영역의 셀은 지금 생사 
 
 ### 3.4 클래스 다이어그램
 
-3.3절 시퀀스 다이어그램에 나온 클래스와 상위 타입 `Cell`, State 패턴의 `FreezingState`와 `NormalState`를 한 장에 그렸다. 멤버는 Freezing 기능과 관련된 것만 적었다.
+Freezing이 동작하는 데 꼭 필요한 클래스 아홉 개만 한 장에 그렸다. 3.3절 시퀀스 다이어그램의 중심 객체(`Universe`, `FreezingTools`, `FreezingManager`, `FreezingRegion`)와 State 패턴의 `FreezingState`, `FrozenState`, `NormalState`, 다음 생사를 바꾸는 `Cell`과 `Resident`다. 멤버는 패턴의 역할과 세대 처리가 드러나는 것만 적었다(굵은 단위의 클래스 명세).
 
-![Freezing 클래스 다이어그램](diagram/class-freezing.png)
+![Freezing 클래스 다이어그램](diagram/class-freezing-simple.png)
 
 | 클래스 | 원본에서의 역할 | 이 기능에서의 역할 |
 | --- | --- | --- |
-| `Cell` (인터페이스) | Composite의 Component | `holdNextState()`를 더했다 |
-| `Neighborhood` | Composite. 8×8 칸을 가진 블록 | `holdNextState()`를 하위 셀에 넘긴다 |
-| `Resident` | Composite의 Leaf. 셀 하나 | 다음 생사를 스냅샷 값으로 바꾸고, 그 세대에는 나이를 세지 않는다 |
-| `Universe` | Singleton, Mediator. 판을 그리고 시계 틱을 받는다 | 틱 처리에 Freezing 단계를 넣고, Freezing과 다른 기능을 연결한다 |
-| `FreezingRegion` | (없음) | State 패턴의 Context |
+| `Universe` | Singleton, Mediator. 판을 그리고 시계 틱을 받는다 | `FreezingManager`를 만들어 `FreezingTools`에 넘기고, 틱마다 계산과 전이 사이에 `beforeTransition()`, 세대 증가 뒤에 `afterGeneration()`을 부른다 |
+| `FreezingTools` | (없음) | Freezing 탭과 보드 위 표시. 영역 선택을 시작하고(`beginSelection()`) 영역을 그린다(`paintOverlay()`) |
+| `FreezingManager` | (없음) | 영역 목록과 세대 처리 단계. 설치·해제(`install()`, `release()`)와, 편집·배치를 막는 검사(`isFrozen()`, `overlapsFrozen()`)를 맡는다 |
+| `FreezingRegion` | (없음) | State 패턴의 Context. 영역과 스냅샷을 갖고, 고정 여부를 묻지 않고 `state`에 넘긴다 |
 | `FreezingState` | (없음) | State |
-| `NormalState`, `FrozenState` | (없음) | ConcreteState. `NormalState`는 `INSTANCE` 하나를 함께 쓴다 |
-| `FreezingManager` | (없음) | 영역 목록과 세대 처리 단계. Observer의 Subject(`Runnable` 목록) |
-| `FreezingTools` | (없음) | Freezing 탭과 보드 위 표시. Observer의 구독자 |
+| `FrozenState`, `NormalState` | (없음) | ConcreteState. `FrozenState`는 남은 세대(`remaining`)를 세다가 0이 되면 `NormalState`로 바꾼다. `NormalState`는 값이 없어 `INSTANCE` 하나를 함께 쓴다 |
+| `Cell` (인터페이스) | Composite의 Component | `holdNextState()`를 더했다 |
+| `Resident` | Composite의 Leaf. 셀 하나 | 다음 생사를 스냅샷 값으로 바꾸고, 그 세대에는 나이를 세지 않는다(`heldThisGeneration`) |
 
+관계는 코드의 필드와 호출을 따라 그렸다.
+
+| 관계 | 종류 | 근거 |
+| --- | --- | --- |
+| `Universe` "1" → "1" `FreezingTools` (`freezingTools`) | 연관 | `Universe`의 필드 |
+| `Universe` ⇢ `FreezingManager` | 의존 («create», «use») | 생성자에서 만들어 `FreezingTools`에 넘기고, 틱마다 `freezingTools.manager()`로 꺼내 부른다. 필드로 갖지는 않는다 |
+| `FreezingTools` "1" → "1" `FreezingManager` (`manager`) | 연관 | `FreezingTools`의 필드 |
+| `FreezingManager` "1" ◇→ "0..*" `FreezingRegion` (`regions`) | 공유 집합 | 영역 목록은 `FreezingManager`가 갖지만, `FreezingTools`의 화면 목록도 같은 영역 객체를 참조한다. 영역은 매니저를 모르므로 한쪽 방향이다 |
+| `FreezingRegion` "0..*" → "1" `FreezingState` (`state`) | 연관 | `FreezingRegion`의 필드. `NormalState.INSTANCE` 하나를 여러 영역이 함께 가리키므로 영역 쪽은 0..* |
+| `FrozenState`, `NormalState` ⇢▷ `FreezingState` | 실현 | `implements FreezingState` |
+| `FreezingRegion` ⇢ `Cell` | 의존 («use») | `freeze()`와 `holdSnapshot()`이 매개변수로 받은 판을 쓴다 |
+| `Resident` ⇢▷ `Cell` | 실현 | `implements Cell` |
+
+- 패턴의 역할은 스테레오타입이 아니라 노트에 적었다. «interface»는 인터페이스라는 뜻이라 그대로 두었다.
+- 그림에서 뺀 것: `Life`(사이드바 탭을 더하는 세 줄뿐이다), `Clock`(`FreezingTools`가 선택을 시작할 때 멈추기만 한다), `PatternTools`(배치 가드로만 연결된다), `Neighborhood`(`holdNextState()`를 하위 셀에 넘기기만 한다), 그리고 각 클래스의 화면·목록 관리 멤버. 이들과의 연결은 2절과 3.3절에 있다.
 - `FreezingManager`는 `FreezingTools`를 모르고 `Runnable` 목록만 가진다. 화면 없이 테스트할 수 있다(NFR-3).
 - `PatternTools`와 `FreezingTools`는 서로를 모른다. `PatternTools`는 배치 가드 `Predicate<Rectangle>` 하나, `FreezingTools`는 선택 시작 때 부를 `Runnable` 하나만 받는다. 둘을 아는 것은 `Universe`뿐이다.
 
