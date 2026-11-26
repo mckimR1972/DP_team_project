@@ -77,7 +77,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 ### 2.1 유스케이스 목록
 
-기존 기능과 추가 기능을 나눠 적었다. 추가한 유스케이스는 이름 끝에 `(E)`를 붙였고, 기존 유스케이스 이름은 팀 전체 유스케이스 다이어그램과 같게 맞췄다.
+기존 기능과 추가 기능을 나눠 적었다. 추가한 유스케이스는 이름 끝에 `(E)`를 붙였다. 유스케이스 이름과 관계는 팀 전체 유스케이스 다이어그램([usecase-overview.png](../usecase-overview.png))의 사운드 부분과 같다.
 
 | 구분 | 유스케이스 | 사운드와의 관계 |
 |---|---|---|
@@ -88,18 +88,17 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 | 기존 | Clear Board, Store / Load Board | Clear와 Load로 바뀐 판을 재생선이 다음 스텝부터 연주한다 |
 | 기존 | Exit Game | 관계 없음 |
 | 추가 (UC-S1) | Hear Generation Sound(E) | Advance Generation을 확장한다. 조건은 소리가 켜져 있을 때다 |
-| 추가 (UC-S2) | Hear Board Sweep(E) | 사용자와 직접 연관. 게임 진행과 상관없이 동작한다 |
-| 추가 (UC-S3) | Toggle Sound(E) | 사용자와 직접 연관 |
-| 추가 (UC-S4) | Configure Sound(E) | 사용자와 직접 연관 |
+| 추가 (UC-S2) | Toggle Sound(E) | 사용자와 직접 연관. 켜져 있는 동안 재생선이 돈다 |
+| 추가 (UC-S3) | Configure Sound(E) | 사용자와 직접 연관 |
 
 ![사운드 이펙트 유스케이스 다이어그램](diagram/usecase.png)
 
-그림 원본은 [diagram/usecase.puml](diagram/usecase.puml)이다. 시스템 경계는 "Life Game" 상자 하나다. 기존 유스케이스는 사운드와 «include»·«extend»로 이어지는 Run / Halt Game, Step One Generation, Advance Generation만 그렸다. Edit Cells, Clear Board, Store / Load Board, Exit Game은 사운드와 이런 관계가 없어서 위 표에만 적었다. 그림에 있는 관계는 이렇다.
+그림 원본은 [diagram/usecase.puml](diagram/usecase.puml)이다. 시스템 경계는 "Life Game" 상자 하나다. 기존 유스케이스는 사운드와 «include»·«extend»로 이어지는 Run / Halt Game, Step One Generation, Advance Generation만 그렸다. Edit Cells, Clear Board, Store / Load Board, Exit Game은 사운드와 이런 관계가 없어서 위 표에만 적었다. Advance Generation에는 Freezing 기능이 쓰는 확장 지점("다음 세대 계산 후")도 있지만, 사운드와 관계가 없어 그림에는 적지 않았다. 그림에 있는 관계는 이렇다.
 
 - «include»: 게임을 실행하면(Run / Halt Game) 틱마다, Step One Generation을 고르면 한 번 세대가 진행된다(Advance Generation). 할 때마다 반드시 따라오는 일이라 include로 그렸다. Halt는 세대 진행을 멈추기만 한다.
 - «extend»: 세대가 확정된 뒤(확장점 "세대 확정 후") 소리가 켜져 있을 때만 Hear Generation Sound(E)가 끼어든다. 소리가 꺼져 있어도 세대 진행에는 아무 문제가 없어서 extend로 그렸다.
 - Hear Generation Sound(E)는 사용자가 직접 시작하는 일이 아니라 세대 진행에 붙어서 일어나서, 사용자와 선으로 잇지 않았다.
-- Hear Board Sweep(E)는 게임 진행과 관계없이 150ms 타이머로 돌아서 기존 유스케이스와 include·extend 관계가 없다.
+- 재생선은 따로 유스케이스로 두지 않았다. 사용자가 그때마다 요청하는 일이 아니라, 소리가 켜져 있는 동안 150ms 타이머로 계속 도는 동작이기 때문이다. 소리 전체를 켜고 끄는 Toggle Sound(E)(UC-S2)에 묶었고, 재생선이 하는 일은 요구사항 F7, F8과 연산 계약 CO3([sound-uml.md](sound-uml.md) 4.3절)에 적었다. 설정 창에서 재생선만 끄는 것은 Configure Sound(E)(UC-S3)다.
 
 ### 2.2 유스케이스 명세
 
@@ -131,42 +130,17 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 - 1d. 직전 세대 소리를 낸 지 120ms가 지나지 않았으면 이번 세대는 건너뛴다. 빠른 속도에서 소리가 뭉치지 않게 하려고 넣었다.
 - 3a. 한 세대에 12개 이상 생기면 같은 화음을 한 옥타브 위에서 조금 작게 한 번 더 낸다.
 - 4a. 작은 흔들림이 켜져 있으면 음마다 시작이 0~15ms 늦어지고 세기가 조금씩 달라지며, 가끔 한 옥타브 위 음이 섞인다.
-- 4b. 설정에서 끈 항목은 UC-S4의 설정 항목 표대로 동작이 바뀐다. 예를 들어 스트럼을 끄면 음 사이의 25ms 간격 없이 내고, 코드 진행을 끄면 늘 C 코드의 5음을 쓴다.
+- 4b. 설정에서 끈 항목은 UC-S3의 설정 항목 표대로 동작이 바뀐다. 예를 들어 스트럼을 끄면 음 사이의 25ms 간격 없이 내고, 코드 진행을 끄면 늘 C 코드의 5음을 쓴다.
 
-#### UC-S2 Hear Board Sweep(E)
-
-| 항목 | 내용 |
-|---|---|
-| 목표 | 게임을 멈춰 둔 상태에서도 지금 판의 모양을 소리로 듣는다 |
-| 액터 | 사용자 |
-| 시작 | 프로그램이 시작되면 150ms마다 저절로 진행한다 |
-| 사전 조건 | MIDI 신시사이저가 열려 있다. `Sound`가 `On`이다. 게임이 실행 중이든 멈춰 있든 상관없다 |
-| 사후 조건 | 재생선 위치가 판 위에 초록 선으로 표시되고, 선 아래 산 셀의 소리가 예약된다 |
-
-기본 흐름
-
-1. 150ms마다 시스템은 재생선을 4열 오른쪽으로 옮기고 그 자리에 초록 선을 그린다.
-2. 시스템은 재생선이 지나는 4열 안의 산 셀로 최대 3음을 낸다. 4스텝에 한 번은 조금 더 세게 내서 박자가 느껴지게 한다.
-3. 시스템은 현재 코드의 패드를 낸다. 산 셀이 많을수록 크게 내되 상한이 있다.
-4. 16스텝(64열, 약 2.4초)을 돌면 처음으로 돌아가고, 코드가 C → Am → F → G 순서로 바뀐다. 생성음과 재생선이 쓰는 5음도 함께 바뀐다.
-
-대안 흐름
-
-- 1a. 사용자가 셀을 편집하거나(Edit Cells, Draw Cells by Dragging(E)) Clear, Load, 템플릿 배치·되돌리기(Place Template(E), Undo Placement(E))를 하면 다음 스텝부터 바뀐 판을 연주한다.
-- 1b. 설정에서 재생선을 끄면 선을 지우고 연주하지 않는다. 패드는 따로 켜고 끈다.
-- 2a. 재생선이 지나는 4열에 산 셀이 없으면 그 스텝은 조용하다.
-- 3a. 판이 비어 있거나 설정에서 패드를 끄면 패드를 끈다. 재생선은 계속 움직인다.
-- 4a. 설정에서 코드 진행을 끄면 코드는 C에 머문다.
-
-#### UC-S3 Toggle Sound(E)
+#### UC-S2 Toggle Sound(E)
 
 | 항목 | 내용 |
 |---|---|
 | 목표 | 소리를 잠시 끄거나 다시 켠다 |
 | 액터 | 사용자 |
 | 시작 | 사용자가 `Sound` 메뉴에서 `Off` 또는 `On`을 고른다 |
-| 사전 조건 | MIDI 신시사이저가 열려 있다. 열 수 없으면 `Sound` 메뉴가 생기지 않는다 |
-| 사후 조건 | Off면 새 소리를 예약하지 않고, 다음 스텝에 패드를 끄고 재생선을 지운다. 이미 예약된 음은 예정대로 울리고 꺼진다. On이면 다음 스텝부터 다시 연주한다 |
+| 사전 조건 | MIDI 신시사이저가 열려 있다. 열 수 없으면 `Sound` 메뉴가 생기지 않는다. 프로그램을 시작하면 소리는 켜져 있다 |
+| 사후 조건 | Off면 새 소리를 예약하지 않고, 다음 스텝에 패드를 끄고 재생선을 지운다. 이미 예약된 음은 예정대로 울리고 꺼진다. On이면 다음 스텝부터 재생선이 다시 돌며 판을 연주한다 |
 
 기본 흐름
 
@@ -180,7 +154,9 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 - 2a. Off인 동안에도 판이 바뀐 내용은 계속 받아 둔다. 그래서 On으로 바꾸면 그 사이에 편집한 판을 바로 연주한다.
 - 2b. Off를 고르기 전에 이미 예약된 음은 예정대로 울리고 꺼진다.
 
-#### UC-S4 Configure Sound(E)
+켜져 있는 동안 재생선은 150ms마다 4열씩 움직여 16스텝(약 2.4초)에 판을 한 바퀴 돈다. 지나는 구간의 산 셀을 연주하고, 밑에는 현재 코드의 패드를 깐다. 게임이 실행 중이든 멈춰 있든 같고, 셀 편집(Edit Cells, Draw Cells by Dragging(E)), Clear, Load, 템플릿 배치·되돌리기(Place Template(E), Undo Placement(E))로 바뀐 판은 다음 스텝부터 연주한다. 자세한 동작은 요구사항 F7, F8에 있다.
+
+#### UC-S3 Configure Sound(E)
 
 | 항목 | 내용 |
 |---|---|
@@ -229,11 +205,11 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 | F4 | 12개 이상 생긴 세대는 한 옥타브 위 화음을 조금 작게 겹친다 | UC-S1 | `smallGenerationsHaveNoBurstLayer`, `burstLayerDoublesNotesAnOctaveHigherAndQuieter`, `largeBirthEventKeepsTheBurstLayer` |
 | F5 | 변화가 없는 세대와, 세대 진행이 아닌 판 변경(편집·Clear·Load·템플릿·색 변경)은 세대 소리를 내지 않는다 | UC-S1 | `stableAndEmptyGenerationsNeverScheduleGenerationSounds`, `nonGenerationEventUpdatesSweepWithoutGenerationSounds`, `realColorMenuRefreshesStatisticsWithoutSchedulingGenerationSound` |
 | F6 | 같은 변화가 되풀이되면 12번에 걸쳐 무음까지 줄이고, 새 변화가 오면 원래 크기로 돌아간다. 판이 전멸하면 마무리 화음을 한 번 낸다 | UC-S1 | `RepeatTrackerTest` 3개, `scalingLowersLoudnessOnly`, `endingChordIsAboveThePadOfTheSameChord`, `extinctionPlaysOneEndingAndLaterEmptyTicksStaySilent` |
-| F7 | 재생선은 150ms마다 4열씩 움직이며 그 구간의 산 셀을 최대 3음으로 연주하고, 판 위에 초록 선으로 보인다. 게임이 멈춰 있어도 동작하고 편집한 판을 반영한다 | UC-S2 | `sweepPlaysOnlyCellsInTheColumnBlock`, `sweepLimitsVoicesAndAccentsTheBeat`, `sweepOfAnEmptyBlockIsSilent`, `playheadIsDrawnOverTheBoardAndCanBeRemoved`, `initialSnapshotIsReadyBeforeTheFirstScheduledSweep` |
+| F7 | 재생선은 150ms마다 4열씩 움직이며 그 구간의 산 셀을 최대 3음으로 연주하고, 4스텝마다 조금 세게 낸다. 산 셀이 없는 구간은 조용하다. 판 위에 초록 선으로 보인다. 게임이 멈춰 있어도 동작하고 편집한 판을 반영한다 | UC-S2 | `sweepPlaysOnlyCellsInTheColumnBlock`, `sweepLimitsVoicesAndAccentsTheBeat`, `sweepOfAnEmptyBlockIsSilent`, `playheadIsDrawnOverTheBoardAndCanBeRemoved`, `initialSnapshotIsReadyBeforeTheFirstScheduledSweep` |
 | F8 | 재생선이 한 바퀴 돌 때마다 코드가 C → Am → F → G로 바뀌고 패드도 같은 코드를 따른다. 패드는 산 셀이 많을수록 커지고 빈 판이면 꺼진다 | UC-S2 | `sameCellChangesPitchAcrossTheProgression`, `progressionWrapsAround`, `padFollowsTheProgression`, `padGrowsWithLiveCellsUpToACapAndStopsOnAnEmptyBoard` |
 | F9 | 작은 흔들림은 세기를 ±8, 시작을 0~15ms 바꾸고, 12% 확률로 한 옥타브 올린다 | UC-S1, UC-S2 | `humanizingKeepsNotesValidAndVariesThem`, `timingJitterStaysSmall` |
-| F10 | `Sound` → `Off`면 새 소리를 예약하지 않고 다음 스텝에 패드와 재생선을 멈춘다. 이미 예약된 음은 예정대로 끝난다. `On`으로 바꾸면 Off 동안 바뀐 판을 연주한다 | UC-S3 | `disabledSoundStillReceivesEditsForTheNextSweep` |
-| F11 | 설정 창에서 9개 항목을 하나씩 끄고, 5개 항목의 악기를 바꿀 수 있다 | UC-S4 | `SoundSettingsTest` 3개 |
+| F10 | `Sound` → `Off`면 새 소리를 예약하지 않고 다음 스텝에 패드와 재생선을 멈춘다. 이미 예약된 음은 예정대로 끝난다. `On`으로 바꾸면 Off 동안 바뀐 판을 연주한다 | UC-S2 | `disabledSoundStillReceivesEditsForTheNextSweep` |
+| F11 | 설정 창에서 9개 항목을 하나씩 끄고, 5개 항목의 악기를 바꿀 수 있다 | UC-S3 | `SoundSettingsTest` 3개 |
 | F12 | Freezing으로 고정된 셀은 세대 소리를 내지 않고, 풀린 첫 세대부터 다시 들린다. 재생선은 고정된 산 셀도 연주한다 | UC-S1, UC-S2 | `FreezingSoundIntegrationTest` 3개 |
 
 ### 3.2 비기능 요구사항

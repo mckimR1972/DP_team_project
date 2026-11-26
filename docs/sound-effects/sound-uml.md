@@ -115,7 +115,7 @@ Command 패턴의 역할은 그림의 범례에 적었다. `SoundEffects`(Client
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Hear Board Sweep(E), Toggle Sound(E), Configure Sound(E) |
+| Cross References | Toggle Sound(E), Configure Sound(E) |
 | Preconditions | 없음 |
 | Postconditions | MIDI 신시사이저를 열 수 있었으면: `SoundEffects` 인스턴스 `effects`가 생성되었다. `effects`가 `Universe.boardListeners`와 연관되었다. `effects.latestCells`가 시작 시점 판의 복사본이 되었다. `effects.enabled`가 true, `effects.chord`와 `effects.step`이 0이 되었다. `SoundSettings` 인스턴스 `settings`가 생성되어 `effects`와 연관되었고, 9개 기능이 모두 켜짐, 악기는 각 목록의 첫 번째가 되었다. `playStep` 명령이 150ms 주기로 `scheduler`와 연관되었다. Sound 메뉴 항목 3개가 등록되었다. 열 수 없었으면: `SoundEffects` 인스턴스가 생성되지 않았고 `Universe.boardListeners`에 사운드가 없다 |
 
@@ -131,7 +131,7 @@ Command 패턴의 역할은 그림의 범례에 적었다. `SoundEffects`(Client
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Hear Board Sweep(E) |
+| Cross References | Toggle Sound(E) (켜져 있는 동안 도는 재생선, 기능 요구사항 F7·F8) |
 | Preconditions | `effects.latestCells`가 null이 아니다 |
 | Postconditions | `effects.enabled`가 true인 경우: `Universe.playhead`가 `step × 4`가 되었다(재생선이 꺼져 있으면 -1). 그 4열 안의 산 셀로 고른 음마다 켜기·끄기 명령 한 쌍(최대 3쌍)이 `scheduler`와 연관되었다. `effects.padNotes`가 현재 코드의 패드 음이 되었다(패드 세기가 0이면 빈 배열). `effects.step`이 `(step + 1) % 16`이 되었고, 0이 되었으면 `effects.chord`가 1 늘었다. `effects.enabled`가 false인 경우: `effects.padNotes`가 빈 배열, `Universe.playhead`가 -1이 되었다. `step`과 `chord`는 바뀌지 않았다 |
 
@@ -139,7 +139,7 @@ Command 패턴의 역할은 그림의 범례에 적었다. `SoundEffects`(Client
 
 | 항목 | 내용 |
 |---|---|
-| Cross References | Edit Cells, Clear Board, Store / Load Board, Place Template(E), Undo Placement(E), Hear Board Sweep(E) |
+| Cross References | Edit Cells, Draw Cells by Dragging(E), Clear Board, Store / Load Board, Place Template(E), Undo Placement(E) |
 | Preconditions | 각 연산의 원래 사전 조건. `effects`가 설치되어 있다 |
 | Postconditions | (각 연산의 원래 사후 조건에 더해) `effects.latestCells`가 편집 후 판의 복사본으로 바뀌었다. 소리 명령은 `scheduler`와 연관되지 않았다 |
 

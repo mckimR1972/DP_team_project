@@ -11,8 +11,7 @@
 | 유스케이스 | 동작 |
 |---|---|
 | Hear Generation Sound(E) | 세대가 확정되면 생긴 셀을 최대 5음 화음으로 왼쪽 음부터 25ms 간격으로 내고, 사라진 셀이 있으면 60ms 뒤 타악기를 한 번 친다. 위쪽 셀일수록 높은 음이고, 열 위치는 좌우 위치가 된다. Advance Generation의 확장점 "세대 확정 후"에서 소리가 켜져 있을 때만 일어난다 |
-| Hear Board Sweep(E) | 재생선이 150ms마다 4열씩 움직이며 그 구간의 산 셀을 최대 3음으로 연주하고, 밑에는 현재 코드의 저음 패드를 깐다. 게임이 멈춰 있어도 돈다 |
-| Toggle Sound(E) | `Sound` 메뉴의 `On`, `Off`로 소리 전체를 켜고 끈다 |
+| Toggle Sound(E) | `Sound` 메뉴의 `On`, `Off`로 소리 전체를 켜고 끈다. 켜져 있는 동안 재생선이 150ms마다 4열씩 움직이며 그 구간의 산 셀을 최대 3음으로 연주하고, 밑에는 현재 코드의 저음 패드를 깐다. 게임이 멈춰 있어도 돈다 |
 | Configure Sound(E) | `Sound` → `Settings` 창에서 9개 항목을 하나씩 끄고, 5개 항목의 악기를 바꾼다. 모달 창이 아니라서 창을 띄워 둔 채 게임을 진행할 수 있다 |
 
 음높이는 판의 세로 64행을 C3부터 3옥타브(15음)로 나눠 정한다. 한 옥타브 안에서는 현재 코드에 맞춘 5음만 쓰고, 코드는 재생선이 한 바퀴(16스텝, 약 2.4초) 돌 때마다 C → Am → F → G 순서로 바뀐다.
@@ -331,11 +330,11 @@ void everyPitchIsInCMajor()
 
 ## 유스케이스 (사운드 부분)
 
-확장 유스케이스는 Hear Generation Sound(E), Hear Board Sweep(E), Toggle Sound(E), Configure Sound(E) 네 개다. Hear Generation Sound(E)는 Advance Generation의 확장점 "세대 확정 후"에 extend로 붙고, 조건은 소리가 켜져 있는 것이다. Run / Halt Game과 Step One Generation이 Advance Generation을 include하는 구조는 색 순환, Freezing, 통계와 같다. 나머지 세 유스케이스는 사용자와 직접 이어지고, Hear Board Sweep(E)는 150ms 타이머로 돌기 때문에 기존 유스케이스와 include·extend 관계가 없다.
+확장 유스케이스는 Hear Generation Sound(E), Toggle Sound(E), Configure Sound(E) 세 개다. Hear Generation Sound(E)는 Advance Generation의 확장점 "세대 확정 후"에 extend로 붙고, 조건은 소리가 켜져 있는 것이다. Run / Halt Game과 Step One Generation이 Advance Generation을 include하는 구조는 색 순환, Freezing, 통계와 같다. 나머지 두 유스케이스는 사용자와 직접 이어진다. 재생선은 소리가 켜져 있는 동안 150ms 타이머로 계속 도는 동작이라 유스케이스를 따로 두지 않고 Toggle Sound(E)에 묶었다.
 
 ![사운드 이펙트 유스케이스 다이어그램](diagram/usecase.png)
 
-그림 S-9. 사운드 이펙트 유스케이스 (팀 전체 그림에 합칠 때는 이 관계를 그대로 쓴다)
+그림 S-9. 사운드 이펙트 유스케이스 (팀 전체 유스케이스 다이어그램의 사운드 부분)
 
 ## 기능 간 연동 (사운드 부분)
 
