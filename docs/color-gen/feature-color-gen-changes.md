@@ -6,6 +6,8 @@
 
 이 브랜치에서 바뀐 코드를 변경 단위마다 기록한다. 변경마다 요약, 바꾼 이유, 변경 내용, 검증 결과를 적는다.
 
+각 변경의 검증에는 그 변경에서 새로 확인한 내용만 적었다. 전체 테스트는 지금 코드 기준으로 375개이고 모두 통과한다. 이 중 색 순환 기능의 테스트는 39개다. 실행 결과는 [색 순환 명세서 5.1절](color-gen.md#51-실행-결과)에 있다.
+
 ## 변경 목록
 
 | 번호 | 변경 | 바뀌는 파일 | 상태 |
@@ -160,8 +162,6 @@ assertNotNull(gridActions.get("Clear"));     // 기록이 없으면 여기서 �
 
 | 항목 | 결과 |
 | --- | --- |
-| 전체 테스트 (`gradlew test --rerun`) | 54개 통과 (기존 32개, 새 22개), 실패 0 |
-| 테스트용 JVM 수 | 4개 (테스트 클래스마다 1개) |
 | 결함을 일부러 넣은 사본 | 색 배열을 복사하지 않게 하고 색 1개를 허용하게 바꾸자, `cyclingPolicyKeepsItsOwnCopyOfTheColors`와 "only one color" 경우 2개만 실패 |
 
 - `--warning-mode all`로 실행했을 때 Gradle 사용 중단(deprecation) 경고는 없었다.
@@ -263,8 +263,6 @@ assertNotNull(gridActions.get("Clear"));     // 기록이 없으면 여기서 �
 
 | 항목 | 결과 |
 | --- | --- |
-| 전체 테스트 (`gradlew test --rerun`) | 62개 통과 (기존 32개, `CellColorPolicyTest` 22개, 새 8개), 실패 0 |
-| 테스트용 JVM 수 | 6개 (테스트 클래스마다 1개) |
 | 새 테스트 시간 | `CellAgeColorTest` 약 2.5초(그중 `lifeRuleIsUnchanged` 약 1.9초), `DefaultCellColorTest` 약 0.3초 |
 
 추가한 줄마다 결함을 하나씩 넣은 사본에서 전체 테스트를 돌린 결과다. 8가지 결함 모두 실패하는 테스트가 하나 이상 있었고, 기존 테스트 32개와 `CellColorPolicyTest`는 어느 결함에서도 실패하지 않았다.
@@ -402,11 +400,6 @@ Universe가 매 틱 `transition()`을 불러, 생사가 바뀌지 않는 틱에�
 
 ### 검증
 
-| 항목 | 결과 |
-| --- | --- |
-| 전체 테스트 (`gradlew test --rerun`) | 65개 통과 (기존 32개, `CellColorPolicyTest` 22개, `CellAgeColorTest` 8개, `DefaultCellColorTest` 1개, `UniverseColorTest` 2개), 실패 0 |
-| 테스트용 JVM 수 | 7개 (테스트 클래스마다 1개) |
-
 바꾼 줄마다 결함을 하나씩 넣은 사본에서 전체 테스트를 돌린 결과다.
 
 | 바꾼 줄 | 넣은 결함 | 실패한 테스트 |
@@ -516,11 +509,6 @@ Grid, Go 메뉴 뒤에 Color 메뉴를 추가했다. Single Color를 고르면 �
 
 ### 검증
 
-| 항목 | 결과 |
-| --- | --- |
-| 전체 테스트 (`gradlew test --rerun`) | 67개 통과 (기존 32개, `CellColorPolicyTest` 22개, `CellAgeColorTest` 8개, `DefaultCellColorTest` 1개, `UniverseColorTest` 4개), 실패 0 |
-| 테스트용 JVM 수 | 7개 (테스트 클래스마다 1개) |
-
 바꾼 줄마다 결함을 하나씩 넣은 사본에서 전체 테스트를 돌린 결과다.
 
 | 바꾼 줄 | 넣은 결함 | 실패한 테스트 |
@@ -580,10 +568,6 @@ Grid, Go 메뉴 뒤에 Color 메뉴를 추가했다. Single Color를 고르면 �
 
 ### 검증
 
-| 항목 | 결과 |
-| --- | --- |
-| 전체 테스트 (`gradlew clean test`) | 67개 통과, 실패 0 |
-
 - 한글 주석은 `build.gradle`의 `options.encoding = 'UTF-8'` 설정으로 컴파일된다.
 - 환경: Gradle 9.5.1(래퍼), JDK 17, JUnit Jupiter 6.0.3, Mockito 5.23.0, Windows 11, 2026-11-15.
 
@@ -636,7 +620,6 @@ private void refreshNow()
 
 | 항목 | 결과 |
 | --- | --- |
-| 전체 테스트 (`gradlew clean test`) | 72개 통과, 실패 0 (dev의 70개 + 이 항목의 2개) |
 | 결함 사본: 색 순환 중 다시 그리기 요청을 지움 | cyclingTickRequestsRepaintEvenWhenNothingChanges 실패 |
 | 결함 사본: 꺼진 상태에서 바뀐 셀이 없어도 매 틱 다시 그림 | tickWithCyclingOffRepaintsOnlyWhenCellsChange 실패 |
 | 실제 창의 화면 색 (블록, 순환 규칙) | 9틱 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강. 다시 그리기 요청을 지운 대조 사본은 계속 빨강 |
