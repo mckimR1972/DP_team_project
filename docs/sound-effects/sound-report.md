@@ -57,7 +57,7 @@ if( outermostCell.transition() )
 }
 ```
 
-통계 기능을 합칠 때 이 알림은 통계와 사운드가 함께 받는 공통 이벤트로 바뀌었다. 지금 코드의 틱 처리는 다음과 같다(Freezing 처리는 생략).
+통계 기능을 합칠 때 이 알림은 통계와 사운드가 함께 받는 공통 이벤트로 바뀌었다. 지금 코드의 틱 처리는 다음과 같다(Freezing 처리와 화면 갱신은 생략).
 
 ```java
 boolean[][] before = liveCells();
@@ -123,7 +123,7 @@ private void play( MidiChannel channel, NoteMapper.Note note,
 
 그림 S-3. 한 세대의 소리가 예약되고 실행되는 과정
 
-위 구간은 이벤트 스레드에서 한 틱 안에 일어나는 일이다. `SoundEffects`는 `schedule()`만 하고 돌아오므로 `Universe`는 소리를 기다리지 않고 `refreshNow()`로 넘어간다. 실제 `noteOn`, `noteOff`는 아래 구간처럼 sound-notes 스레드가 예약한 시각에 실행한다. `alt`의 세 칸은 판이 전멸했을 때(마무리 화음), 반복으로 무음이 됐거나 직전 소리와 120ms 안일 때(건너뜀), 그 밖의 경우(생성음, 대량 생성 레이어, 타악기)다.
+위 구간은 이벤트 스레드에서 한 틱 안에 일어나는 일이다. `SoundEffects`는 `schedule()`만 하고 돌아오므로 `Universe`는 소리를 기다리지 않고 `refreshNow()`로 넘어간다. 실제 `noteOn`, `noteOff`는 아래 구간처럼 sound-notes 스레드가 예약한 시각에 실행한다. 안쪽 `alt`의 세 칸은 판이 전멸했을 때(마무리 화음), 반복으로 무음이 됐거나 직전 소리와 120ms 안일 때(건너뜀), 그 밖의 경우(생성음, 대량 생성 레이어, 타악기)다.
 
 ### 3.3 Composite 확장: 좌표로 셀 상태 묻기
 
@@ -321,7 +321,7 @@ void everyPitchIsInCMajor()
 
 담당: [이름]
 
-사운드 패키지 전체, `Universe`의 첫 변화 발행 구조(`GenerationListener`)와 재생선 표시(`setPlayhead()`), `Cell` 계층의 `isAliveAt()`, 사운드 작업에서 추가한 테스트 32개, 사운드 문서(설계 문서, 기능 명세, UML)를 맡았다. 통합 테스트 20개(`SoundEffectsIntegrationTest` 17, `FreezingSoundIntegrationTest` 3)는 통계와 Freezing 기능을 합칠 때 더해졌다.
+사운드 패키지 전체, `Universe`의 첫 변화 발행 구조(`GenerationListener`)와 재생선 표시(`setPlayhead()`), `Cell` 계층의 `isAliveAt()`, 사운드 작업에서 추가한 테스트 32개(`NoteMapperTest` 23, `RepeatTrackerTest` 3, `SoundSettingsTest` 3, `NeighborhoodTest` 1, `UniverseStoreTest` 2), 사운드 문서(설계 문서, 기능 명세, UML)를 맡았다. 통합 테스트 20개(`SoundEffectsIntegrationTest` 17, `FreezingSoundIntegrationTest` 3)는 통계와 Freezing 기능을 합칠 때 더해졌다.
 
 ---
 
@@ -331,7 +331,7 @@ void everyPitchIsInCMajor()
 
 ## 유스케이스 (사운드 부분)
 
-확장 유스케이스는 Hear Generation Sound(E), Hear Board Sweep(E), Toggle Sound(E), Configure Sound(E) 네 개다. Hear Generation Sound(E)는 Advance Generation의 확장점 "세대 확정 후"에 extend로 붙고, 조건은 소리가 켜져 있는 것이다. Run / Halt Game과 Step One Generation이 Advance Generation을 include하는 구조는 색 순환, Freezing과 같다. 나머지 세 유스케이스는 사용자와 직접 이어지고, Hear Board Sweep(E)는 150ms 타이머로 돌기 때문에 기존 유스케이스와 include·extend 관계가 없다.
+확장 유스케이스는 Hear Generation Sound(E), Hear Board Sweep(E), Toggle Sound(E), Configure Sound(E) 네 개다. Hear Generation Sound(E)는 Advance Generation의 확장점 "세대 확정 후"에 extend로 붙고, 조건은 소리가 켜져 있는 것이다. Run / Halt Game과 Step One Generation이 Advance Generation을 include하는 구조는 색 순환, Freezing, 통계와 같다. 나머지 세 유스케이스는 사용자와 직접 이어지고, Hear Board Sweep(E)는 150ms 타이머로 돌기 때문에 기존 유스케이스와 include·extend 관계가 없다.
 
 ![사운드 이펙트 유스케이스 다이어그램](diagram/usecase.png)
 
@@ -361,4 +361,4 @@ void everyPitchIsInCMajor()
 
 게임 쪽에서 사운드를 아는 곳은 `Life`의 `install()` 한 줄뿐이라, 이 줄을 빼면 소리만 빠지고 게임은 그대로 돈다. 통계와 같은 이벤트로 합칠 때 사운드 쪽은 수신부 30줄 정도만 고쳤고, 사운드 작업에서 더한 `isAliveAt()`은 드래그 그리기, 캡처·템플릿, Freezing 영역 저장, 공통 이벤트의 판 복사에서도 쓰이고 있다. 소리를 예약 명령으로 만든 덕분에 소리의 타이밍도 장치 없이 숫자로 테스트할 수 있었다.
 
-한계도 있다. 소리를 내는 기능을 새로 더하려면 지금은 `SoundEffects`를 고쳐야 한다(Strategy를 적용하지 않음). 설정은 파일에 저장하지 않아 프로그램을 다시 켜면 처음 값으로 돌아간다. Medium(70ms)이나 Fast(30ms) 속도에서는 세대 소리 사이 최소 간격(120ms) 때문에 일부 세대의 소리를 건너뛴다. Clear나 Load는 반복 기록을 지우지 않아서, 같은 자리에 같은 진동자를 다시 그리면 처음부터 작게 들릴 수 있다. `SoundEffects`는 재생선을 그리려고 `Universe.setPlayhead()`를 직접 부르고, 이벤트에 통계용 값이 들어 있어서 통계 쪽 변경이 사운드에 영향을 줄 수 있다. 실제 음색과 어울림은 자동 테스트로 확인할 수 없어서 직접 들어 확인했다.
+한계도 있다. 소리를 내는 기능을 새로 더하려면 지금은 `SoundEffects`를 고쳐야 한다(Strategy를 적용하지 않음). 설정은 파일에 저장하지 않아 프로그램을 다시 켜면 처음 값으로 돌아간다. Medium(70ms)이나 Fast(30ms) 속도에서는 세대 소리 사이 최소 간격(120ms) 때문에 일부 세대의 소리를 건너뛴다. Clear나 Load는 반복 기록을 지우지 않아서, 같은 자리에 같은 진동자를 다시 그리면 처음부터 작게 들리거나 아예 들리지 않을 수 있다. `SoundEffects`는 재생선을 그리려고 `Universe.setPlayhead()`를 직접 부르고, 이벤트에 통계용 값이 들어 있어서 통계 쪽 변경이 사운드에 영향을 줄 수 있다. 실제 음색과 어울림은 자동 테스트로 확인할 수 없어서 직접 들어 확인했다.
