@@ -2,9 +2,9 @@
 
 Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡처했다.
 
-- 실행: 2026-11-21, `.\gradlew.bat clean test --rerun-tasks --console=plain`
-- 코드: main `4dc39e6`. 그 뒤 dev(`cfba2ed`, PR #24)는 테스트 파일을 기능별 폴더로 옮기기만 했고 테스트 클래스와 메서드는 같다
-- `test-all.png`만 2026-11-26에 dev `ec7b7c3`(#27, #28 병합 뒤)에서 같은 명령으로 다시 실행해 캡처했다. 통계 테스트 정리(#27)로 전체가 384개에서 375개가 됐고, Freezing 테스트 90개는 그대로다
+- 실행: `.\gradlew.bat clean test --rerun-tasks --console=plain`
+- 코드: Freezing 화면들은 Freezing을 합친 직후의 코드에서 찍었다. 그 뒤 테스트 파일을 기능별 폴더로 옮겼지만 Freezing 테스트 클래스와 메서드는 같다
+- `test-all.png`만 통계 테스트 정리와 테스트 전용 멤버 삭제가 들어간 뒤의 코드에서 같은 명령으로 다시 실행해 캡처했다. 통계 테스트 정리로 전체가 384개에서 375개가 됐고, Freezing 테스트 90개는 그대로다
 - 환경: Windows 11, JDK 17, Gradle 9.5.1
 
 | 화면 | 내용 | 결과 |
@@ -22,7 +22,7 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 
 `FreezingModelTest`는 Universe와 Swing 없이 보드(`Neighborhood` + `Resident`)와 `FreezingManager`만 만들어 시험한다. 세대 진행은 테스트 안의 `tick()`이 게임과 같은 순서(`figureNextState` → `beforeTransition` → `transition` → 세대 +1 → `afterGeneration`)로 부른다.
 
-묶음별 화면은 2026-11-22에 같은 코드에서 `gradlew test --rerun --tests "com.holub.life.FreezingModelTest.<메서드>"`로 묶음에 속한 테스트만 실행한 결과다. 7개 묶음의 합은 50개로 전체 실행의 `FreezingModelTest`와 같다. 1번 묶음(기본 규칙) 화면만 글라이더 테스트의 이름을 고친 뒤(#26) 2026-11-25에 같은 방법으로 다시 찍었다.
+묶음별 화면은 같은 코드에서 `gradlew test --rerun --tests "com.holub.life.FreezingModelTest.<메서드>"`로 묶음에 속한 테스트만 실행한 결과다. 7개 묶음의 합은 50개로 전체 실행의 `FreezingModelTest`와 같다. 1번 묶음(기본 규칙) 화면만 글라이더 테스트의 이름을 고친 뒤 같은 방법으로 다시 찍었다.
 
 | 화면 | 묶음 | 확인하는 것 | 결과 |
 | --- | --- | --- | --- |
