@@ -234,7 +234,7 @@ if (tabs.getSelectedComponent() != freezing) universe.finishFreezingEditing();
 | `FreezingState` | 세대 처리의 두 시점에서 할 일을 정의하는 인터페이스 | `beforeTransition(region, board)`, `afterGeneration(region)`, `isFrozen()`, `remainingGenerations()` |
 | `NormalState` | 고정되지 않은 상태. 아무것도 하지 않는다 | `INSTANCE` 하나를 공유 |
 | `FrozenState` | 고정 상태. 스냅샷을 적용하고 남은 세대를 줄이다가 0이 되면 영역을 `NormalState`로 바꾼다 | `remaining` |
-| `FreezingRegion` | 영역 하나. 사각형, 스냅샷, 시작 세대, 지속 세대, 현재 상태를 가진다 | `freeze()`, `release()`, `changeState()`, `holdSnapshot()` |
+| `FreezingRegion` | 영역 하나. 사각형, 스냅샷, 현재 상태를 가진다 | `freeze()`, `release()`, `changeState()`, `holdSnapshot()` |
 | `FreezingManager` | 영역 목록, 설치 검증(빈 영역·겹침), 해제, 초기화, 세대 처리 두 시점의 전달. Swing 코드 없음 | `install()`, `release()`, `releaseAll()`, `reset()`, `beforeTransition()`, `afterGeneration()`, `isFrozen()`, `overlapsFrozen()`, `addListener()` |
 | `FreezingTools` | Freezing 탭 화면, 드래그 선택, 보드 위 표시 | `beginSelection()`, `cancel()`, `reset()`, `blockedEdit()`, `paintOverlay()` |
 
