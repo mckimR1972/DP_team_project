@@ -72,7 +72,7 @@ if( outermostCell.transition() )
 
 `publishChanges()`는 64×64 판을 한 번 돌면서 `before`에는 없고 지금은 있는 칸을 `births`, 반대인 칸을 `deaths`에 넣은 뒤 `Universe.GenerationListener` 구독자에게 보냈다. 구독자 관리는 Holub 코드에 있던 `com.holub.tools.Publisher`를 그대로 썼다. 좌표는 `java.awt.Point`로 넘기고 `x`가 열, `y`가 행이다.
 
-통계 기능도 같은 세대 정보가 필요해지면서 이 부분은 공통 이벤트로 바뀌었다. 지금 코드의 틱 처리는 다음과 같다(Freezing 처리는 생략).
+통계 기능도 같은 세대 정보가 필요해지면서 이 부분은 공통 이벤트로 바뀌었다. 지금 코드의 틱 처리는 다음과 같다(Freezing 처리와 화면 갱신은 생략).
 
 ```java
 boolean[][] before = liveCells();
@@ -335,7 +335,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | `SoundEffectsIntegrationTest` | 17 | 통계 기능을 합칠 때 추가. 실제 `Universe`, `Statistics`와 연결한 `SoundEffects` |
 | `FreezingSoundIntegrationTest` | 3 | Freezing 기능을 합칠 때 추가. 고정된 셀과 소리 |
 
-사운드 작업에서 추가한 테스트는 32개다. 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. 이후 다른 기능을 합치면서 `SoundEffects`를 실제로 실행하는 통합 테스트 20개가 더해졌다.
+사운드 작업에서 추가한 테스트는 32개다(`NoteMapperTest` 23, `RepeatTrackerTest` 3, `SoundSettingsTest` 3, `NeighborhoodTest` 1, `UniverseStoreTest` 2). 이와 별도로 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. 이후 다른 기능을 합치면서 `SoundEffects`를 실제로 실행하는 통합 테스트 20개가 더해졌다.
 
 아래 캡처는 모두 2026-11-26 16:58(KST)에 `./gradlew test --rerun`으로 돌린 결과다. 화면 맨 위에도 실행 날짜와 명령을 적었다.
 
