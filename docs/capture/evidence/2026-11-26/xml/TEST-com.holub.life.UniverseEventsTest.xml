@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.UniverseEventsTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-11-26T07:26:16.820Z" hostname="DESKTOP-4CP7K21" time="2.214">
+  <properties/>
+  <testcase name="generationCannotBePublishedWithoutAnActualTransition()" classname="com.holub.life.UniverseEventsTest" time="0.098"/>
+  <testcase name="duplicateRegistrationDoesNotRepeatInitialOrBroadcast()" classname="com.holub.life.UniverseEventsTest" time="0.024"/>
+  <testcase name="clearPublishesOneEmptyStateAndResetsGeneration()" classname="com.holub.life.UniverseEventsTest" time="0.032"/>
+  <testcase name="cancelledLoadPreservesCurrentStateWithoutPublishingOrShowingError()" classname="com.holub.life.UniverseEventsTest" time="0.23"/>
+  <testcase name="registrationDeliversCurrentEmptyBoardOnEdt()" classname="com.holub.life.UniverseEventsTest" time="0.007"/>
+  <testcase name="storeDoesNotPublishOrResetGeneration()" classname="com.holub.life.UniverseEventsTest" time="0.022"/>
+  <testcase name="observersShareAnEventButCannotChangeEachOthersSnapshots()" classname="com.holub.life.UniverseEventsTest" time="0.009"/>
+  <testcase name="failedReadPreservesBoardGenerationAndStatisticsWithoutPublishing()" classname="com.holub.life.UniverseEventsTest" time="0.025"/>
+  <testcase name="stableBlockStillAdvancesAndReportsMeasuredZeroChange()" classname="com.holub.life.UniverseEventsTest" time="0.01"/>
+  <testcase name="listenerAndEventKindMustNotBeNull()" classname="com.holub.life.UniverseEventsTest" time="0.007"/>
+  <testcase name="loadPublishesRestoredStateOnceAndResetsComparisonBaseline()" classname="com.holub.life.UniverseEventsTest" time="0.022"/>
+  <testcase name="removedListenerReceivesNothingUntilRegisteredAgain()" classname="com.holub.life.UniverseEventsTest" time="0.009"/>
+  <testcase name="actualBlinkerAcrossNeighborhoodBoundaryPublishesCompletedGeneration()" classname="com.holub.life.UniverseEventsTest" time="0.013"/>
+  <testcase name="boardOperationsRejectCallsOutsideEdt()" classname="com.holub.life.UniverseEventsTest" time="0.007"/>
+  <testcase name="editingBeforeNextGenerationUsesActualBoardForSharedDelta()" classname="com.holub.life.UniverseEventsTest" time="0.014"/>
+  <testcase name="subscriptionChangesDuringDeliveryApplyToNextBroadcast()" classname="com.holub.life.UniverseEventsTest" time="0.009"/>
+  <testcase name="emptyBoardStillPublishesEveryGeneration()" classname="com.holub.life.UniverseEventsTest" time="0.01"/>
+  <testcase name="ignoredMousePressesDoNotChangeBoardOrPublish()" classname="com.holub.life.UniverseEventsTest" time="0.008"/>
+  <testcase name="clicksPublishExactRowMajorCoordinatesAndToggleState()" classname="com.holub.life.UniverseEventsTest" time="0.013"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

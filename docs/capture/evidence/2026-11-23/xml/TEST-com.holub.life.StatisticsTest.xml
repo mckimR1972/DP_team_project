@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.StatisticsTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2026-11-23T06:20:21.218Z" hostname="DESKTOP-VK6OGO1" time="0.197">
+  <properties/>
+  <testcase name="unchangedGenerationReportsMeasuredZeroRatherThanUnavailable()" classname="com.holub.life.StatisticsTest" time="0.062"/>
+  <testcase name="initialSnapshotReportsPopulationAndSuppliedGeneration()" classname="com.holub.life.StatisticsTest" time="0.007"/>
+  <testcase name="countsAllBirthsInSuppliedTransition()" classname="com.holub.life.StatisticsTest" time="0.002"/>
+  <testcase name="hasNoSummaryBeforeFirstEvent()" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="blinkerUsesTheSuppliedCoordinates()" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="rejectsMissingCallbackAndEvent()" classname="com.holub.life.StatisticsTest" time="0.003"/>
+  <testcase name="[1] INITIAL" classname="com.holub.life.StatisticsTest" time="0.009"/>
+  <testcase name="[2] EDIT" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="[3] TEMPLATE" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="[4] TEMPLATE_UNDO" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="[5] CLEAR" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="[6] LOAD" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="readingStatisticsDoesNotMutateSharedEvent()" classname="com.holub.life.StatisticsTest" time="0.002"/>
+  <testcase name="extinctionCountsAllDeaths()" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="fullBoardHasOneHundredPercentPopulation()" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="publishesOneImmutableSummaryForEachEvent()" classname="com.holub.life.StatisticsTest" time="0.002"/>
+  <testcase name="[1] 8" classname="com.holub.life.StatisticsTest" time="0.0"/>
+  <testcase name="[2] 9" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="[3] 12" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="firstGenerationAlreadyContainsItsOwnDelta()" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="changedDimensionsUseEventPopulationAndDeltaWithoutOldBoard()" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="emptyBoardHasZeroPopulationAndPercentage()" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

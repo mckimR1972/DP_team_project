@@ -4,9 +4,8 @@
 
 | 영역 | 현재 문서 | 성격 |
 |---|---|---|
-| 캡처·템플릿 | [캡처 문서 묶음](capture/README.md) | 기능 명세, 설계 결정, 연계, 테스트, 도식의 추적 시작점 |
-| 캡처 사용법 | [capture-templates.md](capture/capture-templates.md) | 사용법과 기존 설명 |
-| 캡처 드래그 구현 이력 | [capture-drag-design.md](capture/capture-drag-design.md) | PR #13 당시의 설계·시험 병합 기록 |
+| 캡처 공유용 | [capture.md](capture/capture.md) | 팀 보고서용 기능 명세·GoF·유스케이스·UML·연산 계약·대표 테스트 |
+| 캡처 상세 | [캡처 상세 문서](capture/README.md) | 설계 결정·통합·전체 테스트·도식·검증 근거 |
 | 세대별 색상 | [feature-color-gen-changes.md](color-gen/feature-color-gen-changes.md) | 변경 이유·대안·검증 |
 | 화면 갱신 지연 | [color-gen-redraw-lag.md](color-gen/color-gen-redraw-lag.md) | 원인 분석과 대안 비교 |
 | 기본 오류 | [fix-life-game-changes.md](fixes/fix-life-game-changes.md) | 기존 코드 오류 수정과 회귀 검사 |

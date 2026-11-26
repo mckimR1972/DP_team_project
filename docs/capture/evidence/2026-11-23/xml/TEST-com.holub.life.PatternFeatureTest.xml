@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.PatternFeatureTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-23T06:19:58.314Z" hostname="DESKTOP-VK6OGO1" time="0.169">
+  <properties/>
+  <testcase name="templateValidation()" classname="com.holub.life.PatternFeatureTest" time="0.025"/>
+  <testcase name="corruptFilesAndSaveFailure()" classname="com.holub.life.PatternFeatureTest" time="0.029"/>
+  <testcase name="boundsAndEmptyCapture()" classname="com.holub.life.PatternFeatureTest" time="0.037"/>
+  <testcase name="transparentOverlapAndNoOp()" classname="com.holub.life.PatternFeatureTest" time="0.002"/>
+  <testcase name="capturePreservesOffsetsAndMargins()" classname="com.holub.life.PatternFeatureTest" time="0.002"/>
+  <testcase name="historyInvalidation()" classname="com.holub.life.PatternFeatureTest" time="0.001"/>
+  <testcase name="randomLifeComparison()" classname="com.holub.life.PatternFeatureTest" time="0.04"/>
+  <testcase name="gliderAcrossNeighborhoods()" classname="com.holub.life.PatternFeatureTest" time="0.003"/>
+  <testcase name="saveReloadAndDuplicateNames()" classname="com.holub.life.PatternFeatureTest" time="0.009"/>
+  <testcase name="repeatPlacementAndUndo()" classname="com.holub.life.PatternFeatureTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -2,31 +2,49 @@
 !include theme.puml
 actor "사용자" as User
 participant PatternTools as UI
+participant Clock
 participant BoardEditor as Editor
 participant PlacePatternCommand as Cmd
 participant "PatternCells / Cell" as Cells
 User -> UI : 왼쪽 버튼 누름
 UI -> Editor : beginStroke()
-loop 최초 찍기 / 80ms 반복 / 이동 구간의 보간 기준점
+loop 최초 찍기 / 80ms 반복 / 이동 보간
+ UI -> Editor : fits / canPlace (UI 사전 검사)
+ opt UI 검사 허용
   UI -> Editor : place(pattern, origin)
-  Editor -> Editor : fits / placement guard
-  alt 허용된 배치
-    Editor -> Cmd : 새 Command.execute()
-    Cmd -> Cells : 죽어 있던 대상만 setAlive(true)
-    Cmd -> Cmd : 실제 추가 좌표를 기록
-    Cmd --> Editor : 변경 여부
-    Editor -> Editor : 최초 성공은 history에 추가\n후속 성공은 stroke.include(command)
-  else 범위 초과 / guard 거부
-    Editor --> UI : 거부 (변경·이력 없음)
+  Editor -> Editor : fits / canPlace 재검사
+  opt 모델 검사 허용
+   Editor -> Cmd : 새 Command.execute()
+   Cmd -> Cells : 죽어 있던 대상만 setAlive(true)
+   Cmd --> Editor : 변경 여부
+   opt 실제 변경 있음
+    alt 작업의 첫 성공
+     Editor -> Editor : history.push(command) / stroke 지정
+    else 같은 작업의 후속 성공
+     Editor -> Cmd : stroke.include(command)
+    end
+   end
   end
+ end
 end
 User -> UI : 버튼 해제
 UI -> Editor : endStroke()
-Editor -> UI : onEdit(TEMPLATE) [변경이 있었을 때]
-UI -> UI : PropertyChange / 외부 구독자에 전달
+opt 작업에 실제 변경 있음
+ Editor -> UI : onEdit(TEMPLATE)
+end
 User -> UI : Undo 버튼 / Ctrl+Z
-UI -> Editor : undo()
-Editor -> Cmd : 마지막 작업.undo()
-Cmd -> Cells : 기록한 추가 좌표만 setAlive(false)
-Editor -> UI : onEdit(TEMPLATE_UNDO)
+UI -> Editor : endStroke() / canUndo()
+opt 유효한 이력 있음
+ UI -> Clock : stop()
+ UI -> Editor : undo()
+ Editor -> Editor : endStroke() / history.pop()
+ Editor -> Cmd : undo()
+ Cmd -> Cells : 추가 좌표만 setAlive(false)
+ Editor -> UI : onEdit(TEMPLATE_UNDO)
+end
+note over UI, Editor
+빈 Undo는 시계를 멈추지 않는다.
+모델 직접 호출: 범위 밖은 예외, guard 거부는 false.
+UI는 위 검사를 통과한 위치만 모델에 전달한다.
+end note
 @enduml

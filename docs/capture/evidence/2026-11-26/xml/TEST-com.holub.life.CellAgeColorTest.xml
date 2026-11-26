@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.CellAgeColorTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-11-26T07:24:35.227Z" hostname="DESKTOP-4CP7K21" time="1.576">
+  <properties/>
+  <testcase name="captureCopiesOnlyLivingCellsRegardlessOfColorAndAge()" classname="com.holub.life.CellAgeColorTest" time="0.167"/>
+  <testcase name="survivorAgesNewbornStartsAtZeroAndRebornCellStartsOver()" classname="com.holub.life.CellAgeColorTest" time="0.017"/>
+  <testcase name="cellRevivedByClickStartsAtAgeZero()" classname="com.holub.life.CellAgeColorTest" time="0.017"/>
+  <testcase name="storeThenLoadKeepsCellsAndRestartsColor()" classname="com.holub.life.CellAgeColorTest" time="0.03"/>
+  <testcase name="colorChangesWithAgeFollowsTheCurrentPolicy()" classname="com.holub.life.CellAgeColorTest" time="0.002"/>
+  <testcase name="setColorPolicyRejectsNullAndKeepsThePreviousPolicy()" classname="com.holub.life.CellAgeColorTest" time="0.006"/>
+  <testcase name="stillLifeChangesColorEveryTenGenerationsAndWrapsAround()" classname="com.holub.life.CellAgeColorTest" time="0.02"/>
+  <testcase name="cellClickedAfterClearStartsRed()" classname="com.holub.life.CellAgeColorTest" time="0.013"/>
+  <testcase name="lifeRuleIsUnchanged()" classname="com.holub.life.CellAgeColorTest" time="1.248"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

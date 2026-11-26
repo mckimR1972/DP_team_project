@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.UniverseColorTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-21T14:59:07.654Z" hostname="OSANCOMPUTER" time="1.619">
+  <properties/>
+  <testcase name="ageIsCountedWhileCyclingIsOffSoSwitchingOnShowsTheRightColor()" classname="com.holub.life.UniverseColorTest" time="0.119"/>
+  <testcase name="cyclingTickRequestsRepaintEvenWhenNothingChanges()" classname="com.holub.life.UniverseColorTest" time="0.012"/>
+  <testcase name="stillLifeCyclesThroughColorsWhenNothingElseChanges()" classname="com.holub.life.UniverseColorTest" time="0.047"/>
+  <testcase name="stillLifeStaysRedWhileCyclingIsOff()" classname="com.holub.life.UniverseColorTest" time="0.025"/>
+  <testcase name="singleColorBringsBackTheOriginalRed()" classname="com.holub.life.UniverseColorTest" time="0.042"/>
+  <testcase name="tickWithCyclingOffRepaintsOnlyWhenCellsChange()" classname="com.holub.life.UniverseColorTest" time="0.014"/>
+  <testcase name="placementAndUndoPreserveExistingCellAge()" classname="com.holub.life.UniverseColorTest" time="0.034"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

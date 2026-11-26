@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.StatisticsTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-11-26T08:49:03.999Z" hostname="DESKTOP-4CP7K21" time="0.434">
+  <properties/>
+  <testcase name="unchangedGenerationReportsMeasuredZeroRatherThanUnavailable()" classname="com.holub.life.StatisticsTest" time="0.108"/>
+  <testcase name="initialSnapshotReportsPopulationAndSuppliedGeneration()" classname="com.holub.life.StatisticsTest" time="0.016"/>
+  <testcase name="countsAllBirthsInSuppliedTransition()" classname="com.holub.life.StatisticsTest" time="0.002"/>
+  <testcase name="hasNoSummaryBeforeFirstEvent()" classname="com.holub.life.StatisticsTest" time="0.002"/>
+  <testcase name="blinkerUsesTheSuppliedCoordinates()" classname="com.holub.life.StatisticsTest" time="0.003"/>
+  <testcase name="rejectsMissingCallbackAndEvent()" classname="com.holub.life.StatisticsTest" time="0.006"/>
+  <testcase name="extinctionCountsAllDeaths()" classname="com.holub.life.StatisticsTest" time="0.002"/>
+  <testcase name="fullBoardHasOneHundredPercentPopulation()" classname="com.holub.life.StatisticsTest" time="0.002"/>
+  <testcase name="publishesOneSummaryForEachEvent()" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="firstGenerationAlreadyContainsItsOwnDelta()" classname="com.holub.life.StatisticsTest" time="0.002"/>
+  <testcase name="emptyBoardHasZeroPopulationAndPercentage()" classname="com.holub.life.StatisticsTest" time="0.001"/>
+  <testcase name="[1] &quot;EDIT&quot;, &quot;5&quot;" classname="com.holub.life.StatisticsTest" time="0.066"/>
+  <testcase name="[2] &quot;TEMPLATE&quot;, &quot;5&quot;" classname="com.holub.life.StatisticsTest" time="0.003"/>
+  <testcase name="[3] &quot;TEMPLATE_UNDO&quot;, &quot;5&quot;" classname="com.holub.life.StatisticsTest" time="0.003"/>
+  <testcase name="[4] &quot;CLEAR&quot;, &quot;0&quot;" classname="com.holub.life.StatisticsTest" time="0.002"/>
+  <testcase name="[5] &quot;LOAD&quot;, &quot;0&quot;" classname="com.holub.life.StatisticsTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

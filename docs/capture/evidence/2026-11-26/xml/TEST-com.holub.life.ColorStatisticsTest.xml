@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.ColorStatisticsTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-11-26T07:24:52.021Z" hostname="DESKTOP-4CP7K21" time="0.309">
+  <properties/>
+  <testcase name="rejectsMissingColorListOrMissingColorEntry()" classname="com.holub.life.ColorStatisticsTest" time="0.052"/>
+  <testcase name="eventCopiesTheSourceColorListAndExposesOnlyAnImmutableList()" classname="com.holub.life.ColorStatisticsTest" time="0.04"/>
+  <testcase name="laterEventsReplaceCountsWithoutMutatingPreviousSummaries()" classname="com.holub.life.ColorStatisticsTest" time="0.005"/>
+  <testcase name="policyChangeWithoutAGenerationKeepsDeltaUnavailable()" classname="com.holub.life.ColorStatisticsTest" time="0.002"/>
+  <testcase name="groupsColorsByValueAndSupportsColorsOutsideTheDefaultPalette()" classname="com.holub.life.ColorStatisticsTest" time="0.002"/>
+  <testcase name="summaryDefensivelyCopiesItsColorResults()" classname="com.holub.life.ColorStatisticsTest" time="0.002"/>
+  <testcase name="policyChangePreservesTheLastGenerationDeltaWhileReplacingColors()" classname="com.holub.life.ColorStatisticsTest" time="0.003"/>
+  <testcase name="calculatesEachColorAgainstLivingCellsInsteadOfBoardArea()" classname="com.holub.life.ColorStatisticsTest" time="0.011"/>
+  <testcase name="policyChangeAfterEditingDoesNotRestoreAnOldGenerationDelta()" classname="com.holub.life.ColorStatisticsTest" time="0.008"/>
+  <testcase name="singleColorUsesOneHundredPercentEvenOnASparseBoard()" classname="com.holub.life.ColorStatisticsTest" time="0.002"/>
+  <testcase name="[1] 0" classname="com.holub.life.ColorStatisticsTest" time="0.019"/>
+  <testcase name="[2] 2" classname="com.holub.life.ColorStatisticsTest" time="0.001"/>
+  <testcase name="emptyBoardRemovesPreviousColorsWithoutDividingByZero()" classname="com.holub.life.ColorStatisticsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

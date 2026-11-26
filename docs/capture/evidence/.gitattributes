@@ -1,0 +1,4 @@
+*.xml text eol=lf
+*.log text eol=lf
+*.json text eol=lf
+*.png binary
