@@ -51,7 +51,7 @@ public final class PatternFeatureTest {
     void capturePreservesOffsetsAndMargins() throws Exception {
         Files.createDirectories(Paths.get("build"));
         Cell board = board();
-        BoardEditor editor = new BoardEditor(board);
+        BoardEditor editor = new BoardEditor(board, kind -> { });
         editor.place(glider(), new Point(3, 4));
         boolean[][] original = snapshot(board);
         PatternTemplate captured = editor.capture("Captured", new Rectangle(2, 3, 5, 5));
@@ -64,7 +64,7 @@ public final class PatternFeatureTest {
     void repeatPlacementAndUndo() throws Exception {
         Files.createDirectories(Paths.get("build"));
         Cell board = board();
-        BoardEditor editor = new BoardEditor(board);
+        BoardEditor editor = new BoardEditor(board, kind -> { });
         editor.place(glider(), new Point(3, 4));
         boolean[][] original = snapshot(board);
         PatternTemplate captured = editor.capture("Captured", new Rectangle(2, 3, 5, 5));
@@ -82,7 +82,7 @@ public final class PatternFeatureTest {
     void transparentOverlapAndNoOp() throws Exception {
         Files.createDirectories(Paths.get("build"));
         Cell board = board();
-        BoardEditor editor = new BoardEditor(board);
+        BoardEditor editor = new BoardEditor(board, kind -> { });
 
         editor.place(PatternTemplate.fromRows("Seed", "O"), new Point(7, 7));
         editor.place(glider(), new Point(7, 7));
@@ -97,7 +97,7 @@ public final class PatternFeatureTest {
     void boundsAndEmptyCapture() throws Exception {
         Files.createDirectories(Paths.get("build"));
         Cell board = board();
-        BoardEditor editor = new BoardEditor(board);
+        BoardEditor editor = new BoardEditor(board, kind -> { });
 
         boolean[][] beforeInvalid = snapshot(board);
         rejects(() -> editor.place(glider(), new Point(14, 14)));
@@ -114,7 +114,7 @@ public final class PatternFeatureTest {
     void historyInvalidation() throws Exception {
         Files.createDirectories(Paths.get("build"));
         Cell board = board();
-        BoardEditor editor = new BoardEditor(board);
+        BoardEditor editor = new BoardEditor(board, kind -> { });
         editor.place(glider(), new Point(3, 4));
 
         editor.clearHistory();
@@ -177,7 +177,7 @@ public final class PatternFeatureTest {
         Files.createDirectories(Paths.get("build"));
 
         Cell crossing = board();
-        new BoardEditor(crossing).place(glider(), new Point(2, 2));
+        new BoardEditor(crossing, kind -> { }).place(glider(), new Point(2, 2));
         boolean[][] expected = snapshot(crossing);
         for (int generation = 0; generation < 40; generation++) {
             expected = referenceStep(expected);
@@ -196,7 +196,7 @@ public final class PatternFeatureTest {
             Cell randomBoard = board();
             boolean[][] seed = new boolean[16][16];
             for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) seed[y][x] = random.nextDouble() < 0.22;
-            new BoardEditor(randomBoard).place(new PatternTemplate("Random", seed), new Point());
+            new BoardEditor(randomBoard, kind -> { }).place(new PatternTemplate("Random", seed), new Point());
             expected = seed;
             for (int generation = 0; generation < 30; generation++) {
                 expected = referenceStep(expected);

@@ -19,7 +19,6 @@ public final class BoardEditor {
     private boolean grouping;
     private PlacePatternCommand stroke;
 
-    public BoardEditor(Cell board) { this(board, kind -> { }); }
     public BoardEditor(Cell board, Consumer<EditKind> onEdit) {
         this.board = Objects.requireNonNull(board);
         this.onEdit = Objects.requireNonNull(onEdit);

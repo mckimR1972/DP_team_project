@@ -204,7 +204,7 @@ class PatternToolsTest {
         SwingUtilities.invokeAndWait(() -> {
             Color blue = new Color(0x0072B2);
             Resident.setColorPolicy(new CyclingColorPolicy(10, Color.RED, blue));
-            new BoardEditor(cells).place(PatternTemplate.fromRows("Block", "OO", "OO"), new Point(0, 0));
+            new BoardEditor(cells, kind -> { }).place(PatternTemplate.fromRows("Block", "OO", "OO"), new Point(0, 0));
             for (int i = 0; i < 10; i++) {
                 cells.figureNextState(Cell.DUMMY, Cell.DUMMY, Cell.DUMMY, Cell.DUMMY,
                         Cell.DUMMY, Cell.DUMMY, Cell.DUMMY, Cell.DUMMY);

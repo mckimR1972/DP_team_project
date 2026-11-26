@@ -46,7 +46,7 @@ class CellAgeColorTest {
         placeBlock(0, 0);
         tick(10);
         assertEquals(BLUE, colorAt(0, 0));
-        BoardEditor editor = new BoardEditor(board);
+        BoardEditor editor = new BoardEditor(board, kind -> { });
         PatternTemplate blue = editor.capture("blue", new Rectangle(0, 0, 3, 3));
         tick(10);
         assertEquals(GREEN, colorAt(0, 0));
