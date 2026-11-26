@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant C as Clock
+    participant U as Universe / Clock.Listener
+    participant B as outermostCell
+    participant S as Statistics
+    participant P as StatisticsPanel
+    C->>U: tick()
+    U->>B: figureNextState(...)
+    U->>U: before = liveCells()
+    Note over U,B: 기존 프리즈 고정 처리 후 전이
+    U->>B: transition()
+    U->>U: generation++
+    Note over U,B: 기존 프리즈 만료 처리 완료
+    U->>U: notifyBoardChanged(GENERATION, before)
+    U->>U: createBoardChangeEvent(kind, before)
+    U->>S: onBoardChanged(event)
+    S->>S: calculate(event)
+    S->>S: currentSummary = summary
+    S->>P: showStatistics(summary) via Consumer.accept
+    U->>U: refreshNow() when needed

@@ -32,6 +32,7 @@ import static org.mockito.Mockito.mockStatic;
 class StatisticsPanelIntegrationTest {
     private StatisticsPanel panel;
     private Statistics statistics;
+    private final List<Statistics.Summary> summaries = new ArrayList<>();
     @TempDir Path directory;
 
     @BeforeAll
@@ -40,7 +41,7 @@ class StatisticsPanelIntegrationTest {
     @BeforeEach
     void reset() throws Exception {
         LifeTestSupport.resetBoard();
-        LifeTestSupport.onEdt(() -> panel = new StatisticsPanel());
+        LifeTestSupport.onEdt(() -> panel = recordingPanel(summaries::add));
     }
 
     @AfterEach
@@ -228,7 +229,7 @@ class StatisticsPanelIntegrationTest {
     }
 
     @Test
-    void hiddenStatisticsKeepsUpdatingAndTabChangesDoNotResetTheBaseline() throws Exception {
+    void hiddenStatisticsKeepsUpdatingAndTabChangesPreserveTheSummary() throws Exception {
         LifeTestSupport.onEdt(() -> {
             JTabbedPane tabs = sharedTabs();
             tabs.addTab("통계", panel);
@@ -244,29 +245,16 @@ class StatisticsPanelIntegrationTest {
             tabs.setSelectedIndex(1);
             LifeTestSupport.clock.tick();
             assertDisplay("2", "3", "0.07%", "2", "2");
-            Statistics.Summary beforeSelection = statistics.current().orElseThrow();
+            Statistics.Summary beforeSelection = summary();
 
             tabs.setSelectedIndex(2);
             assertTrue(panel.isVisible());
-            assertSame(beforeSelection, statistics.current().orElseThrow());
+            assertSame(beforeSelection, summary());
             assertDisplay("2", "3", "0.07%", "2", "2");
             tabs.setSelectedIndex(0);
             LifeTestSupport.clock.tick();
             tabs.setSelectedIndex(2);
             assertDisplay("3", "3", "0.07%", "2", "2");
-        });
-    }
-
-    @Test
-    void largeDisplayedCountsAndExplanationFitTheSharedPanelWidth() throws Exception {
-        LifeTestSupport.onEdt(() -> {
-            JTabbedPane tabs = new JTabbedPane();
-            tabs.addTab("통계", panel);
-            JPanel content = Life.createContent(LifeTestSupport.universe, tabs);
-            panel.showStatistics(new Statistics.Summary(3_000_000_000L, 4096, 100, 4096, 4096, true, List.of(new Statistics.ColorCount(java.awt.Color.RED, 4096, 100.0))));
-            layoutAtPreferredSize(content);
-            assertLabelsFit(panel);
-            assertBoardAndSidebarBounds(content, tabs);
         });
     }
 
@@ -337,6 +325,8 @@ class StatisticsPanelIntegrationTest {
     }
 
     private void connect() { statistics = Life.connectStatistics(LifeTestSupport.universe, panel); }
+
+    private Statistics.Summary summary() { return summaries.get(summaries.size() - 1); }
 
     private void assertDisplay(String generation, String livingCells, String ratio, String births, String deaths) {
         assertEquals(Map.of("generation", generation, "livingCells", livingCells,

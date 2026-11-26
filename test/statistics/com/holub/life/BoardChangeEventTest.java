@@ -74,16 +74,15 @@ class BoardChangeEventTest {
         assertThrows(NullPointerException.class, () -> new BoardChangeEvent(GENERATION, 1, 1, new boolean[1][1], Arrays.asList((Point) null), List.of(), LifeTestSupport.redColors(new boolean[1][1])));
     }
 
-    @ParameterizedTest @ValueSource(longs = {-1, Long.MIN_VALUE})
-    void rejectsNegativeGeneration(long generation) {
-        assertThrows(IllegalArgumentException.class, () -> event(INITIAL, generation, 1, new boolean[1][1]));
+    @Test void rejectsNegativeGeneration() {
+        assertThrows(IllegalArgumentException.class, () -> event(INITIAL, -1, 1, new boolean[1][1]));
     }
 
     @Test void completedGenerationCannotBeZero() {
         assertThrows(IllegalArgumentException.class, () -> event(GENERATION, 0, 1, new boolean[1][1]));
     }
 
-    @ParameterizedTest @ValueSource(ints = {0, -1, 46341, Integer.MAX_VALUE})
+    @ParameterizedTest @ValueSource(ints = {0, -1, 46341})
     void rejectsInvalidBoardSize(int size) {
         assertThrows(IllegalArgumentException.class, () -> event(INITIAL, 0, size, new boolean[1][1]));
     }

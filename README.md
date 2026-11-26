@@ -89,7 +89,7 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 | [docs/capture/capture.md](docs/capture/capture.md) | 팀 공유용 캡처 기능 명세·GoF·UML·연산 계약·대표 테스트 |
 | [docs/capture/README.md](docs/capture/README.md) | 캡처 기능·설계 결정·통합·전체 테스트·도식과 검증 근거를 모은 상세 문서 |
 | [docs/fixes/fix-single-step-halt.md](docs/fixes/fix-single-step-halt.md) | 실행 중 Tick(Single Step)이 멈추지 않는 문제: 원인, 수정, 다른 방법, 수정 전후 테스트 |
-| [docs/freezing/FREEZING.md](docs/freezing/FREEZING.md) | Freezing(영역 고정) 기능: 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 검증 |
+| [docs/freezing/freezing.md](docs/freezing/freezing.md) | 영역별 세대 고정(Freezing) 기능: 요구사항과 유스케이스, 바뀐 코드, UML 다이어그램, 패턴과 설계 결정, 테스트 |
 
 ## GitHub 사용 규칙 (팀 공통)
 

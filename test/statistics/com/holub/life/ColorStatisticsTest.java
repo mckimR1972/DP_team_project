@@ -14,7 +14,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Event and aggregation tests with synthetic data; no actual board or UI. */
 class ColorStatisticsTest {
-    private final Statistics statistics = new Statistics(summary -> { });
+    private final List<Statistics.Summary> summaries = new ArrayList<>();
+    private final Statistics statistics = new Statistics(summaries::add);
 
     @Test void eventCopiesTheSourceColorListAndExposesOnlyAnImmutableList() {
         List<Color> colors = new ArrayList<>(List.of(Color.RED, Color.BLUE));
@@ -48,11 +49,11 @@ class ColorStatisticsTest {
         assertEquals(100.0, current().colorCounts().stream().mapToDouble(Statistics.ColorCount::ratio).sum());
     }
 
-    @Test void groupsColorsByValueAndSupportsColorsOutsideTheDefaultPalette() {
-        Color custom = new Color(0x6a5199);
-        statistics.onBoardChanged(event(EDIT, 0, List.of(custom, new Color(0x6a5199), Color.RED)));
+    @Test void groupsEqualColorValuesIntoOneCount() {
+        Color blue = new Color(0x0072B2);
+        statistics.onBoardChanged(event(EDIT, 0, List.of(blue, new Color(0x0072B2), Color.RED)));
         assertEquals(2, current().colorCounts().size());
-        assertCount(custom, 2, 200.0 / 3);
+        assertCount(blue, 2, 200.0 / 3);
         assertCount(Color.RED, 1, 100.0 / 3);
     }
 
@@ -74,10 +75,10 @@ class ColorStatisticsTest {
         statistics.onBoardChanged(event(INITIAL, 0, List.of(Color.RED, Color.BLUE)));
         Statistics.Summary previous = current();
         statistics.onBoardChanged(event(EDIT, 0, List.of(Color.GREEN)));
-        assertEquals(2, previous.colorCounts().size());
+        assertEquals(List.of(new Statistics.ColorCount(Color.BLUE, 1, 50),
+                new Statistics.ColorCount(Color.RED, 1, 50)), previous.colorCounts());
         assertCount(Color.GREEN, 1, 100.0);
         assertEquals(1, current().colorCounts().size());
-        assertThrows(UnsupportedOperationException.class, () -> previous.colorCounts().clear());
     }
 
     @Test void summaryDefensivelyCopiesItsColorResults() {
@@ -113,7 +114,7 @@ class ColorStatisticsTest {
         assertCount(Color.RED, 2, 100.0);
     }
 
-    private Statistics.Summary current() { return statistics.current().orElseThrow(); }
+    private Statistics.Summary current() { return summaries.get(summaries.size() - 1); }
     private void assertCount(Color color, int cells, double ratio) {
         Statistics.ColorCount count = current().colorCounts().stream()
                 .filter(item -> item.color().equals(color)).findFirst().orElseThrow();

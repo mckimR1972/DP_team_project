@@ -1,0 +1,44 @@
+@startuml sd-select-region
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd selectRegion(start, end)
+
+participant ":FreezingTools" as T
+participant ":FreezingManager" as M
+participant ":Universe" as U
+
+note over T, U : 사용자가 보드(:Universe)를 누르고 끌고 놓으면\nSwing이 FreezingTools의 마우스 리스너를 부른다.\nselecting이 false이면 리스너는 바로 돌아간다
+
+[o-> T : mousePressed(e)
+alt 오른쪽 버튼
+  T -> T : cancel()
+else 왼쪽 버튼
+  T -> T : cellAt(e.getPoint(), false)
+  T -->> T : anchor = cellAt(...): Point
+  note right of T : 보드 밖을 누르면 null이고\n선택을 시작하지 않는다
+  opt anchor != null
+    T -> T : selectThrough(anchor)
+  end
+end
+
+loop 끄는 동안
+  [o-> T : mouseDragged(e)
+  T -> T : selectThrough(cellAt(e.getPoint(), true))
+end
+
+[o-> T : mouseReleased(e)
+T -> T : selectThrough(cellAt(e.getPoint(), true))
+note right of T : anchor = null
+
+group selectThrough(end)가 매번 하는 일
+  note over T : selection = anchor와 end를\n두 모서리로 하는 사각형
+  T -> M : overlapsFrozen(selection)
+  M -->> T : overlaps = overlapsFrozen(selection): boolean
+  note right of T : install 버튼 사용 가능 = !overlaps
+  T ->> U : repaint()
+end
+@enduml
