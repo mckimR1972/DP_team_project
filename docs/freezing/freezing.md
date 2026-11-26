@@ -186,7 +186,7 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 
 ## 2. 기존 코드에서 바뀐 부분
 
-원본 클래스 중 `Cell`, `Neighborhood`, `Resident`, `Universe`, `Life`를 고쳤다. 원본은 Holub 코드 그대로다. 아래 표의 "Freezing 전"과 코드의 `-` 줄은 Freezing을 붙이기 직전의 코드이고, 그중 Holub 원본에 없던 것(셀의 나이, 통계·사운드 이벤트, 캡처·배치 편집 중 틱 건너뛰기)은 다른 기능이 더한 것이다. Holub 코드의 오류를 고친 내용은 [docs/fixes/](../fixes/)에 있다.
+원본 클래스 중 `Cell`, `Neighborhood`, `Resident`, `Universe`, `Life`를 고쳤다. 원본은 Holub 코드 그대로다. 아래 표의 "Freezing 전"과 코드의 `-` 줄은 Freezing을 붙이기 직전의 코드이고, 그중 Holub 원본에 없던 것(셀의 나이, 통계·사운드 이벤트, 캡처·배치 편집 중 틱 건너뛰기)은 다른 기능이 더한 것이다. Holub 코드의 오류를 고친 내용은 [원본 코드 대비 개선 사항](../original-improvements.md)에 있다.
 
 ### 2.1 Cell 계층: 좌표로 다음 생사만 바꾼다
 
