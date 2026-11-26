@@ -243,7 +243,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 | N1 | 게임 로직(`Universe`, `Cell`)은 사운드 패키지를 몰라야 한다. 사운드를 빼도 게임은 그대로 동작한다 | `Universe`와 `Cell` 계층은 사운드 패키지를 import하지 않는다. 게임 쪽에서 사운드를 아는 곳은 프로그램 시작점인 `Life`의 `SoundEffects.install()` 한 줄뿐이라, 이 호출을 빼면 소리만 빠진다 |
 | N2 | 세대를 진행하는 Swing 이벤트 스레드는 소리 때문에 기다리면 안 된다 | 모든 음은 스케줄러에 예약만 한다. `birthStrumNoteLengthsAndPercussionDelayRemainUnchanged`가 예약 목록을 확인하고, `sweepUsesAnIndependentSnapshotOnItsWorkerThread`가 재생선이 다른 스레드에서 판의 복사본만 읽는지 확인한다 |
 | N3 | MIDI 신시사이저가 없는 환경에서도 게임이 정상 실행되어야 한다 | `missingMidiDeviceDoesNotPreventStatisticsFromAdvancing` |
-| N4 | 기존 기능이 그대로 동작해야 한다 | 사운드 작업 전에 있던 테스트(기본 오류를 고칠 때 만든 `ResidentTest` 18개, `NeighborhoodTest` 11개, `UniverseStoreTest` 3개)가 그대로 통과한다 |
+| N4 | 기존 기능이 그대로 동작해야 한다 | 사운드 작업 전에 있던 테스트(원본 오류를 고칠 때 만든 `ResidentTest` 18개, `NeighborhoodTest` 11개, `UniverseStoreTest` 3개. 고친 내용은 `docs/original-improvements.md`)가 그대로 통과한다 |
 | N5 | 음을 고르는 규칙은 MIDI 장치와 화면 없이 테스트할 수 있어야 한다 | `NoteMapper`, `RepeatTracker`, `SoundSettings`는 MIDI와 Swing을 쓰지 않는다. 테스트에서는 랜덤에 시드를 넣어 결과를 고정한다 |
 
 ## 4. 적용한 GoF 패턴

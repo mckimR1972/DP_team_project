@@ -36,7 +36,7 @@ User -> System : setInstrument(SWEEP, 하프)
 System --> User : 재생선이 하프 소리로 바뀜
 
 User -> System : selectSoundOff()
-System --> User : 소리가 멈추고 재생선이 사라짐
+System --> User : 다음 재생선 스텝에서 재생선이 사라지고 패드가 꺼짐\n(이미 예약된 음은 끝까지 울림)
 User -> System : selectSoundOn()
 System --> User : 재생선이 다시 돌며 현재 판을 연주
 @enduml

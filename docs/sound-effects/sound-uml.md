@@ -23,6 +23,8 @@
 
 두 패턴의 역할은 그림의 노트에 적었다. `Statistics`는 통계 기능의 클래스라서 이름만 그렸다.
 
+`Life`의 `universe` 필드, `Universe`의 `boardListeners`·`generation`·`addBoardChangeListener()`·`removeBoardChangeListener()`·`notifyBoardChanged()`, 그리고 `BoardChangeEvent`는 통계 기능을 합칠 때 생긴 것이다. 사운드가 설치되고(`install(universe)`) 판 변화를 받는 통로라서 남겼고, 등록과 해제는 Observer에서 Subject가 하는 일이라 함께 그렸다. 이벤트의 세대 번호(`generation`)와 색 목록(`aliveColors`)은 통계가 쓰는 값이고, 사운드는 종류(`kind()`), 판 복사본(`copyAliveCells()`), 생긴 셀(`copyBirths()`), 사라진 셀(`copyDeaths()`)만 읽는다.
+
 `SoundEffects`에서 `Universe`로 가는 연관은 재생선을 판 위에 그리기(`setPlayhead`) 위한 것이다. 판의 상태는 `Universe`에 묻지 않고 이벤트로만 받는다.
 
 ### 1.3 사운드 패키지 상세
@@ -69,7 +71,7 @@ Command 패턴의 역할은 그림의 범례에 적었다. `SoundEffects`(Client
 
 ![사운드 켜짐과 꺼짐 상태 다이어그램](diagram/state-sound.png)
 
-`SoundEffects` 객체의 상태다. 꺼져 있어도 이벤트는 계속 받아 `latestCells`를 바꿔 두기 때문에, 다시 켜면 그 사이에 편집한 판을 바로 연주한다. 꺼진 동안에는 `playStep`이 패드를 끄고 재생선을 지운 뒤 바로 끝나므로 재생선 위치와 코드는 그대로 멈춰 있다.
+사운드 기능의 상태다. 신시사이저를 열지 못하면 `SoundEffects` 객체가 만들어지지 않고 '소리 없음'에 머문다. 꺼져 있어도 이벤트는 계속 받아 `latestCells`를 바꿔 두기 때문에, 다시 켜면 그 사이에 편집한 판을 바로 연주한다. 꺼진 동안에는 `playStep`이 패드를 끄고 재생선을 지운 뒤 바로 끝나므로 재생선 위치와 코드는 그대로 멈춰 있다.
 
 ### 3.2 반복 페이드
 

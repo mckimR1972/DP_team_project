@@ -20,7 +20,7 @@ note over L, M : 모두 Swing 이벤트 스레드에서 실행된다
 L -> SC : install(universe)
 SC -> MS : getSynthesizer()
 
-alt MIDI 신시사이저를 열 수 없음
+alt getSynthesizer()나 open()에서 MidiUnavailableException
   MS --> SC : MidiUnavailableException
   SC --> L : "Sound disabled" 출력 후 반환
   note right of L : 리스너도 메뉴도 등록하지 않는다.\n게임은 소리 없이 그대로 실행된다

@@ -39,7 +39,8 @@ S --> D
 == sound-notes 스레드 ==
 
 Q -> S : applyInstruments()
-S -> CH : programChange(악기 번호)
+S -> CH : programChange(생성음·대량 생성·재생선 악기)
 S -> CH : noteOff(누르던 패드 음)
+S -> CH : programChange(패드 악기)
 note right of CH : 패드는 다음 스텝에\n새 악기로 다시 시작한다
 @enduml

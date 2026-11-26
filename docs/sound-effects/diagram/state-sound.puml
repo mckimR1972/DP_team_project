@@ -22,8 +22,10 @@ Off : onBoardChanged(e) / latestCells = e.copyAliveCells()
 Off : playStep / 패드 끄기, setPlayhead(-1)
 Off : Settings 선택 / showSettings()
 
-[*] --> NoDevice : install(universe)\n[신시사이저를 열 수 없음]
-[*] --> On : install(universe)\n[신시사이저를 열었음]\n/ addBoardChangeListener(effects),\nscheduleAtFixedRate(playStep, 0, 150ms)
+state Installed <<choice>>
+[*] --> Installed : / install(universe)
+Installed --> NoDevice : [신시사이저를 열 수 없음]
+Installed --> On : [신시사이저를 열었음]\n/ addBoardChangeListener(effects),\nscheduleAtFixedRate(playStep, 0, 150ms)
 
 On --> Off : Sound > Off\n/ enabled = false
 Off --> On : Sound > On\n/ enabled = true

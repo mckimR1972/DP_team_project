@@ -27,9 +27,9 @@ class Universe {
 class Clock {
   - publisher : Publisher
   + {static} instance() : Clock
-  + startTicking(ms : int)
+  + startTicking(millisecondsBetweenTicks : int)
   + stop()
-  + addClockListener(observer : Listener)
+  + addClockListener(observer : Clock.Listener)
   + tick()
 }
 
@@ -38,9 +38,10 @@ interface "Clock.Listener" as ClockListener <<interface>> {
 }
 
 class Publisher {
+  - subscribers : Publisher.Node
   + subscribe(subscriber : Object)
   + cancelSubscription(subscriber : Object)
-  + publish(deliveryAgent : Distributor)
+  + publish(deliveryAgent : Publisher.Distributor)
 }
 
 interface Cell <<interface>> {
@@ -49,7 +50,7 @@ interface Cell <<interface>> {
   + isAlive() : boolean
   + widthInCells() : int
   + userClicked(here : Point, surface : Rectangle)
-  + transfer(memento : Storable, upperLeft : Point, doLoad : boolean) : boolean
+  + transfer(memento : Storable, upperLeftCorner : Point, doLoad : boolean) : boolean
   + createMemento() : Storable
 }
 
@@ -64,7 +65,7 @@ class Resident {
 }
 
 class MenuSite {
-  + {static} addLine(requester : Object, menu : String, name : String, listener : ActionListener)
+  + {static} addLine(requester : Object, toThisMenu : String, name : String, listener : ActionListener)
 }
 
 Life ..> Universe : <<use>>
@@ -75,7 +76,7 @@ Neighborhood "1" *-- "64" Cell : grid
 
 Universe ..> MenuSite : <<use>>
 Clock "1" --> "1" Publisher : publisher
-Publisher "1" o-- "*" ClockListener : subscribers
+Clock +-- ClockListener
 Universe ..> ClockListener : <<create>>
 
 note left of Life
@@ -92,7 +93,14 @@ note right of Universe
 end note
 
 note bottom of Cell
-  isAlive()는 "이 블록 안에 산 셀이 있는가"이다.
+  Cell 주석에 따르면 isAlive()는
+  "이 블록 안에 산 셀이 있는가"를 묻는다.
   좌표 하나의 생사를 묻는 연산은 없다.
+end note
+note bottom of Publisher
+  subscribe()는 새 구독자를 subscribers 맨 앞에 넣고,
+  publish()는 앞에서부터 차례로 알린다.
+  Clock.tick()은 각 구독자를 Clock.Listener로 바꿔
+  tick()을 부른다.
 end note
 @enduml

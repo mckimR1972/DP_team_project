@@ -14,6 +14,7 @@ title 사운드를 붙인 뒤: 게임과 사운드의 연결
 
 package "com.holub.life" {
   class Life {
+    - universe : Universe
     - Life()
   }
 
@@ -27,7 +28,7 @@ package "com.holub.life" {
     + removeBoardChangeListener(listener : BoardChangeListener)
     + **liveCells() : boolean[][]**
     + **setPlayhead(column : int)**
-    - notifyBoardChanged(kind : Kind, before : boolean[][])
+    - notifyBoardChanged(kind : BoardChangeEvent.Kind, before : boolean[][])
   }
 
   interface BoardChangeListener <<interface>> {
@@ -35,13 +36,13 @@ package "com.holub.life" {
   }
 
   class BoardChangeEvent {
-    - kind : Kind
+    - kind : BoardChangeEvent.Kind
     - generation : long
     - aliveCells : boolean[][]
     - births : List<Point>
     - deaths : List<Point>
     - aliveColors : List<Color>
-    + kind() : Kind
+    + kind() : BoardChangeEvent.Kind
     + generation() : long
     + copyAliveCells() : boolean[][]
     + copyBirths() : List<Point>
@@ -87,10 +88,10 @@ package "com.holub.life.sound" {
   }
 }
 
-Life ..> Universe : <<use>>
+Life "1" --> "1" Universe : universe
 Life ..> SoundEffects : <<use>>
 
-Universe "1" o-- "*" BoardChangeListener : boardListeners
+Universe "1" --> "0..*" BoardChangeListener : boardListeners
 Universe ..> BoardChangeEvent : <<create>>
 BoardChangeEvent +-- Kind
 BoardChangeListener <|.. Statistics

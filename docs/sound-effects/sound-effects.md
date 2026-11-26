@@ -90,7 +90,7 @@ notifyBoardChanged( BoardChangeEvent.Kind.GENERATION, before );  // 통계와 �
 
 ### 2.2 Cell 계층: 좌표로 셀 상태 묻기
 
-`Universe`가 판을 읽으려면 "r행 c열 셀이 살아 있는가"를 물을 수 있어야 하는데, 원래 `Cell` 인터페이스에는 그런 연산이 없었다. `isAlive()`는 "이 블록 안에 산 셀이 하나라도 있는가"를 묻는 것이라 용도가 다르다. 그래서 `Cell`에 `isAliveAt(row, column)`을 추가했다.
+`Universe`가 판을 읽으려면 "r행 c열 셀이 살아 있는가"를 물을 수 있어야 하는데, 원래 `Cell` 인터페이스에는 그런 연산이 없었다. `Cell` 주석에 따르면 `isAlive()`는 "이 블록 안에 산 셀이 하나라도 있는가"를 묻는 것이라 용도가 다르다. 그래서 `Cell`에 `isAliveAt(row, column)`을 추가했다.
 
 ```java
 // Cell

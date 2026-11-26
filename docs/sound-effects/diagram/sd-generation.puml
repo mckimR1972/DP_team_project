@@ -20,20 +20,21 @@ participant "voices[i] :\nMidiChannel" as V
 
 [o-> C : 시간 이벤트
 C -> U : tick()
+U -> N : figureNextState(Cell.DUMMY × 8)
 U -> U : before = liveCells()
 U -> N : transition()
 N --> U : changed
 U -> U : generation++
 U -> U : event = BoardChangeEvent(GENERATION,\nbefore와 비교한 births, deaths)
 U -> S : onBoardChanged(event)
-note right of U : 같은 이벤트를 Statistics도 받는다.\nFreezing 처리와 통계는 생략
+note right of U : 같은 이벤트를 Statistics도 받는다.\n패턴 도구·Freezing 처리와 통계는 생략
 S -> S : latestCells = event.copyAliveCells()
 
 alt births와 deaths가 모두 비어 있음
   S --> U
 else 생긴 셀 또는 사라진 셀이 있음
   S -> S : generationChanged(births, deaths)
-  opt enabled == false
+  break enabled == false
     S --> U
   end
   opt 반복 페이드 켜짐
@@ -42,7 +43,7 @@ else 생긴 셀 또는 사라진 셀이 있음
   end
 
   alt 반복 페이드 켜짐 and 판 전멸
-    S -> NM : endingChordFor(chord)
+    S -> NM : endingChordFor(currentChord())
     NM --> S : 3음
     loop 음마다 (0, 90, 180ms)
       S -> Q : schedule(noteOn 명령, i × 90ms)
@@ -51,17 +52,24 @@ else 생긴 셀 또는 사라진 셀이 있음
   else gain == 0 or 직전 소리 후 120ms 안
     note over S : 이번 세대는 건너뛴다
   else
-    S -> NM : notesFor(births, 64, chord)
+    S -> NM : notesFor(births, 64, currentChord())
     NM --> S : 최대 5음 (왼쪽부터 정렬)
     S -> NM : humanized(notes) [작은 흔들림 켜짐], scaled(notes, gain)
     NM --> S : notes
-    loop 생성음 켜짐 음마다 (voice = 0..4)
-      S -> Q : schedule(noteOn 명령, voice × 25ms + 흔들림)
-      S -> Q : schedule(noteOff 명령, + 220ms)
+    opt 생성음 켜짐
+      loop 음마다 (voice = 0부터, 최대 5음)
+        S -> Q : schedule(noteOn 명령, strumDelay(voice))
+        S -> Q : schedule(noteOff 명령, + 220ms)
+      end
     end
-    opt 대량 생성 켜짐 and births >= 12
-      S -> NM : burstLayerFor(births, notes)
-      S -> Q : schedule(대량 생성 레이어 noteOn / noteOff)
+    note right of S : strumDelay(voice) =\n(스트럼 켜짐 ? voice × 25ms : 0)\n+ 흔들림(작은 흔들림 켜짐이면 0~15ms)
+    opt 대량 생성 켜짐
+      S -> NM : burstLayerFor(births 수, notes)
+      NM --> S : 한 옥타브 위 레이어\n(births가 12개 미만이면 빈 목록)
+      loop 레이어 음마다
+        S -> Q : schedule(noteOn 명령, strumDelay(voice))
+        S -> Q : schedule(noteOff 명령, + 220ms)
+      end
     end
     opt 소멸 타악기 켜짐 and deaths가 있음
       S -> Q : schedule(타악기 명령, 60ms)
@@ -69,7 +77,9 @@ else 생긴 셀 또는 사라진 셀이 있음
   end
   S --> U
 end
-U -> U : refreshNow()
+opt changed or 셀 색이 나이에 따라 바뀜
+  U -> U : refreshNow()
+end
 
 == sound-notes 스레드 (예약한 시간이 되면) ==
 

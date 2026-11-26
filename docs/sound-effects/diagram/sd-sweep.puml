@@ -24,13 +24,15 @@ alt enabled == false
   S -> U : setPlayhead(-1)
 else
   S -> S : cells = latestCells
-  note right of S : 마지막 이벤트의 복사본.\nUniverse의 셀은 읽지 않는다
+  note right of S : 마지막 이벤트의 복사본.\nUniverse의 셀은 읽지 않는다.\n아직 없으면(null) 여기서 끝난다
   S -> S : firstColumn = step × 4
 
   alt 재생선 켜짐
     S -> U : setPlayhead(firstColumn)
-    S -> NM : sweepNotesFor(cells, firstColumn, 4, chord,\nstep % 4 == 0)
+    S -> NM : sweepNotesFor(cells, firstColumn, 4,\ncurrentChord(), step % 4 == 0)
     NM --> S : 최대 3음
+    S -> NM : humanized(notes) [작은 흔들림 켜짐]
+    NM --> S : notes
     loop 음마다
       S -> Q : schedule(noteOn 명령, 흔들림)
       S -> Q : schedule(noteOff 명령, + 400ms)
@@ -39,13 +41,18 @@ else
     S -> U : setPlayhead(-1)
   end
 
-  S -> NM : padNotesFor(chord), padLevelFor(산 셀 수)
-  NM --> S : 패드 음, 세기
+  S -> NM : padNotesFor(currentChord())
+  NM --> S : 패드 음
+  opt 저음 패드 켜짐
+    S -> NM : padLevelFor(산 셀 수)
+    NM --> S : 세기
+  end
+  note right of S : 저음 패드가 꺼져 있으면 세기 = 0
   alt 세기 == 0 (빈 판 또는 패드 꺼짐)
     S -> P : noteOff(누르던 패드 음)
   else
     S -> P : controlChange(EXPRESSION, 세기)
-    opt 코드가 바뀌었음
+    opt 누르고 있는 음과 다름 (코드가 바뀌었거나 새로 시작)
       S -> P : noteOff(이전 음), noteOn(새 음)
     end
   end
