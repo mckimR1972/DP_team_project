@@ -793,12 +793,6 @@ CO6과 CO7은 셀을 바꾸지 않는다. 풀린 영역의 셀은 지금 생사 
 - `FreezingManager`는 `FreezingTools`를 모르고 `Runnable` 목록만 가진다. 화면 없이 테스트할 수 있다(NFR-3).
 - `PatternTools`와 `FreezingTools`는 서로를 모른다. `PatternTools`는 배치 가드 `Predicate<Rectangle>` 하나, `FreezingTools`는 선택 시작 때 부를 `Runnable`(`beforeSelect`) 하나만 받는다. 둘을 아는 것은 `Universe`뿐이다.
 
-#### 핵심 구조만 보기
-
-전체 그림에서 화면·연결 클래스와 세부 멤버를 빼고, State 패턴과 세대 처리가 드러나는 클래스 아홉 개만 남긴 그림이다(굵은 단위의 클래스 명세). 4.1절의 State 패턴 설명은 이 그림을 기준으로 읽으면 된다.
-
-![Freezing 핵심 클래스 다이어그램](diagram/class-freezing-simple.png)
-
 ### 3.5 상태 다이어그램
 
 #### 3.5.1 영역 하나의 상태
