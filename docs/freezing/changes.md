@@ -1,7 +1,6 @@
 # Freezing: 상세 변경 내용과 기존 설계·코드와의 비교
 
-- 코드 기준: dev `838182c` (PR #7 병합 후). “기존”은 Freezing을 합치기 직전의 dev `d215c7a`(PR #16까지)이고, 원본 Holub 코드와 다른 점은 따로 적었다.
-- 확인 방법: `git diff d215c7a 838182c -- src`
+- 코드 기준: Freezing을 합친 뒤의 코드. “기존”은 Freezing을 합치기 직전의 코드이고, 원본 Holub 코드와 다른 점은 따로 적었다.
 - 이 문서는 최종 기능 명세 보고서가 아닌 다른 기능을 통합한 뒤 코드 변경사항을 기록하기 위한 작업용 문서이다.
 
 
@@ -20,12 +19,12 @@
 
 ## 2. 세대 처리: `Universe`의 틱
 
-### 2.1 원본 → 기존(dev) → 변경 후
+### 2.1 원본 → 기존 → 변경 후
 
 원본 Holub 코드의 틱은 계산과 전이 두 단계뿐이었고, 변화가 없으면 전이도 부르지 않았다.
 
 ```java
-// 원본 (cdcedf3)
+// 원본
 public void tick()
 {   if( outermostCell.figureNextState( Cell.DUMMY, ... ) )
     {   if( outermostCell.transition() )
@@ -34,10 +33,10 @@ public void tick()
 }
 ```
 
-Freezing을 합치기 전의 dev에서는 색 순환·캡처·통계·사운드가 이미 들어와 아래 순서였다.
+Freezing을 합치기 전의 코드에서는 색 순환·캡처·통계·사운드가 이미 들어와 아래 순서였다.
 
 ```java
-// 기존 (dev d215c7a)
+// 기존
 if (patternTools.isEditing()) return;
 patternTools.boardChanged();
 outermostCell.figureNextState( Cell.DUMMY, ... );
@@ -50,7 +49,7 @@ notifyBoardChanged(BoardChangeEvent.Kind.GENERATION, before);
 Freezing은 여기에 세 군데를 더했다.
 
 ```java
-// 변경 후 (dev 838182c, Universe.java 221~242행)
+// 변경 후 (Universe.java 221~242행)
 if (patternTools.isEditing() || freezingTools.isEditing()) return;   // ① 영역 선택 중에는 멈춤
 patternTools.boardChanged();
 outermostCell.figureNextState( Cell.DUMMY, ... );
@@ -119,7 +118,7 @@ public boolean holdNextState(Point location, boolean alive)
 색 순환 기능(PR #8)이 넣은 나이 계산에 조건 하나를 더했다.
 
 ```java
-// 기존 (dev d215c7a)
+// 기존
 public boolean transition()
 {   boolean changed = amAlive != willBeAlive;
     age = (amAlive && willBeAlive) ? age + 1 : 0;
@@ -143,7 +142,7 @@ public boolean transition()
 | 고정된 살아 있는 칸의 나이 | (Freezing 없음) 매 세대 +1 | 고정된 세대에는 그대로. 풀리면 멈췄던 값에서 이어서 센다 |
 | 색 규칙(`CellColorPolicy`) | — | 고치지 않았다. 나이가 그대로이므로 어떤 규칙이든 색이 그대로다 |
 
-처음 구현(`ec3f314`, 2026-11-11)의 `holdNextState()`는 `willBeAlive`만 바꿨고 나이는 다루지 않았다. 당시 브랜치에는 색 순환이 없었기 때문이다. dev를 병합하면서(`feea0df`) `heldThisGeneration`을 추가했다.
+처음 구현(2026-11-11)의 `holdNextState()`는 `willBeAlive`만 바꿨고 나이는 다루지 않았다. 당시에는 색 순환이 없었기 때문이다. 다른 기능과 합치면서 `heldThisGeneration`을 추가했다.
 
 ## 5. 편집 제한: 브러시와 템플릿
 
@@ -241,9 +240,9 @@ if (tabs.getSelectedComponent() != freezing) universe.finishFreezingEditing();
 
 ## 8. 처음 구현에서 병합 뒤로 바뀐 것
 
-Freezing의 첫 커밋(`ec3f314`, 2026-11-11)은 색 순환·통계·사운드가 없는 브랜치에서 만들었다. dev를 병합한 커밋(`feea0df`, 2026-11-20)에서 아래를 고쳤다.
+Freezing의 처음 구현(2026-11-11)은 색 순환·통계·사운드가 없는 상태에서 만들었다. 다른 기능과 합치면서(2026-11-20) 아래를 고쳤다.
 
-| 항목 | 처음 구현 (`ec3f314`) | 병합 뒤 (`838182c`) | 바꾼 이유 |
+| 항목 | 처음 구현 | 병합 뒤 | 바꾼 이유 |
 | --- | --- | --- | --- |
 | 세대 번호 | `FreezingManager`가 `private long generation`을 갖고 `beginGeneration()`에서 올림 | 카운터 삭제. `Universe`의 값을 `LongSupplier`로 읽음 | 통계가 들어오면서 `Universe`에도 세대 번호가 생겼다. 두 곳에서 세면 초기화 시점이 어긋날 때 숫자가 달라진다 |
 | 스냅샷 읽기 | `board.createMemento()`로 보드 전체를 복사한 뒤 `memento.isAlive(point)` | `board.isAliveAt(row, column)` | 사운드·드래그가 추가한 좌표 조회 메서드가 생겨 필요한 칸만 물을 수 있게 됐다 |
