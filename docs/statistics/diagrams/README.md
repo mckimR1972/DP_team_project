@@ -16,7 +16,7 @@ PlantUML 1.2026.10과 Java 21 이상을 사용한다. 다이어그램 렌더링�
 java -Djava.awt.headless=true -jar /path/to/plantuml-1.2026.10.jar -charset UTF-8 -tpng docs/statistics/diagrams/statistics-use-cases.puml docs/statistics/diagrams/statistics-classes.puml
 ```
 
-유스케이스와 클래스는 팀 UML 통일안에 따라 흑백과 표준 관계 표기를 사용한다. 유스케이스는 행위자를 왼쪽에 배치하기 위해 Graphviz 배치 엔진을 사용하므로, 재생성할 때 Graphviz(`dot`)가 설치되어 있어야 한다. 클래스는 ELK 배치 엔진을 사용한다.
+유스케이스와 클래스는 팀 UML 통일안에 따라 흑백과 표준 관계 표기를 사용한다. 유스케이스는 Smetana 배치 엔진을, 클래스는 ELK 배치 엔진을 사용한다.
 
 ## 시퀀스 PNG 다시 생성
 
