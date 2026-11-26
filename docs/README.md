@@ -15,7 +15,7 @@
 | 사운드 UML | [sound-uml.md](sound-effects/sound-uml.md) | 클래스(전·후), 시퀀스, 상태 다이어그램, 시스템 시퀀스와 연산 계약 |
 | 사운드 보고서용 정리 | [sound-report.md](sound-effects/sound-report.md) | 팀 보고서의 사운드 칸(목적, 변경 전후, 패턴, 대안, UML, 테스트)과 공통 장의 사운드 부분 |
 | 단일 진행 오류 | [fix-single-step-halt.md](fixes/fix-single-step-halt.md) | 실행 중 Tick이 멈추지 않던 원본 오류의 원인, 수정, 테스트 |
-| Freezing (영역 고정) | [FREEZING.md](freezing/FREEZING.md) | 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 테스트 |
+| Freezing (영역 고정) | [freezing.md](freezing/freezing.md) | 기능 명세와 유스케이스, 바뀐 코드, UML 다이어그램, 패턴·설계 결정, 테스트 |
 
 캡처 문서 묶음에서는 요구사항 → 설계 결정 → 코드 → 테스트 → 도식의 ID를 연결한다. 이는 캡처 자료의 정리 방식이며, 다른 팀원의 문서 형식을 일괄 변경하는 규칙은 아니다.
 

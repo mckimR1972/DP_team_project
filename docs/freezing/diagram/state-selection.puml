@@ -1,0 +1,31 @@
+@startuml state-selection
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+hide empty description
+mainframe stm 영역 선택 모드 (FreezingTools.selecting)
+
+state "선택 안 함" as Idle
+Idle : selecting = false
+
+state "영역 선택 중" as Selecting
+Selecting : selecting = true
+Selecting : tick() / 무시 (세대가 진행되지 않는다)
+Selecting : selectRegion(start, end) / selection 갱신,
+Selecting : 설치 버튼 = 겹치지 않음
+
+[*] --> Idle : 프로그램 시작
+
+Idle --> Selecting : startRegionSelection()\n/ 패턴 편집 종료, 되돌리기 이력 비움,\nClock.stop()
+Selecting --> Selecting : startRegionSelection()\n/ 선택 다시 시작
+Selecting --> Idle : installFreezing() [설치 성공]
+Selecting --> Idle : cancelRegionSelection()\n(Esc, 오른쪽 클릭, 선택 끝내기, 탭 전환)
+Selecting --> Idle : Grid > Clear,\nLoad 성공\n/ reset()
+
+note bottom of Selecting
+  설치된 영역의 상태(State 패턴)와는 다른 것이다.
+  선택을 끝내도 설치된 영역은 남고,
+  시계는 저절로 다시 켜지지 않는다
+end note
+@enduml

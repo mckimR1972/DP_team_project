@@ -1,0 +1,36 @@
+@startuml state-region
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+hide empty description
+mainframe stm Freezing 영역 (FreezingRegion.state)
+
+state NormalState
+state NormalState : 규칙 그대로
+
+state FrozenState
+state FrozenState : remaining = 남은 세대
+state FrozenState : beforeTransition() / holdSnapshot(board)
+
+[*] --> NormalState : new FreezingRegion(area)
+
+NormalState -down-> FrozenState : freeze(board, n) [n >= 1]\n/ 스냅샷 저장, remaining = n
+FrozenState --> FrozenState : afterGeneration() [remaining > 1]\n/ remaining--
+FrozenState -up-> NormalState : afterGeneration() [remaining == 1]\n/ remaining = 0, 자동 해제
+FrozenState -up-> NormalState : release()\n강제 해제, 전체 해제, Clear, Load
+NormalState -right-> [*] : FreezingManager가\n목록에서 제거
+
+note left of FrozenState
+  가드는 afterGeneration()이
+  remaining을 줄이기 전의 값이다.
+  코드: if (--remaining <= 0) 전환
+end note
+
+note bottom of FrozenState
+  예: 세대 10에 n = 5로 설치하면
+  11~15세대 갱신 동안 고정,
+  15세대 갱신이 끝날 때 해제,
+  16세대 갱신부터 정상 규칙
+end note
+@enduml

@@ -1,0 +1,49 @@
+@startuml sd-install
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd installFreezing()
+
+actor "사용자" as User
+participant "install : JButton" as B
+participant ":FreezingTools" as T
+participant "duration : JSpinner" as S
+participant ":FreezingManager" as M
+participant ":Universe" as U
+participant "board : Cell" as Board
+
+User -> B : click()
+B -> T : installSelection()
+T -> S : getValue()
+S -->> T : generations = getValue(): Integer
+T -> M : install(selection, generations)
+note right of M : area = selection과 보드의 교집합
+
+alt area가 비었거나 활성 영역과 겹침
+  M -->> T : IllegalArgumentException
+  T -> T : message(e.getMessage())
+else
+  create participant "region : FreezingRegion" as R
+  M -->> R : new(area)
+  M -> R : freeze(board, generations)
+  create participant "frozen : FrozenState" as F
+  R -->> F : new(generations)
+  note right of F : generations < 1이면\nIllegalArgumentException
+  loop 영역의 칸마다
+    R -> Board : isAliveAt(row, column)
+    Board -->> R : alive = isAliveAt(row, column): boolean
+    note right of R : snapshot[y][x] = alive
+  end
+  R -> R : changeState(frozen)
+  note right of M : regions.add(region)
+  M -> T : run()
+  note right of T : addListener(this::refresh)로\n등록한 Runnable. 목록과 버튼을 고친다
+  M -->> T : region = install(...): FreezingRegion
+  note right of T : selecting = false\nselection = null
+  T -> T : message("… (g+1 ~ g+n세대 고정)")
+end
+T ->> U : repaint()
+@enduml

@@ -1,0 +1,36 @@
+@startuml sd-start-selection
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd startRegionSelection()
+
+actor "사용자" as User
+participant "select : JButton" as B
+participant ":FreezingTools" as T
+participant ":Universe" as U
+participant ":PatternTools" as P
+participant ":Clock" as C
+
+User -> B : click()
+B -> T : beginSelection()
+note right of T : 버튼 리스너는 FreezingTools 안의\n람다라 FreezingTools로 합쳐 그렸다
+T -> U : run()
+note right of U : beforeSelect: Universe가\n생성자에서 넘긴 람다
+U -> P : isEditing()
+P -->> U : editing = isEditing(): boolean
+opt editing
+  U -> P : cancel()
+end
+U -> P : boardChanged()
+note right of P : 되돌리기 이력을 비운다
+T -> C : stop()
+note right of T
+  selecting = true
+  selection = null
+  커서를 십자 모양으로
+end note
+T ->> U : repaint()
+@enduml
