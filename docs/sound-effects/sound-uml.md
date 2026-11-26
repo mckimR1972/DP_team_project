@@ -1,6 +1,6 @@
 # 사운드 이펙트 UML
 
-사운드 이펙트 기능의 클래스, 시퀀스, 상태 다이어그램과 시스템 연산의 연산 계약이다. 기준 코드는 `dev`(`838182c`)이고, 유스케이스와 요구사항은 [sound-effects-spec.md](sound-effects-spec.md), 설계 결정과 테스트는 [sound-effects.md](sound-effects.md)에 있다.
+사운드 이펙트 기능의 클래스, 시퀀스, 상태 다이어그램과 시스템 연산의 연산 계약이다. 기준은 통계와 Freezing 기능까지 합친 지금 코드이고, 유스케이스와 요구사항은 [sound-effects-spec.md](sound-effects-spec.md), 설계 결정과 테스트는 [sound-effects.md](sound-effects.md)에 있다.
 
 그림 원본(`.puml`)과 PNG는 [`docs/sound-effects/diagram/`](diagram/)에 있다. 유스케이스 다이어그램(`usecase.png`)은 기능 명세 2장에서 쓴다.
 
@@ -122,7 +122,7 @@ Command 패턴의 역할은 그림의 범례에 적었다. `SoundEffects`(Client
 | 항목 | 내용 |
 |---|---|
 | Cross References | Run / Halt Game, Step One Generation, Advance Generation, Hear Generation Sound(E) |
-| Preconditions | 캡처·배치 편집 중이 아니다. `effects`가 설치되어 있다 |
+| Preconditions | 캡처·배치 편집이나 Freezing 영역 선택 중이 아니다. `effects`가 설치되어 있다 |
 | Postconditions | (원본의 세대 전이에 더해) `effects.latestCells`가 틱 후 판의 복사본으로 바뀌었다. 생긴 셀이나 사라진 셀이 있고 `effects.enabled`가 true인 경우: 반복 페이드가 켜져 있으면 `RepeatTracker.recent`에 이번 변화의 값이 더해졌고(8개를 넘으면 가장 오래된 값이 빠짐), `repeats`가 같은 변화면 1 늘고 아니면 0이 되었다. 판이 전멸했고 반복 페이드가 켜져 있으면 마무리 화음 명령 6개(켜기 3, 끄기 3)가 `scheduler`와 연관되었다. 그 밖에 gain이 0보다 크고 직전 소리 후 120ms가 지났으면 `effects.lastPhraseNanos`가 현재 시각이 되었고, 생성음의 켜기·끄기 명령이 음마다 한 쌍씩(최대 5쌍) `scheduler`와 연관되었다. 12개 이상 생겼으면 대량 생성 레이어 명령 쌍이, 사라진 셀이 있으면 60ms 뒤의 타악기 명령 1개가 더 연관되었다(각 기능이 켜져 있을 때). 생긴 셀도 사라진 셀도 없으면 `latestCells` 말고는 바뀐 것이 없다 |
 
 #### CO3 `sweepStep()`
@@ -165,7 +165,7 @@ Command 패턴의 역할은 그림의 범례에 적었다. `SoundEffects`(Client
 |---|---|
 | Cross References | Configure Sound(E) |
 | Preconditions | `effects`가 설치되어 있다 |
-| Postconditions | `effects.settingsDialog`가 없었으면 `SoundSettingsDialog` 인스턴스 `d`가 생성되어 `effects.settingsDialog`, `settings`와 연관되었다. 설정 창이 보이는 상태가 되었다 |
+| Postconditions | `effects.settingsDialog`가 없었으면 `SoundSettingsDialog` 인스턴스 `d`가 생성되어 `effects.settingsDialog`와 연관되었다(`d`는 `settings`를 필드로 갖지 않고, 체크박스와 선택 상자의 리스너가 `settings`를 쓴다). 설정 창이 보이는 상태가 되었다 |
 
 #### CO8 `setFeature(feature, on)`
 

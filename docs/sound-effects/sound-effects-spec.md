@@ -2,7 +2,7 @@
 
 판의 변화를 소리로 들려주는 확장 기능의 명세다. 기능 설명, 유스케이스, 요구사항, 적용한 패턴, 테스트 순서로 적었다. 구현 과정과 설계 결정은 [sound-effects.md](sound-effects.md), 다이어그램과 연산 계약은 [sound-uml.md](sound-uml.md)에 있다.
 
-기준 코드는 통계(#10)와 Freezing(#7)을 합친 `dev`(`838182c`)다. 지금 `dev`(`cfba2ed`)도 소스 코드는 같고, 테스트와 문서만 기능별 폴더로 옮겨졌다. 이 문서의 테스트 파일 경로는 `cfba2ed` 기준이다.
+기준은 통계와 Freezing 기능까지 합친 지금 코드다.
 
 ## 1. 기능 개요
 
@@ -270,7 +270,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 대신 변화를 찾으려고 틱마다 판(64×64)을 전이 전과 후에 한 번씩 읽는다. 화면을 다시 그리는 것보다 훨씬 가벼워서 그대로 뒀다. 또 리스너는 Swing 이벤트 스레드에서 불리기 때문에 오래 걸리면 화면이 같이 멈춘다. 4.2의 Command 구조는 이 때문에 필요했다.
 
-처음(#3)에는 사운드 전용 인터페이스 `Universe.GenerationListener`를 두고, 구독 관리는 Holub 코드의 `Publisher`를 썼다. 통계 기능(#10)도 같은 세대 정보가 필요해서, 두 기능이 같은 이벤트를 받도록 `BoardChangeListener`와 `BoardChangeEvent`로 합쳐졌다. 소리를 만드는 코드가 처음부터 `Universe`와 떨어져 있어서 이때 사운드 쪽에서 고친 곳은 `SoundEffects`의 수신부 30줄 정도였고, `NoteMapper`, `RepeatTracker`, `SoundSettings`는 그대로였다.
+처음에는 사운드 전용 인터페이스 `Universe.GenerationListener`를 두고, 구독 관리는 Holub 코드의 `Publisher`를 썼다. 통계 기능도 같은 세대 정보가 필요해서, 두 기능이 같은 이벤트를 받도록 `BoardChangeListener`와 `BoardChangeEvent`로 합쳐졌다. 소리를 만드는 코드가 처음부터 `Universe`와 떨어져 있어서 이때 사운드 쪽에서 고친 곳은 `SoundEffects`의 수신부 30줄 정도였고, `NoteMapper`, `RepeatTracker`, `SoundSettings`는 그대로였다.
 
 ### 4.2 Command: 소리를 예약 명령으로 만든다
 
@@ -328,7 +328,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 ### 6.1 실행과 결과
 
-저장소 루트에서 `./gradlew test`를 실행한다. 2026-11-24 18:59(KST)에 `docs/sound-spec`(`c51e59b`, 소스·테스트는 `dev` `cfba2ed`와 같음)에서 `./gradlew test --rerun`으로 다시 실행해 전체 384개가 모두 통과했다. 캡처 맨 위에도 실행 날짜와 커밋을 적었다.
+저장소 루트에서 `./gradlew test`를 실행한다. 2026-11-26 10:42(KST)에 `./gradlew test --rerun`으로 다시 실행해 전체 384개가 모두 통과했다. 캡처 맨 위에도 실행 날짜와 명령을 적었다.
 
 ![전체 테스트 결과](evidence/test-all.png)
 
@@ -419,10 +419,11 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 ### 6.4 JUnit으로 확인하지 않는 것
 
-자동 테스트로 확인하지 않는 것은 세 가지다.
+자동 테스트로 확인하지 않는 것은 네 가지다.
 
 - 실제 장치에서 나는 음색과 음량, 설정 창에서 악기를 바꿨을 때 실제로 다르게 들리는지
 - 여러 음이 함께 날 때 실제로 어울리게 들리는지. 테스트는 각 음이 C장조 안에 있는지까지만 본다
 - `Off`를 고를 때 이미 예약돼 있던 음이 예정대로 끝나는지
+- 설정 창의 체크박스와 선택 상자가 설정 값을 바꾸는지. `SoundSettingsTest`는 그 뒤의 설정 값(`SoundSettings`)만 확인한다
 
 악기 20개가 모두 소리를 내는지, 빈 판과 `Off` 뒤에 조용한지, 재생선과 패드를 끄면 멈추는지는 신시사이저 출력을 따로 받아 확인했다([sound-effects.md](sound-effects.md) 6.5절).
