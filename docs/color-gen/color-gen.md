@@ -166,7 +166,7 @@ FR-7과 FR-8은 이 기능의 유스케이스가 아니라, 셀을 살리거나 
 원본 클래스 중 `Resident`와 `Universe`를 고쳤다. 아래에는 코드를 옮기는 대신 원본과 무엇이 달라졌는지를 적었다.
 
 - 이 문서에서 원본은 Holub 코드 그대로다.
-- 원본에 있던 오류(`transition()`이 반대 값을 돌려주던 것 등)는 색 기능을 붙이기 전에 따로 고쳤다([fix-life-game-changes.md](../fixes/fix-life-game-changes.md)). 이 문서에서 `transition()`이 돌려주는 값과 그 값을 쓰는 동작은 고친 뒤를 기준으로 적는다.
+- 원본에 있던 오류(`transition()`이 반대 값을 돌려주던 것 등)는 색 기능을 붙이기 전에 따로 고쳤다([원본 코드 대비 개선 사항 1.1절](../original-improvements.md#11-residenttransition이-반대-값을-돌려준다)). 이 문서에서 `transition()`이 돌려주는 값과 그 값을 쓰는 동작은 고친 뒤를 기준으로 적는다.
 - 테스트 설정(`build.gradle`의 `forkEvery = 1`)을 바꾼 이유는 5.2절에 있다.
 
 ### 2.1 Resident: 나이를 세고 색을 규칙에 묻는다

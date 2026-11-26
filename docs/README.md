@@ -10,9 +10,8 @@
 | 세대별 색상 | [color-gen/color-gen.md](color-gen/color-gen.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
 | 세대별 색상 구현 이력 | [color-gen/feature-color-gen-changes.md](color-gen/feature-color-gen-changes.md) | 커밋 단위 변경 이유·대안·검증 |
 | 화면 갱신 지연 | [color-gen.md 4.4절](color-gen/color-gen.md#44-판-전체를-다시-그리는-방법-화면-갱신-지연) | 원인 분석과 대안 비교 |
-| 기본 오류 | [fix-life-game-changes.md](fixes/fix-life-game-changes.md) | 기존 코드 오류 수정과 회귀 검사 |
+| 원본 대비 개선 | [original-improvements.md](original-improvements.md) | 원본 코드의 오류 수정, 구조·설계 개선, 원본 기능의 테스트 |
 | 사운드 이펙트 | [sound-effects.md](sound-effects/sound-effects.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
-| 단일 진행 오류 | [fix-single-step-halt.md](fixes/fix-single-step-halt.md) | 실행 중 Tick이 멈추지 않던 원본 오류의 원인, 수정, 테스트 |
 | Freezing (영역 고정) | [FREEZING.md](freezing/FREEZING.md) | 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 테스트 |
 
 캡처 문서 묶음에서는 요구사항 → 설계 결정 → 코드 → 테스트 → 도식의 ID를 연결한다. 이는 캡처 자료의 정리 방식이며, 다른 팀원의 문서 형식을 일괄 변경하는 규칙은 아니다.
