@@ -1,29 +1,27 @@
 @startuml
 !include theme.puml
 skinparam componentStyle rectangle
-skinparam componentBackgroundColor #EFF7FA
-skinparam componentBorderColor #51768B
-skinparam nodesep 65
-skinparam ranksep 65
-rectangle "현재 dev a480113" {
-  component "Universe / Clock\n입력·세대 중재" as Universe
-  component "캡처 편집\nPatternTools + BoardEditor" as Capture
-  component "Cell 트리\n기존 셀의 나이·색" as Cells
-  component "PropertyChange\nTEMPLATE / TEMPLATE_UNDO" as Signal
-  Universe --> Capture : IF-01/03\nisEditing / boardChanged
-  Capture --> Cells : IF-02\n변경 셀만 편집
-  Capture --> Signal : IF-05\n완료 후 한 번
-}
-rectangle "미병합 PR의 연결" #FFF7E6 {
-  component "PR #7 FreezingManager\nee1e763" as Freeze #FFF7E6
-  component "PR #10 Universe\nBoardChangeEvent\n8eb1dfe" as Events #FFF7E6
-  component "PR #10 통계·사운드 구독자" as Observers #FFF7E6
-  Events ..> Observers : IF-05/06\n완료 스냅샷 / 종류 구분
-}
-Freeze ..> Capture : IF-04\nRectangle guard (true=차단)
-Signal ..> Events : IF-05\nTEMPLATE / TEMPLATE_UNDO 구독
-legend bottom
-실선: 현재 dev 계약     점선: 미병합 PR의 조립 계약
-PR #10 브랜치에는 이미 리스너가 있음. 병합 시 중복 등록 금지.
-endlegend
+top to bottom direction
+component "Universe / Clock\n입력·세대 중재" as Universe
+component "FreezingManager" as Freeze
+component "PatternTools\n입력·미리보기" as UI
+component "BoardEditor\n캡처·배치·Undo" as Editor
+component "Cell 트리\n생존·나이·색" as Cells
+component "BoardChangeEvent" as Event
+component "Statistics" as Stats
+component "SoundEffects" as Sound
+Universe --> UI : IF-01/03\n편집 중 tick 차단
+Universe --> UI : IF-04\nsetPlacementGuard(Predicate)
+Editor ..> Freeze : 주입된 Predicate 실행\n직접 참조 없음 / true = 차단
+UI --> Editor : guard 위임 / 입력 / endStroke / undo
+Editor --> Cells : IF-02\n변경 셀만 편집
+Editor --> UI : IF-05\n완료 콜백 한 번
+UI --> Universe : TEMPLATE / TEMPLATE_UNDO\nPropertyChange
+Universe ..> Event : 완료 스냅샷 이벤트 생성
+Universe --> Stats : onBoardChanged(event)\n편집은 세대 증가 없음
+Universe --> Sound : onBoardChanged(event)\n편집은 자연 탄생음 아님
+note bottom of Editor
+프리징 영역 선택 시작: 캡처 종료 + 이력 비우기
+탭 전환: 숨겨진 작업 종료, 이력은 유지
+end note
 @enduml

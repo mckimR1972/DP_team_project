@@ -6,8 +6,8 @@ import java.awt.Rectangle;
 /**
  * State pattern context: one rectangular Freezing area.
  *
- * <p>It holds the area, the install-time snapshot, the start generation, the
- * duration, and its current {@link FreezingState}. The generation update calls
+ * <p>It holds the area, the install-time snapshot, and its current
+ * {@link FreezingState}. The generation update calls
  * only {@link #beforeTransition} and {@link #afterGeneration}. What actually
  * happens is decided by the current state object.
  * State changes: {@code Normal -> Frozen (freeze) -> Normal (expired or release)}.
@@ -16,8 +16,6 @@ final class FreezingRegion {
     private final Rectangle area;           // x = column, y = row, in cells
     private boolean[][] snapshot;           // [row][column] relative to the area
     private FreezingState state = NormalState.INSTANCE;
-    private long startGeneration;
-    private int duration;
 
     FreezingRegion(Rectangle area) {
         if (area == null || area.width < 1 || area.height < 1)
@@ -26,14 +24,12 @@ final class FreezingRegion {
     }
 
     /** Normal -> Frozen. Saves every cell state (alive and dead) at this moment. */
-    void freeze(Cell board, int generations, long currentGeneration) {
+    void freeze(Cell board, int generations) {
         FrozenState frozen = new FrozenState(generations);     // validates first
         snapshot = new boolean[area.height][area.width];
         for (int y = 0; y < area.height; y++)
             for (int x = 0; x < area.width; x++)
                 snapshot[y][x] = board.isAliveAt(area.y + y, area.x + x);   // Composite query (row, column)
-        startGeneration = currentGeneration;
-        duration = generations;
         changeState(frozen);
     }
 
@@ -59,10 +55,7 @@ final class FreezingRegion {
 
     boolean isFrozen() { return state.isFrozen(); }
     int remainingGenerations() { return state.remainingGenerations(); }
-    FreezingState state() { return state; }
     Rectangle area() { return new Rectangle(area); }
-    long startGeneration() { return startGeneration; }
-    int duration() { return duration; }
     boolean contains(Point cell) { return cell != null && area.contains(cell); }
     boolean intersects(Rectangle other) { return area.intersects(other); }
 

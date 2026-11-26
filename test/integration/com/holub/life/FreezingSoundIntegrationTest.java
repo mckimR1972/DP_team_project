@@ -96,7 +96,7 @@ class FreezingSoundIntegrationTest {
     void aFrozenBlinkerIsSilentAndIsHeardAgainOnItsFirstFreeGeneration() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(10, 9); LifeTestSupport.click(10, 10); LifeTestSupport.click(10, 11);
-            LifeTestSupport.universe.freezing().install(new Rectangle(8, 9, 5, 3), 3);
+            LifeTestSupport.freezing().install(new Rectangle(8, 9, 5, 3), 3);
             for (int g = 1; g <= 3; g++) {
                 LifeTestSupport.clock.tick();
                 assertTrue(jobs.isEmpty(), "a frozen blinker must not schedule a note at generation " + g);
@@ -117,7 +117,7 @@ class FreezingSoundIntegrationTest {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(5, 5);                                   // frozen lone cell
             LifeTestSupport.click(40, 40);                                 // free lone cell
-            LifeTestSupport.universe.freezing().install(new Rectangle(5, 5, 1, 1), 2);
+            LifeTestSupport.freezing().install(new Rectangle(5, 5, 1, 1), 2);
 
             LifeTestSupport.clock.tick();                                  // only the free cell dies
             runNotes();
@@ -139,7 +139,7 @@ class FreezingSoundIntegrationTest {
     void thePlaybackLineKeepsPlayingAFrozenLiveCellThatWouldOtherwiseBeGone() throws Exception {
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.click(20, 0);                                  // lone cell in the first swept columns
-            LifeTestSupport.universe.freezing().install(new Rectangle(0, 20, 1, 1), 5);
+            LifeTestSupport.freezing().install(new Rectangle(0, 20, 1, 1), 5);
             LifeTestSupport.clock.tick(); LifeTestSupport.clock.tick();
             assertTrue(jobs.isEmpty(), "no generation sound: nothing was born or died");
             sweepStep.run();

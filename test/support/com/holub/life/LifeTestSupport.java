@@ -24,6 +24,18 @@ final class LifeTestSupport {
 
     private LifeTestSupport() { }
 
+    /** The board's Freezing manager, reached the way the game reaches it:
+     *  Universe's freezingTools field and FreezingTools.manager(). */
+    static FreezingManager freezing() {
+        try {
+            java.lang.reflect.Field tools = Universe.class.getDeclaredField("freezingTools");
+            tools.setAccessible(true);
+            return ((FreezingTools) tools.get(universe)).manager();
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
     static void initialize() throws Exception {
         if (universe != null) return;
         java.nio.file.Path templates = java.nio.file.Files.createTempDirectory("life-statistics-test-");

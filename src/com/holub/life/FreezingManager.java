@@ -50,7 +50,7 @@ final class FreezingManager {
             if (r.isFrozen() && r.intersects(area))
                 throw new IllegalArgumentException("이미 Freezing된 영역과 겹칩니다.");
         FreezingRegion region = new FreezingRegion(area);
-        region.freeze(board, generations, generation());     // Normal -> Frozen
+        region.freeze(board, generations);                   // Normal -> Frozen
         regions.add(region);
         changed();
         return region;

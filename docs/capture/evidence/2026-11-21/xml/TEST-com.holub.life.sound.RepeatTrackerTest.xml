@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.sound.RepeatTrackerTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-21T14:59:16.790Z" hostname="OSANCOMPUTER" time="0.063">
+  <properties/>
+  <testcase name="newGenerationsStayAtFullVolume()" classname="com.holub.life.sound.RepeatTrackerTest" time="0.034"/>
+  <testcase name="somethingNewRestoresTheVolume()" classname="com.holub.life.sound.RepeatTrackerTest" time="0.006"/>
+  <testcase name="oscillatorFadesToSilence()" classname="com.holub.life.sound.RepeatTrackerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

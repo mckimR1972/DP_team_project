@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.BoardChangeEventTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-11-23T06:19:14.311Z" hostname="DESKTOP-VK6OGO1" time="0.232">
+  <properties/>
+  <testcase name="[1] INITIAL" classname="com.holub.life.BoardChangeEventTest" time="0.036"/>
+  <testcase name="[2] EDIT" classname="com.holub.life.BoardChangeEventTest" time="0.002"/>
+  <testcase name="[3] TEMPLATE" classname="com.holub.life.BoardChangeEventTest" time="0.001"/>
+  <testcase name="[4] TEMPLATE_UNDO" classname="com.holub.life.BoardChangeEventTest" time="0.001"/>
+  <testcase name="[5] CLEAR" classname="com.holub.life.BoardChangeEventTest" time="0.002"/>
+  <testcase name="[6] LOAD" classname="com.holub.life.BoardChangeEventTest" time="0.001"/>
+  <testcase name="[7] COLOR_POLICY_CHANGED" classname="com.holub.life.BoardChangeEventTest" time="0.001"/>
+  <testcase name="completedGenerationCannotBeZero()" classname="com.holub.life.BoardChangeEventTest" time="0.002"/>
+  <testcase name="[1] -1" classname="com.holub.life.BoardChangeEventTest" time="0.004"/>
+  <testcase name="[2] 3" classname="com.holub.life.BoardChangeEventTest" time="0.001"/>
+  <testcase name="[1] 0" classname="com.holub.life.BoardChangeEventTest" time="0.002"/>
+  <testcase name="[2] -1" classname="com.holub.life.BoardChangeEventTest" time="0.002"/>
+  <testcase name="[3] 46341" classname="com.holub.life.BoardChangeEventTest" time="0.0"/>
+  <testcase name="[4] 2147483647" classname="com.holub.life.BoardChangeEventTest" time="0.001"/>
+  <testcase name="acceptsEmptyBoardAtGenerationZero()" classname="com.holub.life.BoardChangeEventTest" time="0.003"/>
+  <testcase name="[1] -1" classname="com.holub.life.BoardChangeEventTest" time="0.004"/>
+  <testcase name="[2] -9223372036854775808" classname="com.holub.life.BoardChangeEventTest" time="0.002"/>
+  <testcase name="returnedRowsListsAndPointsAreIndependentForEveryObserver()" classname="com.holub.life.BoardChangeEventTest" time="0.034"/>
+  <testcase name="rejectsMismatchedRaggedAndNullRows()" classname="com.holub.life.BoardChangeEventTest" time="0.002"/>
+  <testcase name="retainsMetadataAndRowColumnCoordinates()" classname="com.holub.life.BoardChangeEventTest" time="0.0"/>
+  <testcase name="sourceRowsListsAndPointsCannotChangeEvent()" classname="com.holub.life.BoardChangeEventTest" time="0.001"/>
+  <testcase name="rejectsMissingKindBoardListsAndPoints()" classname="com.holub.life.BoardChangeEventTest" time="0.002"/>
+  <testcase name="rejectsDuplicateOrInconsistentChanges()" classname="com.holub.life.BoardChangeEventTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

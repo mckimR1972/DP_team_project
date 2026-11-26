@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.SoundEffectsIntegrationTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-11-26T08:48:52.731Z" hostname="DESKTOP-4CP7K21" time="1.953">
+  <properties/>
+  <testcase name="largeBirthEventKeepsTheBurstLayer()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.208"/>
+  <testcase name="initialSnapshotIsReadyBeforeTheFirstScheduledSweep()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.015"/>
+  <testcase name="[1] INITIAL" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.024"/>
+  <testcase name="[2] EDIT" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.014"/>
+  <testcase name="[3] TEMPLATE" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.011"/>
+  <testcase name="[4] TEMPLATE_UNDO" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.011"/>
+  <testcase name="[5] CLEAR" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.009"/>
+  <testcase name="[6] LOAD" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.011"/>
+  <testcase name="[7] COLOR_POLICY_CHANGED" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.011"/>
+  <testcase name="missingMidiDeviceDoesNotPreventStatisticsFromAdvancing()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.028"/>
+  <testcase name="birthStrumNoteLengthsAndPercussionDelayRemainUnchanged()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.013"/>
+  <testcase name="realColorMenuRefreshesStatisticsWithoutSchedulingGenerationSound()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.022"/>
+  <testcase name="realBlinkerUpdatesStatisticsAndSchedulesBirthAndDeathSoundsOnce()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.014"/>
+  <testcase name="stableAndEmptyGenerationsNeverScheduleGenerationSounds()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.019"/>
+  <testcase name="sweepUsesAnIndependentSnapshotOnItsWorkerThread()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.014"/>
+  <testcase name="disabledSoundStillReceivesEditsForTheNextSweep()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.011"/>
+  <testcase name="extinctionPlaysOneEndingAndLaterEmptyTicksStaySilent()" classname="com.holub.life.SoundEffectsIntegrationTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Sound disabled: test device unavailable
+]]></system-err>
+</testsuite>

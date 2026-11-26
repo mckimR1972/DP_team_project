@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PatternHistoryTest {
     private final Cell board = new Neighborhood(4, new Neighborhood(4, new Resident()));
-    private final BoardEditor editor = new BoardEditor(board);
+    private final BoardEditor editor = new BoardEditor(board, kind -> { });
     private final PatternTemplate dot = PatternTemplate.fromRows("Dot", "O");
 
     @Test void aStrokeIsOneCommandEvenWithRepeatedAndOverlappingStamps() {

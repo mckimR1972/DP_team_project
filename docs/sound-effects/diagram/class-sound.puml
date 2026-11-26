@@ -1,0 +1,155 @@
+@startuml class-sound
+!pragma layout smetana
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam classAttributeIconSize 0
+hide circle
+hide empty members
+set separator none
+left to right direction
+skinparam ranksep 50
+skinparam nodesep 30
+title com.holub.life.sound 패키지 상세
+
+interface BoardChangeListener <<interface>> {
+  + onBoardChanged(event : BoardChangeEvent)
+}
+
+package "com.holub.life.sound" {
+  class SoundEffects {
+    - latestCells : boolean[][] {volatile}
+    - enabled : boolean = true {volatile}
+    - chord : int = 0 {volatile}
+    - step : int = 0
+    - padNotes : int[]
+    - lastPhraseNanos : long
+    + {static} install(universe : Universe)
+    + onBoardChanged(event : BoardChangeEvent)
+    - generationChanged(births : List<Point>, deaths : List<Point>)
+    - playStep()
+    - play(channel : MidiChannel, note : NoteMapper.Note, delayMs : int, lengthMs : int)
+    - playPercussion(velocity : int)
+    - playEnding()
+    - applyInstruments()
+    - createMenus()
+    - showSettings()
+  }
+
+  class NoteMapper {
+    ~ notesFor(births : List<Point>, boardWidth : int, chord : int) : List<NoteMapper.Note>
+    ~ sweepNotesFor(liveCells : boolean[][], firstColumn : int, columns : int, chord : int, accented : boolean) : List<NoteMapper.Note>
+    ~ burstLayerFor(births : int, notes : List<NoteMapper.Note>) : List<NoteMapper.Note>
+    ~ humanized(notes : List<NoteMapper.Note>) : List<NoteMapper.Note>
+    ~ scaled(notes : List<NoteMapper.Note>, gain : double) : List<NoteMapper.Note>
+    ~ endingChordFor(chord : int) : List<NoteMapper.Note>
+    ~ padNotesFor(chord : int) : int[]
+    ~ padLevelFor(liveCells : int) : int
+    ~ percussionVelocityFor(deaths : int) : int
+    ~ timingJitterMs() : int
+  }
+
+  class RepeatTracker {
+    - recent : Deque<Integer>
+    - repeats : int
+    ~ gainFor(births : List<Point>, deaths : List<Point>) : double
+  }
+
+  class SoundSettings {
+    - switches : Map<SoundSettings.Feature, Boolean>
+    - choices : Map<SoundSettings.Feature, SoundSettings.Instrument>
+    ~ isOn(feature : SoundSettings.Feature) : boolean
+    ~ setOn(feature : SoundSettings.Feature, on : boolean)
+    ~ instrumentOf(feature : SoundSettings.Feature) : SoundSettings.Instrument
+    ~ setInstrument(feature : SoundSettings.Feature, instrument : SoundSettings.Instrument)
+    ~ onInstrumentChange(listener : Runnable)
+  }
+
+  class SoundSettingsDialog {
+    ~ SoundSettingsDialog(owner : Window, settings : SoundSettings)
+  }
+
+  class "NoteMapper.Note" as Note <<record>> {
+    - pitch : int
+    - pan : int
+    - velocity : int
+  }
+
+  enum "SoundSettings.Feature" as Feature <<enumeration>> {
+    BIRTHS
+    PROGRESSION
+    STRUM
+    DEATHS
+    DRONE
+    BURST
+    FADE
+    VARIATION
+    SWEEP
+  }
+
+  class "SoundSettings.Instrument" as Instrument <<record>> {
+    - name : String
+    - code : int
+  }
+}
+
+interface ScheduledExecutorService <<interface>> {
+  + schedule(command : Runnable, delay : long, unit : TimeUnit) : ScheduledFuture<?>
+  + scheduleAtFixedRate(command : Runnable, initialDelay : long, period : long, unit : TimeUnit) : ScheduledFuture<?>
+  + execute(command : Runnable)
+}
+
+interface Runnable <<interface>> {
+  + run()
+}
+
+interface MidiChannel <<interface>> {
+  + noteOn(noteNumber : int, velocity : int)
+  + noteOff(noteNumber : int)
+  + programChange(program : int)
+  + controlChange(controller : int, value : int)
+}
+
+class JDialog
+
+SoundEffects ..|> BoardChangeListener
+
+SoundEffects "1" *-- "1" NoteMapper : mapper
+SoundEffects "1" *-- "1" RepeatTracker : repeats
+SoundEffects "1" *-- "1" SoundSettings : settings
+SoundEffects "1" --> "0..1" SoundSettingsDialog : settingsDialog
+SoundEffects "1" --> "1" ScheduledExecutorService : noteScheduler
+SoundEffects "1" --> "5" MidiChannel : voices
+SoundEffects "1" --> "1" MidiChannel : burst
+SoundEffects "1" --> "1" MidiChannel : pad
+SoundEffects "1" --> "1" MidiChannel : sweep
+SoundEffects "1" --> "1" MidiChannel : percussion
+SoundEffects ..> Runnable : <<create>>
+
+NoteMapper ..> Note : <<create>>
+SoundSettings +-- Feature
+SoundSettings +-- Instrument
+SoundSettings <.. SoundSettingsDialog : <<use>>
+SoundSettingsDialog --|> JDialog
+ScheduledExecutorService ..> Runnable : <<use>>
+MidiChannel <.. Runnable : <<use>>
+
+note bottom of ScheduledExecutorService
+  단일 스레드(sound-notes).
+  설치할 때 악기를 처음 정하는 것을 빼면
+  MidiChannel, step, padNotes는
+  이 스레드에서만 만진다.
+end note
+
+legend bottom left
+  Command 역할: SoundEffects(Client)가 Runnable(Command)을 만들어
+  ScheduledExecutorService(Invoker)에 예약하고,
+  예약한 시간에 MidiChannel(Receiver)을 부른다.
+  MidiChannel 9개: voices(생성음) 5, burst(대량 생성)·pad(패드)·sweep(재생선)·percussion(타악기) 1개씩
+  SoundSettingsDialog는 체크박스·선택 상자의 리스너에서
+  SoundSettings 값을 바꾼다.
+  NoteMapper, RepeatTracker, SoundSettings는 MIDI와 Swing에 의존하지 않아서
+  JUnit으로 바로 테스트한다.
+endlegend
+@enduml

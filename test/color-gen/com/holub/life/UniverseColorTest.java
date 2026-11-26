@@ -137,7 +137,7 @@ class UniverseColorTest {
         // Use the same board and command path as the capture/template controls.
         java.lang.reflect.Field field = Universe.class.getDeclaredField("outermostCell");
         field.setAccessible(true);
-        BoardEditor editor = new BoardEditor((Cell) field.get(universe));
+        BoardEditor editor = new BoardEditor((Cell) field.get(universe), kind -> { });
         SwingUtilities.invokeAndWait(() -> editor.place(
                 PatternTemplate.fromRows("overlap", "OOO"), new java.awt.Point(0, 0)));
         assertEquals(BLUE, colorAt(0, 0));

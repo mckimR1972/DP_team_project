@@ -1,0 +1,41 @@
+@startuml sd-release
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam sequenceMessageAlign center
+hide footbox
+mainframe sd releaseFreezing(region), releaseAllFreezing()
+
+actor "사용자" as User
+participant "release : JButton" as RB
+participant "releaseAll : JButton" as AB
+participant ":FreezingTools" as T
+participant ":FreezingManager" as M
+participant "region : FreezingRegion" as R
+
+alt releaseFreezing(region)
+  User -> RB : click()
+  RB -> T : actionPerformed(e)
+  note right of T : 버튼 리스너는 FreezingTools 안의 람다다.\n목록에서 고른 영역(list.getSelectedValue())을 쓴다
+  T -> M : release(region)
+  note right of M : regions.remove(region)
+  M -> R : release()
+  R -> R : changeState(NormalState.INSTANCE)
+  M -> T : run()
+  note right of T : refresh(): 목록과 버튼을 고친다
+  T -> T : message("… 다음 세대부터 정상 규칙을 적용합니다.")
+else releaseAllFreezing()
+  User -> AB : click()
+  AB -> T : actionPerformed(e)
+  T -> M : releaseAll()
+  loop 활성 영역마다
+    M -> R : release()
+    R -> R : changeState(NormalState.INSTANCE)
+  end
+  note right of M : regions.clear()
+  M -> T : run()
+  T -> T : message("모든 Freezing을 해제했습니다.")
+end
+note over T, R : Grid > Clear와 Load(읽기 성공)는 FreezingTools.reset()으로 선택을 끝내고,\nFreezingManager.reset()이 영역마다 같은 release()를 부른다
+@enduml

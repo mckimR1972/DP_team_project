@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.StatisticsPanelIntegrationTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-11-26T08:48:56.421Z" hostname="DESKTOP-4CP7K21" time="2.595">
+  <properties/>
+  <testcase name="sharedTabsKeepTheirPagesSelectionAndListenersWhenLaidOut()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.709"/>
+  <testcase name="singleStepDisplaysActualBlinkerBirthsAndDeaths()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.051"/>
+  <testcase name="startupConnectionDisplaysInitialStateSynchronously()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.024"/>
+  <testcase name="pausedEditingUpdatesCountsAndClearsPreviousGenerationDelta()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.041"/>
+  <testcase name="connectingToAnExistingGamePreservesItsStateAndGeneration()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.027"/>
+  <testcase name="automaticTimerReachesTheDisplayOnEdt()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.098"/>
+  <testcase name="removingTheObserverStopsDisplayUpdates()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.019"/>
+  <testcase name="standaloneStatisticsTabFitsBesideTheBoardWithoutAGap()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.054"/>
+  <testcase name="loadDisplaysRestoredBoardAndNextGenerationDelta()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.085"/>
+  <testcase name="clearResetsEveryDisplayedValue()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.026"/>
+  <testcase name="threeColorRowsAndLargeValuesFitInsideTheExistingSharedTab()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.052"/>
+  <testcase name="stableBoardDisplaysIncreasingGenerationsAndMeasuredZeroChanges()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.03"/>
+  <testcase name="hiddenStatisticsKeepsUpdatingAndTabChangesPreserveTheSummary()" classname="com.holub.life.StatisticsPanelIntegrationTest" time="0.047"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

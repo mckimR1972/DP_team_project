@@ -87,9 +87,9 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 | [docs/color-gen/color-gen.md](docs/color-gen/color-gen.md) | 세대에 따른 셀 색 순환 기능: 요구사항과 유스케이스, 바뀐 코드, 패턴, 설계 결정과 대안, 테스트 |
 | [docs/color-gen/feature-color-gen-changes.md](docs/color-gen/feature-color-gen-changes.md) | 세대에 따른 셀 색 순환 기능의 변경 기록 |
 | [docs/color-gen/color-gen.md 4.4절](docs/color-gen/color-gen.md#44-판-전체를-다시-그리는-방법-화면-갱신-지연) | 색 순환 중 화면 갱신 지연: 문제 상황, 원인, 해결 방안 |
-| [docs/capture/capture-templates.md](docs/capture/capture-templates.md) | 영역 캡처와 템플릿 배치 기능: 사용법, 구조와 설계 패턴, 검증, 다른 기능과의 연계 |
-| [docs/capture/README.md](docs/capture/README.md) | 캡처 기능 명세·설계 결정·타 기능 접점·테스트 케이스·개별/합본 도식 PDF와 추적표 |
-| [docs/freezing/FREEZING.md](docs/freezing/FREEZING.md) | Freezing(영역 고정) 기능: 사용법, State 패턴, 다른 기능과 연결되는 부분, 추가한 패턴과 이유, 검증 |
+| [docs/capture/capture.md](docs/capture/capture.md) | 팀 공유용 캡처 기능 명세·GoF·UML·연산 계약·대표 테스트 |
+| [docs/capture/README.md](docs/capture/README.md) | 캡처 기능·설계 결정·통합·전체 테스트·도식과 검증 근거를 모은 상세 문서 |
+| [docs/freezing/freezing.md](docs/freezing/freezing.md) | 영역별 세대 고정(Freezing) 기능: 요구사항과 유스케이스, 바뀐 코드, UML 다이어그램, 패턴과 설계 결정, 테스트 |
 
 ## GitHub 사용 규칙 (팀 공통)
 

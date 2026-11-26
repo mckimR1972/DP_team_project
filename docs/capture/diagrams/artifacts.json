@@ -1,30 +1,52 @@
 {
-  "source_commit": "a480113331b9c6541f03a920c4b37be07b6f1b16",
-  "date": "2026-11-18",
+  "source_commit": "265cb37f732402445b5e05e0f2068b5f93acf456",
+  "date": "2026-11-26",
+  "format": "png",
+  "renderer": "PlantUML 1.2026.10",
+  "renderer_sha256": "e9bc9e6b2eb715e8c0c929f3dcb5fc1923be13f37599b09c293c66d354e88686",
+  "png_limit": 8192,
   "text_hash_policy": "UTF-8 with LF newlines",
-  "pdf_pages": 7,
+  "png_dimensions": {
+    "diagrams/01-use-cases.png": [
+      1908,
+      915
+    ],
+    "diagrams/02-classes.png": [
+      2344,
+      1623
+    ],
+    "diagrams/03-capture-save.png": [
+      2093,
+      1523
+    ],
+    "diagrams/04-stroke-undo.png": [
+      1967,
+      2649
+    ],
+    "diagrams/05-edit-states.png": [
+      1634,
+      1046
+    ],
+    "diagrams/06-integration.png": [
+      2618,
+      984
+    ]
+  },
   "sha256": {
-    "diagrams/manifest.json": "91f2b60d00258542b143eb2a2f8ea403c78764e63f06b308281f735e5544552c",
-    "diagrams/theme.puml": "4d0130998ff5e4f57a4086ed16606dadcda108cfe2e50590ee98c5055d37fea4",
-    "tools/build_diagrams.py": "38d7d6cbfc05560203c734ec49542532a3581b67d40cab8fbb7548cca84bdc19",
-    "diagrams/capture-diagrams.pdf": "f9d6696254739d00f1c4f10e50c673e0145cda91eae98659b926db6499b9253c",
-    "diagrams/01-use-cases.puml": "b84bc0e5a8a3e1bf0817013ef49a93f3e20c5055f043a101ad95de93a7bbc926",
-    "diagrams/svg/01-use-cases.svg": "6303a8d61807523101efbd451cb785a5e0014ba2a5893f820173b4db7f0ccf70",
-    "diagrams/pdf/01-use-cases.pdf": "513297df2ed2d00f1bdd03e77874b3e1b2908f0e18870e453754fd2826542e1a",
-    "diagrams/02-classes.puml": "987ea1f77f9c8d9eabeaf2dad50d8fcdc887a81b7867f24a2624d9eaa171d8dc",
-    "diagrams/svg/02-classes.svg": "c85e62e816f4a314a7fb4a9e1bcb272ded764fe5f38540e89b458a7b56ed048a",
-    "diagrams/pdf/02-classes.pdf": "58508a65b9412fcefd37f7c1a44033b19f1b626f3713b5382480fe24f9c2bd90",
+    "diagrams/manifest.json": "ea822b405c53e426fa82703f73f326b9ad761062ae152a37c0c4e52a9d8bf9d2",
+    "diagrams/theme.puml": "eb9ce6340a775dccfd52bf6711afc2ee04d823712d29b84bdb3ea84bf36e7725",
+    "tools/build_diagrams.py": "5439e0564cfe96e57af7d635981e1f734e3852cab8aef8af543c5be2e4a117d0",
+    "diagrams/01-use-cases.puml": "c399f32c7f6b27e832996a582cf040ef03aa1f0483bf5718d67f8ced61dc2f4f",
+    "diagrams/01-use-cases.png": "3456d77960b31f49318d0a34efc3fc70fc7170597c79df66e8c56db5def10af1",
+    "diagrams/02-classes.puml": "1b0007de1a815190dbcc838279126bab0a921688b2da63829bae0a38a9c3295f",
+    "diagrams/02-classes.png": "55566e1a80294247d081c8c2ad1c8bafa3eaa7c30660bbb0c806847d66ba35b7",
     "diagrams/03-capture-save.puml": "92adbb8f62dcf473193d814ca9421859150b71ca7a0f4a50068a11437dcd053d",
-    "diagrams/svg/03-capture-save.svg": "2b6132b140f6f7bcb77f2bf200b4784185506c11cc2236645ae16b65aa22b187",
-    "diagrams/pdf/03-capture-save.pdf": "79c4457db5d027492f5f08c42e254544705ef6c213d3c7a68daf40a276da6e71",
-    "diagrams/04-stroke-undo.puml": "1509b1f7ff4ad2998972c07ab6ef724da3b0b3a16a64033ca95ae7e8b85340af",
-    "diagrams/svg/04-stroke-undo.svg": "186ba26e9b6b7727141498e0423c65c6efbc2d5fe734abdcccfae9db8e90e64e",
-    "diagrams/pdf/04-stroke-undo.pdf": "ee4cfec27abfb09a98a4ceb3cc88df93cced93a5b3eee77748bbbe2fba9d1ed6",
+    "diagrams/03-capture-save.png": "d00c669ca7778782a14896431b2b6fdd530469856a69c40e4ce45dcc57cbc195",
+    "diagrams/04-stroke-undo.puml": "4848116530dbcbd6a5d1c0168de741f2b2435665abdc9d881c68e70a6865b0d7",
+    "diagrams/04-stroke-undo.png": "761cdb550dd9978bbaf545515e2fe04dc7a8a535944a5037aa13863f30c5d7ce",
     "diagrams/05-edit-states.puml": "ef0720d1482c1dc2409d2337e0e70a258b93b4dec07d4ff2370f625e4f591db6",
-    "diagrams/svg/05-edit-states.svg": "c52f68303a616b3aa9591c0a57a2b81146a21c959d9e9c355d3c362a5252fa5e",
-    "diagrams/pdf/05-edit-states.pdf": "3e5716e8ec2cb7912822bcb50564c482eac31c7ebd5fde4a8e0e5aad5cf9c7a9",
-    "diagrams/06-integration.puml": "34db1472b3bf23f83481391c1ca48d305fa97d1ba8b3ae4585b9be2da0de5501",
-    "diagrams/svg/06-integration.svg": "36bfb122597ca1cf9c818e2fa58da654115bd31da6f6e4a94c694b766d5c842f",
-    "diagrams/pdf/06-integration.pdf": "135f99df2122d382128c7ced79f5caf34dec535c736a30096f28f634718a3476"
+    "diagrams/05-edit-states.png": "bd1a1982f42a272f518eae231341f91a71ea9c977223eb24030b2a48130fb642",
+    "diagrams/06-integration.puml": "d0cb2eaa91e1c6b405813311dde39b0ee40e202e50820cd112476060f917f0b0",
+    "diagrams/06-integration.png": "4d3a31c310abaddb6fa20a412e3c37dbdd7cfd9b5cea35fcc581747255d81d66"
   }
 }
