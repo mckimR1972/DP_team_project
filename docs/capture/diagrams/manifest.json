@@ -1,29 +1,29 @@
 {
-  "version": "3.2",
-  "date": "2026-11-26",
+  "version": "4.0",
+  "date": "2026-11-27",
   "source_commit": "265cb37f732402445b5e05e0f2068b5f93acf456",
   "diagrams": [
     {
       "id": "D-01",
-      "slug": "01-use-cases",
+      "slug": "report/01-use-cases",
       "title": "캡처·템플릿 유스케이스",
-      "summary": "캡처 담당의 다섯 유스케이스와 직접 연결되는 원본 셀 편집만 표시한다. 시스템 경계는 Life Game 하나이며 다른 담당 기능은 넣지 않는다. 기존 Edit Cells와 확장 기능은 이름 끝의 (E)로 구분한다. Place Template Continuously(E)는 Place Template(E)의 반복 배치 확장 지점에 연결하고, 버튼 유지·드래그 조건은 선 옆 노트에 적는다.",
-      "note": "추적 ID는 본문에만 두고 이름 끝의 (E)로 확장 기능을 구분한다.",
-      "requirements": "R-01~R-09 / E-01~E-05",
+      "summary": "사용자는 모양을 저장하고, 템플릿을 배치하고, 마지막 배치를 되돌린다.",
+      "note": "Place Template(E)의 확장 지점은 배치 전이다. 동결 보호의 확장 관계는 Freezing 그림에 있다.",
+      "requirements": "R-01~R-09 / E-01, E-02, E-04",
       "tests": "T-01~T-25",
       "code": "PatternTools, BoardEditor, PatternLibrary, Universe",
-      "document": "README.md#spec"
+      "document": "capture.md#system-use-cases"
     },
     {
       "id": "D-02",
-      "slug": "02-classes",
+      "slug": "report/02-classes",
       "title": "캡처 객체의 책임과 협력",
       "summary": "입력·저장·편집 이력을 분리하고 기존 Cell Composite를 공개 계약으로 재사용한다.",
-      "note": "표시한 멤버는 실제 코드의 가시성과 타입을 사용한다. void는 생략하고 내부 타입은 PatternTools.Mode로 한정한다. 연관·합성은 양끝 다중성과 필드 역할 이름을 표시한다. 패턴 역할은 본문에서 설명하며 Cell은 인터페이스다. Neighborhood–Cell은 현재 8×8 구성의 1–64 합성이며 생성자는 다른 gridSize도 지원한다.",
+      "note": "입력, 목록, 캡처·배치, 변경 이력과 기존 보드 사이의 관계를 표시한다. 보간과 개별 셀 편집은 객체 시퀀스와 본문에서 설명한다.",
       "requirements": "R-01~R-06, R-09 / ADR-01~ADR-08",
       "tests": "T-01~T-19, T-23",
       "code": "PatternTools, BoardEditor, PlacePatternCommand, Cell",
-      "document": "README.md#design"
+      "document": "capture.md#uml"
     },
     {
       "id": "D-03",
@@ -34,7 +34,7 @@
       "requirements": "R-01, R-02 / E-01 / ADR-01, ADR-08",
       "tests": "T-01, T-02, T-05~T-07, T-25",
       "code": "PatternTools.saveSelection, BoardEditor.capture, PatternLibrary.save",
-      "document": "README.md#contracts"
+      "document": "capture.md#uml"
     },
     {
       "id": "D-04",
@@ -45,18 +45,18 @@
       "requirements": "R-03~R-06, R-09 / ADR-03~ADR-05, ADR-07",
       "tests": "T-03, T-10~T-19, T-23, T-24",
       "code": "PatternTools.stampAt, BoardEditor, PlacePatternCommand",
-      "document": "README.md#contracts"
+      "document": "capture.md#uml"
     },
     {
       "id": "D-05",
-      "slug": "05-edit-states",
+      "slug": "report/05-edit-states",
       "title": "편집 모드와 누른 작업의 상태",
       "summary": "편집 종료는 셀 복원이 아니다. 반복 입력을 끝내고 DRAW로 돌아가며, 복원은 Undo가 담당한다.",
       "note": "실제 Mode enum은 DRAW/CAPTURE/PLACE의 3개다. 내부 두 상태는 stamping 값의 설명이며 State 패턴 클래스가 아니다.",
-      "requirements": "R-04, R-06~R-08 / E-05 / ADR-06",
+      "requirements": "R-04, R-06~R-08 / E-01, E-02 / OC-04, OC-06",
       "tests": "T-18~T-22, T-25",
       "code": "PatternTools.begin, cancel, stopStamping; Universe tick",
-      "document": "README.md#design"
+      "document": "capture.md#uml"
     },
     {
       "id": "D-06",
@@ -67,8 +67,40 @@
       "requirements": "R-05, R-08, R-09 / IF-01~IF-06",
       "tests": "T-14, T-15, T-22~T-25 / IT-01~IT-06 (통과)",
       "code": "PatternTools, BoardEditor, Universe, FreezingManager, BoardChangeEvent",
-      "document": "README.md#integration"
+      "document": "capture.md#uml"
+    },
+    {
+      "id": "D-07",
+      "slug": "report/07-ssd-capture",
+      "title": "Capture Template(E) 시스템 시퀀스",
+      "requirements": "E-01 / R-01, R-02, R-07, R-08 / OC-01, OC-02, OC-06",
+      "tests": "T-01, T-07, T-25",
+      "code": "PatternTools, BoardEditor, PatternLibrary",
+      "document": "capture.md#ssd"
+    },
+    {
+      "id": "D-08",
+      "slug": "report/08-ssd-place",
+      "title": "Place Template(E) 시스템 시퀀스",
+      "requirements": "E-02 / R-03~R-09 / OC-03, OC-04, OC-06",
+      "tests": "T-12, T-14, IT-01",
+      "code": "PatternTools, BoardEditor, PlacePatternCommand",
+      "document": "capture.md#ssd"
+    },
+    {
+      "id": "D-09",
+      "slug": "report/09-ssd-undo",
+      "title": "Undo Placement(E) 시스템 시퀀스",
+      "requirements": "E-04 / R-06, R-08, R-09 / OC-05",
+      "tests": "T-12, T-14, T-24, IT-05",
+      "code": "PatternTools, BoardEditor, PlacePatternCommand",
+      "document": "capture.md#ssd"
     }
   ],
-  "evidence": "evidence/2026-11-26-integrated/results.json"
+  "evidence": "evidence/2026-11-26-integrated/results.json",
+  "readme_only": [
+    "01-use-cases",
+    "02-classes",
+    "05-edit-states"
+  ]
 }

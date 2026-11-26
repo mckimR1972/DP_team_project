@@ -52,7 +52,8 @@ async function main() {
         horizontalOverflow:document.documentElement.scrollWidth>innerWidth,
         headings:[...document.querySelectorAll('h2')].map(h=>h.textContent)
       }));
-      if(state.images.length!==6||state.images.some(i=>!i.loaded||!i.visible||i.display[0]<500)||state.missingAnchors.length||state.horizontalOverflow||errors.length)
+      const expectedFigures = preview.name === 'shared' ? 9 : 6;
+      if(state.images.length!==expectedFigures||state.images.some(i=>!i.loaded||!i.visible||i.display[0]<500)||state.missingAnchors.length||state.horizontalOverflow||errors.length)
         throw new Error(JSON.stringify({preview:preview.name,...state,errors}));
       await page.screenshot({path:path.join(output,preview.name+'-overview.png')});
       for(let i=0;i<state.images.length;i++)
@@ -64,7 +65,7 @@ async function main() {
   fs.writeFileSync(path.join(output,'verification.json'),JSON.stringify({renderer:'marked (GFM)',
     versions:{marked:require('marked/package.json').version,playwright:require('playwright/package.json').version},
     checkedAt:new Date().toISOString(),results},null,2)+'\n');
-  console.log(`PASS: ${results.length} Markdown previews, 12 loaded inline diagrams, internal anchors, no horizontal overflow`);
+  console.log(`PASS: ${results.length} Markdown previews, 15 loaded inline diagrams, internal anchors, no horizontal overflow`);
   console.log(output);
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
