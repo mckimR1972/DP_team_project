@@ -26,15 +26,13 @@ Single Color를 고르면 원본처럼 모두 빨강으로 돌아간다. 처음�
 
 | 유스케이스 | 시작하는 곳 | 다른 유스케이스와의 관계 | 내용 |
 | --- | --- | --- | --- |
-| Turn On Color Cycling(E) | Color > Cycle by Generation | Recolor Cells by Age(E)를 «include» | 색 순환을 켜고, 고르는 즉시 판 전체를 각 셀의 나이에 맞는 색으로 다시 그린다 |
-| Turn Off Color Cycling(E) | Color > Single Color | | 원본 빨강으로 되돌린다. 프로그램을 처음 실행했을 때와 같은 상태다 |
-| Count Cell Age(E) | 세대가 진행될 때마다 | Advance Generation이 «include» | 살아남은 셀은 나이 +1, 새로 태어난 셀은 0. 색 순환이 꺼져 있어도 센다 |
-| Recolor Cells by Age(E) | Color > Cycle by Generation을 고를 때, 그리고 색 순환이 켜져 있을 때 세대마다 | Advance Generation을 «extend» (조건: 색 순환이 켜져 있음) | 판 전체를 나이에 맞는 색으로 다시 그린다. 멈춘 패턴도 10세대마다 색이 바뀐다 |
+| Switch Color Mode(E) | Color > Cycle by Generation 또는 Color > Single Color | | 색 모드를 고른다. 순환 모드를 고르면 그 즉시 판 전체를 각 셀의 나이에 맞는 색으로 다시 그리고, 한 가지 색 모드를 고르면 원본 빨강으로 되돌린다. 프로그램을 처음 실행했을 때는 한 가지 색 모드다 |
+| Recolor Cells by Age(E) | 색 순환이 켜져 있을 때 세대마다 | Advance Generation을 «extend» (조건: 색 순환이 켜져 있음) | 판 전체를 나이에 맞는 색으로 다시 그린다. 멈춘 패턴도 10세대마다 색이 바뀐다 |
 
-- Advance Generation은 원본에서 한 세대를 계산하고 확정하는 부분이다. Run / Halt Game(Go 메뉴의 속도 선택)과 Step One Generation(Go > Tick (Single Step))이 모두 이것을 «include»한다. 나이 세기와 색 다시 그리기는 이 공통 부분에 붙으므로, Run과 Step에 따로 그리지 않았다.
-- Count Cell Age(E)는 «include»다. 나이는 색 순환을 켜든 끄든 매 세대 조건 없이 세고, 세대를 확정하는 단계 안에서 함께 계산되기 때문이다. 나이를 세려고 원본의 세대 진행에서 바꾼 것은 한 가지다. 바뀌는 셀이 없는 세대에도 세대를 확정하게 한 것이다(2.2절). 세대 진행의 결과(생사)는 원본 그대로다.
+- Advance Generation은 원본에서 한 세대를 계산하고 확정하는 부분이다. Run / Halt Game(Go 메뉴의 속도 선택)과 Step One Generation(Go > Tick (Single Step))이 모두 이것을 «include»한다. 세대마다 색을 다시 그리는 것은 이 공통 부분에 붙으므로, Run과 Step에 따로 그리지 않았다.
+- Switch Color Mode(E)는 색 순환을 켜는 것과 끄는 것을 한 유스케이스로 묶은 것이다. 둘 다 셀을 어떤 색으로 볼지 고른다는 같은 목표이고, 고른 모드만 다르다. 순환 모드를 고르는 것이 색 순환을 켜는 것이고, 한 가지 색 모드를 고르는 것이 끄는 것이다.
 - Recolor Cells by Age(E)는 «extend»다. 색 순환이 켜져 있으면 확장 지점 "세대 확정 후"에서 판 전체를 다시 그린다. 생사가 바뀐 셀이 없어 원래는 다시 그리지 않는 세대에도 그리고, 생사가 바뀐 세대에는 원래 하던 다시 그리기와 합쳐 한 번만 그린다. 꺼져 있으면 이 유스케이스는 일어나지 않고, Advance Generation은 원본처럼 셀이 바뀐 세대에만 다시 그린다.
-- Recolor Cells by Age(E)는 Turn On Color Cycling(E)가 «include»하기도 한다. 켜는 순간 한 번 다시 그리는 것도 같은 동작이기 때문이다.
+- 셀의 나이를 세는 것은 유스케이스로 두지 않았다. 나이는 사용자에게 직접 보이지 않는 값이고, 세대를 확정할 때 함께 정해지기 때문이다. 요구사항 FR-4와 연산 계약 CO3(3.2절)의 사후 조건으로 적었다. 나이는 색 순환이 꺼져 있어도 매 세대 센다. 나이를 세려고 원본의 세대 진행에서 바꾼 것은 한 가지다. 바뀌는 셀이 없는 세대에도 세대를 확정하게 한 것이다(2.2절). 세대 진행의 결과(생사)는 원본 그대로다.
 
 각 명세는 유스케이스 이름, 범위, 수준, 주 행위자, 사전 조건, 메인 성공 시나리오, 대체 시나리오, 연관 요구사항 순서로 적었다.
 
@@ -42,7 +40,7 @@ Single Color를 고르면 원본처럼 모두 빨강으로 돌아간다. 처음�
 - Subfunction 유스케이스의 주 행위자는 그것을 포함하는 쪽(확장이면 확장 대상) 유스케이스의 주 행위자를 따랐다.
 - 시나리오는 메뉴 같은 화면 조작 대신 사용자의 의도와 시스템이 하는 일로 적었다. 메뉴 경로는 위 표에, 클래스 사이의 메시지는 3.3절의 시퀀스 다이어그램에 있다.
 
-Advance Generation은 원본 유스케이스지만, 색 순환 유스케이스가 붙는 자리(포함하는 단계와 확장 지점)를 보이려고 먼저 적었다. 확장 지점은 번호 없이 단계 사이에 적었다.
+Advance Generation은 원본 유스케이스지만, 색 순환 유스케이스가 붙는 자리(확장 지점)를 보이려고 먼저 적었다. 확장 지점은 번호 없이 단계 사이에 적었다. Advance Generation에는 Freezing 기능이 쓰는 확장 지점("다음 세대 계산 후")도 있지만, 색 순환과 관계가 없어 이 문서의 명세와 그림에는 적지 않았다.
 
 | 유스케이스 이름 | Advance Generation |
 | --- | --- |
@@ -50,45 +48,25 @@ Advance Generation은 원본 유스케이스지만, 색 순환 유스케이스�
 | 수준 | Subfunction (Run / Halt Game, Step One Generation이 «include») |
 | 주 행위자 | 사용자 (포함하는 Run / Halt Game, Step One Generation의 주 행위자를 따른다) |
 | 사전 조건 | 캡처·배치 편집 중이거나 Freezing 영역을 고르는 중이 아니다 |
-| 메인 성공 시나리오 | 1. 시스템이 원본 규칙대로 판 전체의 다음 세대 생사를 계산한다.<br>2. 시스템이 다음 세대를 확정한다. 바뀌는 셀이 없는 세대에도 확정한다(원본에서 바꾼 점, 2.2절). Count Cell Age(E)를 포함한다(«include»).<br>extension point: 세대 확정 후<br>3. 시스템이 판 전체를 다시 그린다(원본에서 바꾼 점, 4.4절). |
-| 대체 시나리오 | 1a. Freezing 영역 안의 셀이다:<br>&emsp;1. 시스템이 그 셀의 다음 생사를 계산 결과 대신 Freezing을 건 순간의 생사로 둔다.<br>3a. 생사가 바뀐 셀이 없다:<br>&emsp;1. 시스템이 판을 다시 그리지 않는다. |
+| 메인 성공 시나리오 | 1. 시스템이 원본 규칙대로 판 전체의 다음 세대 생사를 계산한다.<br>2. 시스템이 다음 세대를 확정한다. 바뀌는 셀이 없는 세대에도 확정한다(원본에서 바꾼 점, 2.2절).<br>extension point: 세대 확정 후<br>3. 시스템이 판 전체를 다시 그린다(원본에서 바꾼 점, 4.4절). |
+| 대체 시나리오 | 3a. 생사가 바뀐 셀이 없다:<br>&emsp;1. 시스템이 판을 다시 그리지 않는다. |
 | 연관 요구사항 | FR-4, NFR-1, NFR-2 |
 
-| 유스케이스 이름 | Turn On Color Cycling(E) |
+| 유스케이스 이름 | Switch Color Mode(E) |
 | --- | --- |
 | 범위 | Life Game |
 | 수준 | User goal |
 | 주 행위자 | 사용자 |
 | 사전 조건 | 없음. 게임이 돌고 있을 때도 멈춰 있을 때도 쓸 수 있다 |
-| 메인 성공 시나리오 | 1. 사용자가 색 순환을 켜겠다고 요청한다.<br>2. 시스템이 색 규칙을 순환 규칙(셀의 나이 10세대마다 빨강 → 파랑 → 초록)으로 바꾼다.<br>3. Recolor Cells by Age(E)를 포함한다(«include»). |
-| 대체 시나리오 | 2a. 색 순환이 이미 켜져 있다:<br>&emsp;1. 시스템이 같은 순환 규칙으로 다시 바꾼다. 화면의 색은 그대로다. |
-| 연관 요구사항 | FR-1, FR-5 |
-
-| 유스케이스 이름 | Turn Off Color Cycling(E) |
-| --- | --- |
-| 범위 | Life Game |
-| 수준 | User goal |
-| 주 행위자 | 사용자 |
-| 사전 조건 | 없음. 게임이 돌고 있을 때도 멈춰 있을 때도 쓸 수 있다 |
-| 메인 성공 시나리오 | 1. 사용자가 색 순환을 끄겠다고 요청한다.<br>2. 시스템이 색 규칙을 원본 빨강 한 가지 색으로 바꾼다.<br>3. 시스템이 판 전체를 다시 그려 살아 있는 셀을 모두 빨강으로 보여 준다. |
-| 대체 시나리오 | 2a. 색 순환이 이미 꺼져 있다(프로그램을 켠 직후 포함):<br>&emsp;1. 시스템이 같은 빨강 규칙으로 다시 바꾼다. 화면의 색은 그대로다. |
-| 연관 요구사항 | FR-2 |
-
-| 유스케이스 이름 | Count Cell Age(E) |
-| --- | --- |
-| 범위 | Life Game |
-| 수준 | Subfunction (Advance Generation이 매 세대 «include») |
-| 주 행위자 | 사용자 (포함하는 Advance Generation의 주 행위자를 따른다) |
-| 사전 조건 | Advance Generation이 다음 세대의 생사를 계산했고, 그 세대를 확정하는 중이다(Advance Generation 2단계). 색 순환이 꺼져 있어도 일어난다 |
-| 메인 성공 시나리오 | 1. 시스템이 이번 세대 전후로 계속 살아 있는 셀의 나이를 1 늘린다.<br>2. 시스템이 새로 태어난 셀과 죽은 셀의 나이를 0으로 한다. |
-| 대체 시나리오 | 1a. Freezing 영역 안의 셀이다:<br>&emsp;1. 시스템이 그 셀의 나이를 세지 않고 그대로 둔다. |
-| 연관 요구사항 | FR-4, NFR-1 |
+| 메인 성공 시나리오 | 1. 사용자가 순환 모드를 고른다.<br>2. 시스템이 색 규칙을 순환 규칙(셀의 나이 10세대마다 빨강 → 파랑 → 초록)으로 바꾼다.<br>3. 시스템이 판 전체를 다시 그려 살아 있는 셀을 각자의 나이에 맞는 색(1.3절)으로 보여 준다. |
+| 대체 시나리오 | 1a. 사용자가 한 가지 색 모드를 고른다:<br>&emsp;1. 시스템이 색 규칙을 원본 빨강 한 가지 색으로 바꾼다.<br>&emsp;2. 시스템이 판 전체를 다시 그려 살아 있는 셀을 모두 빨강으로 보여 준다. 이미 한 가지 색 모드였다면(프로그램을 켠 직후 포함) 화면의 색은 그대로다.<br>2a. 이미 순환 모드다:<br>&emsp;1. 시스템이 같은 내용의 순환 규칙으로 다시 바꾼다. 화면의 색은 그대로다. |
+| 연관 요구사항 | FR-1, FR-2, FR-5 |
 
 | 유스케이스 이름 | Recolor Cells by Age(E) |
 | --- | --- |
 | 범위 | Life Game |
-| 수준 | Subfunction (Advance Generation의 확장 지점 "세대 확정 후"에서 «extend», Turn On Color Cycling(E)가 «include») |
-| 주 행위자 | 사용자 (포함하는 Turn On Color Cycling(E)와, 확장 대상인 Advance Generation의 주 행위자를 따른다) |
+| 수준 | Subfunction (Advance Generation의 확장 지점 "세대 확정 후"에서 «extend») |
+| 주 행위자 | 사용자 (확장 대상인 Advance Generation의 주 행위자를 따른다) |
 | 사전 조건 | 색 순환이 켜져 있다(확장 조건) |
 | 메인 성공 시나리오 | 1. 시스템이 판 전체를 다시 그린다.<br>2. 시스템이 살아 있는 셀은 나이에 맞는 색(1.3절)으로, 죽은 셀은 원본의 죽은 칸 색으로 칠한다. |
 | 대체 시나리오 | 없음 |
@@ -123,11 +101,11 @@ FR-7과 FR-8은 이 기능의 유스케이스가 아니라, 셀을 살리거나 
 
 | ID | 요구사항 | 유스케이스 |
 | --- | --- | --- |
-| FR-1 | Color > Cycle by Generation을 고르면 색 순환이 켜지고, 세대를 기다리지 않고 바로 판 전체가 각 셀의 나이에 맞는 색으로 다시 그려진다 | Turn On Color Cycling(E) |
-| FR-2 | Color > Single Color를 고르면 색 순환이 꺼지고, 바로 살아 있는 셀이 모두 원본 빨강으로 다시 그려진다 | Turn Off Color Cycling(E) |
+| FR-1 | Color > Cycle by Generation을 고르면 색 순환이 켜지고, 세대를 기다리지 않고 바로 판 전체가 각 셀의 나이에 맞는 색으로 다시 그려진다 | Switch Color Mode(E) |
+| FR-2 | Color > Single Color를 고르면 색 순환이 꺼지고, 바로 살아 있는 셀이 모두 원본 빨강으로 다시 그려진다 | Switch Color Mode(E) |
 | FR-3 | 프로그램을 시작하면 색 순환은 꺼져 있다 | 없음 (프로그램 시작 시 기본값) |
-| FR-4 | 세대가 진행될 때마다 전후 모두 살아 있는 셀은 나이가 1 늘고, 새로 태어난 셀과 죽은 셀은 0이다. 색 순환이 꺼져 있어도 나이를 센다. Freezing으로 고정된 셀은 고정된 동안 나이가 멈춘다 | Count Cell Age(E) |
-| FR-5 | 색 순환이 켜져 있으면 색은 1.3절의 공식을 따른다 | Turn On Color Cycling(E), Recolor Cells by Age(E) |
+| FR-4 | 세대가 진행될 때마다 전후 모두 살아 있는 셀은 나이가 1 늘고, 새로 태어난 셀과 죽은 셀은 0이다. 색 순환이 꺼져 있어도 나이를 센다. Freezing으로 고정된 셀은 고정된 동안 나이가 멈춘다 | Advance Generation |
+| FR-5 | 색 순환이 켜져 있으면 색은 1.3절의 공식을 따른다 | Switch Color Mode(E), Recolor Cells by Age(E) |
 | FR-6 | 색 순환이 켜져 있으면 생사가 바뀌지 않은 세대에도 판 전체를 다시 그린다. 2×2 블록처럼 멈춘 패턴도 10세대마다 색이 바뀐다 | Recolor Cells by Age(E) |
 | FR-7 | 클릭이나 드래그 그리기로 살린 셀, Load로 불러온 셀, 템플릿 배치로 새로 생긴 셀은 나이 0에서 시작한다 | Edit Cells, Store / Load Board, Draw Cells by Dragging(E), Place Template(E) (다른 기능) |
 | FR-8 | 템플릿 배치와 그 되돌리기는 이미 살아 있던 다른 셀의 나이를 바꾸지 않는다 | Place Template(E), Undo Placement(E) (캡처·템플릿 기능) |
@@ -201,7 +179,7 @@ Freezing 기능은 고정된 칸의 다음 생사를 `holdNextState()`로 고정
 
 캡처·템플릿 기능도 편집 오버레이를 그리려고 `refreshNow()`를 같은 방식으로 바꿔서, 지금은 `refreshNow()`가 `repaint()`만 부른다.
 
-다른 기능도 틱 처리에 단계를 더했다. 통계는 확정 전에 판을 복사해 두었다가 확정 뒤 알리고, Freezing은 계산과 확정 사이에서 고정된 칸의 다음 생사를 되돌리고, 캡처·배치 편집 중이거나 Freezing 영역을 고르는 중이면 틱을 건너뛴다. 이 단계들은 위 표의 규칙(매 틱 확정, 다시 그리는 조건)을 바꾸지 않는다. 전체 순서는 3.3.1절의 시퀀스 다이어그램에 있다.
+다른 기능도 틱 처리에 단계를 더했다. 사운드와 통계는 확정 전에 판을 복사해 두었다가 확정 뒤 알리고, Freezing은 계산과 확정 사이에서 고정된 칸의 다음 생사를 되돌리고, 캡처·배치 편집 중이거나 Freezing 영역을 고르는 중이면 틱을 건너뛴다. 이 단계들은 위 표의 규칙(매 틱 확정, 다시 그리는 조건)을 바꾸지 않는다. 전체 순서는 3.3.1절의 시퀀스 다이어그램에 있다.
 
 ### 2.3 Universe: Color 메뉴
 
@@ -238,9 +216,9 @@ Freezing 기능은 고정된 칸의 다음 생사를 `holdNextState()`로 고정
 | --- | --- | --- |
 | 캡처·템플릿 | 템플릿 배치와 되돌리기가 셀을 살리고 죽이는 경로 | 바뀌는 칸만 `userClicked()`로 편집한다. 새로 생긴 셀은 나이 0이고, 기존 셀의 나이는 그대로다 |
 | 캡처·템플릿 | `refreshNow()`, 시계 | `refreshNow()`가 `repaint()`를 부르고, 시계가 Swing 타이머로 바뀌어 틱이 이벤트 스레드에서 돈다 |
-| 사운드 | 틱 처리 | 통계 기능과 같은 `GENERATION` 이벤트로 생긴 셀과 사라진 셀을 받는다. 매 틱 `transition()`을 부르는 순서는 그대로다 |
+| 사운드 | 틱 처리 | 확정 전의 판을 `liveCells()`로 복사해 두는 단계를 더했다. 통계 기능과 같은 `GENERATION` 이벤트로 생긴 셀과 사라진 셀을 받는다. 매 틱 `transition()`을 부르는 순서는 그대로다 |
 | Freezing | 틱 처리, `Resident.transition()`의 나이 계산 | `figureNextState()`와 `transition()` 사이에서 고정된 칸의 다음 생사를 되돌리고, 그 칸은 나이를 세지 않는다. 그래서 고정된 셀은 색 순환 중에도 고정한 순간의 색을 유지하고, 풀리면 멈춘 나이에서 다시 센다(2.1절, 3.5.2절) |
-| 통계 | 틱 처리, 색별 집계 | 매 틱 확정 전에 판을 복사해 두고, 확정 뒤 `GENERATION` 이벤트로 통계와 사운드에 알린다. `Cell.colorAt()`을 더해 살아 있는 셀을 화면 색별로 세고(4.6절), `useColorPolicy()`가 `COLOR_POLICY_CHANGED`로 규칙이 바뀌었음을 알린다 |
+| 통계 | 틱 처리, 색별 집계 | 사운드 기능이 더한 확정 전 판 복사를 함께 쓰고, 확정 뒤 `GENERATION` 이벤트로 통계와 사운드에 알린다. `Cell.colorAt()`을 더해 살아 있는 셀을 화면 색별로 세고(4.6절), `useColorPolicy()`가 `COLOR_POLICY_CHANGED`로 규칙이 바뀌었음을 알린다 |
 
 ### 2.6 원본 설계 패턴과 맞물린 부분
 
@@ -270,16 +248,16 @@ Color 메뉴는 원본 메뉴의 Command 구조를 그대로 따른다.
 
 ### 3.1 시스템 시퀀스 다이어그램
 
-게임을 블랙박스로 보면, 이 기능이 새로 만들거나 바꾼 시스템 연산은 셋이다. 시스템 시퀀스 다이어그램은 이 세 연산이 일어나는 유스케이스마다 한 장씩 그렸고, 그린 규칙은 다음과 같다.
+게임을 블랙박스로 보면, 이 기능이 새로 만들거나 바꾼 시스템 연산은 셋이다. 시스템 시퀀스 다이어그램은 시나리오마다 한 장씩 그렸다. Switch Color Mode(E)는 메인 성공 시나리오(순환 모드를 고름)와 대체 시나리오 1a(한 가지 색 모드를 고름)를 따로 그렸고, 세대 진행은 Step One Generation으로 그렸다. 그린 규칙은 다음과 같다.
 
 - 이벤트 이름은 메뉴 항목이 아니라 사용자의 의도로 적었다.
 - 반환은 화면 모습이 아니라 사용자가 받는 정보로 적었다.
 - 세대를 넘기는 시계는 게임 안에 있으므로 입력으로 그리지 않았다. 게임이 돌고 있는 동안 세대 간격마다 다음 세대를 보여 주는 부분은 시스템에서 사용자로 가는 출력만 loop로 그렸다.
-- 켜기와 끄기는 이미 그 상태였을 때(대체 시나리오 2a)를 alt로 나누고, 그 뒤 게임이 돌면 세대마다 어떤 색을 받는지까지 그렸다.
+- Switch Color Mode(E)의 두 그림은 고른 모드가 이미 지금 모드였을 때를 alt로 나누고(순환 모드는 대체 시나리오 2a, 한 가지 색 모드는 1a의 2단계), 그 뒤 게임이 돌면 세대마다 어떤 색을 받는지까지 그렸다.
 
-![Turn On Color Cycling(E)의 시스템 시퀀스 다이어그램](diagrams/ssd-turn-on.png)
+![Switch Color Mode(E) 메인 성공 시나리오의 시스템 시퀀스 다이어그램](diagrams/ssd-turn-on.png)
 
-![Turn Off Color Cycling(E)의 시스템 시퀀스 다이어그램](diagrams/ssd-turn-off.png)
+![Switch Color Mode(E) 대체 시나리오 1a의 시스템 시퀀스 다이어그램](diagrams/ssd-turn-off.png)
 
 ![색 순환이 켜져 있을 때 Step One Generation의 시스템 시퀀스 다이어그램](diagrams/ssd-step.png)
 
@@ -296,7 +274,7 @@ Color 메뉴는 원본 메뉴의 Command 구조를 그대로 따른다.
 **CO1: turnOnColorCycling()**
 
 - Operation: `turnOnColorCycling()`
-- Cross References: Turn On Color Cycling(E)
+- Cross References: Switch Color Mode(E)의 메인 성공 시나리오
 - Preconditions:
   - Resident가 색 규칙 하나와 연관되어 있다(모든 셀이 함께 쓰는 연관). 프로그램을 켠 직후에는 원본 빨강의 `FixedColorPolicy`다
   - 살아 있는 Resident마다 `age`가 세어져 있다. 색 순환이 꺼져 있던 동안에도 세대마다 셌다
@@ -310,7 +288,7 @@ Color 메뉴는 원본 메뉴의 Command 구조를 그대로 따른다.
 **CO2: turnOffColorCycling()**
 
 - Operation: `turnOffColorCycling()`
-- Cross References: Turn Off Color Cycling(E)
+- Cross References: Switch Color Mode(E)의 대체 시나리오 1a
 - Preconditions:
   - Resident가 색 규칙 하나와 연관되어 있다(모든 셀이 함께 쓰는 연관)
 - Postconditions:
@@ -324,7 +302,7 @@ CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. �
 **CO3: stepOneGeneration()**
 
 - Operation: `stepOneGeneration()`
-- Cross References: Step One Generation, Advance Generation, Count Cell Age(E), Recolor Cells by Age(E)
+- Cross References: Step One Generation, Advance Generation, Recolor Cells by Age(E)
 - Preconditions:
   - 캡처·배치 편집 중이 아니다
   - Freezing 영역을 고르는 중이 아니다
@@ -351,7 +329,7 @@ CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. �
 
 #### 3.3.1 한 세대가 진행되는 순서
 
-한 세대가 진행될 때(Go > Tick, 또는 속도를 고른 뒤 시계가 세대 간격마다) 객체 사이에서 어떻게 처리되는지 원본과 지금을 비교한다. 사후 조건은 3.2절 CO3과 같다. 그림에서 정한 표기는 다음과 같다.
+한 세대가 진행될 때(Go > Tick, 또는 속도를 고른 뒤 시계가 세대 간격마다) 객체 사이에서 어떻게 처리되는지 원본과 지금을 비교한다. 사후 조건은 3.2절 CO3과 같다. 시계가 보내는 틱에서는 CO3의 첫 사후 조건(시계 정지)만 빠진다. 그림에서 정한 표기는 다음과 같다.
 
 - 필드에 값을 넣는 것은 메시지가 아니라서 해당 객체 옆 노트로 적었다.
 - `refreshNow()`와 `repaint()`는 다시 그리기 요청만 넣고 바로 돌아오므로 비동기 메시지(열린 화살촉)로 그렸다.
@@ -366,7 +344,7 @@ CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. �
 
 1. Swing 타이머가, 또는 Go > Tick 메뉴가 `Clock.tick()`을 부르고, 시계가 Universe의 틱 리스너를 부른다.
 2. 캡처·배치 편집 중이거나 Freezing 영역을 고르는 중이면 여기서 끝난다.
-3. `outermostCell.figureNextState()`: 블록마다, 셀마다 다음 생사를 계산한다. 원본처럼 활성 블록과, 맞닿은 가장자리가 바뀐 이웃 블록만 계산하고 나머지 블록은 건너뛴다. 이어서 확정 전의 판을 복사해 둔다(통계 기능).
+3. `outermostCell.figureNextState()`: 블록마다, 셀마다 다음 생사를 계산한다. 원본처럼 활성 블록과, 맞닿은 가장자리가 바뀐 이웃 블록만 계산하고 나머지 블록은 건너뛴다. 이어서 확정 전의 판을 복사해 둔다(사운드 기능이 더했고 통계 기능도 함께 쓴다).
 4. `freezing.beforeTransition()`: Freezing 영역 안의 칸마다 다음 생사를 Freezing을 건 순간의 상태로 되돌린다(`holdNextState()`, Freezing 기능).
 5. `outermostCell.transition()`: 모든 블록, 모든 셀이 다음 생사를 확정한다. 이때 각 Resident가 나이를 정하고, 4에서 되돌린 칸은 나이를 세지 않는다.
 6. 세대 수를 1 늘리고 `freezing.afterGeneration()`이 각 영역의 남은 세대를 줄인다. 0이 된 영역은 Freezing이 풀린다(Freezing 기능).
@@ -376,7 +354,7 @@ CO1과 CO2는 색 규칙만 바꾸고 셀의 나이는 건드리지 않는다. �
 
 원본과 다른 단계는 다음과 같다.
 
-- 이 기능이 바꾼 단계: 5(바뀌는 셀이 없어도 확정), 8(색 순환 중에는 바뀐 셀이 없어도 다시 그림), 9(바뀐 블록만 직접 그리던 것을 판 전체 `repaint()` 요청으로 바꿈, 4.4절)
+- 이 기능이 바꾼 단계: 5(바뀌는 셀이 없어도 확정), 8(색 순환 중에는 바뀐 셀이 없어도 다시 그리고, 바뀐 블록만 직접 그리던 것을 판 전체 `repaint()` 요청으로 바꿈, 4.4절), 9(요청을 받아 판 전체를 그림)
 - 다른 기능이 바꾸거나 더한 단계: 1의 Swing 타이머, 2, 3의 판 복사, 4, 6, 7
 
 #### 3.3.2 Color 메뉴를 고를 때
@@ -434,6 +412,7 @@ Color 메뉴로 고른 색 규칙을 상태로 보면 아래와 같다. 틱을 �
 
 ![색 모드 상태 다이어그램](diagrams/state-color-mode.png)
 
+- 상태 `Single`은 1.2절 Switch Color Mode(E)의 한 가지 색 모드이고, `Cycling`은 순환 모드다.
 - `turnOnColorCycling()`과 `turnOffColorCycling()`은 3.1절의 시스템 연산이다. `tick()`은 Go > Tick과 시계 양쪽에서 오는 틱이라(3.3.1절) 메서드 이름으로 적었다.
 - 같은 메뉴를 다시 고르면 같은 내용의 새 규칙 객체로 바뀐다. 자기 전이라서 전이 액션의 `repaint()`도 다시 일어나지만 화면은 그대로다.
 - 이 상태는 Strategy 객체를 바꿔 끼운 결과다. State 패턴으로 만들지 않은 이유는 4.2절에 있다.
@@ -781,7 +760,7 @@ JUnit 테스트는 게임 창을 띄우지 않고 돈다(NFR-5). 그래서 테�
 - **색은 그려서 읽는다.** 게임이 실제로 쓰는 `redraw()`로 판을 이미지에 그린 뒤 셀 한가운데 픽셀의 색을 읽는다.
 - **나이는 간격 1인 규칙으로 읽는다.** `CyclingColorPolicy(1, 빨강, 파랑, 초록)`이면 나이 0, 1, 2가 각각 빨강, 파랑, 초록으로 그려져, 색으로 나이를 읽을 수 있다. 게임이 쓰는 생성자에 값만 다르게 넣는다. 그래서 나이를 읽는 메서드를 게임 코드에 넣지 않았다.
 - **살아 있는 셀은 저장 경로로 읽는다.** Grid > Store가 판을 저장할 때 쓰는 `transfer()`를 그대로 불러, 살아 있는 셀의 위치를 테스트가 만든 저장용 객체(Memento)에 받아 읽는다.
-- **Universe는 창 없이 만든다.** `UniverseStoreTest`와 같은 방법으로 Mockito가 `MenuSite`와 `Clock`을 대신하고, Universe가 등록한 메뉴 콜백과 시계 리스너를 받아 둔다. 받아 둔 리스너의 `tick()`을 직접 불러 Universe의 실제 틱 처리를 확인한다.
+- **Universe는 창 없이 만든다.** Mockito가 `MenuSite`와 `Clock`을 대신하고, Universe가 등록한 메뉴 콜백과 시계 리스너를 받아 둔다. 받아 둔 리스너의 `tick()`을 직접 불러 Universe의 실제 틱 처리를 확인한다.
 - **Universe 테스트 클래스마다 JVM을 나눈다(`forkEvery = 1`).**
   - Universe는 Singleton(2.6절)이라 JVM에서 한 번만 만들어지고, 메뉴와 시계 리스너도 그때 한 번만 등록한다. 그래서 `UniverseStoreTest`와 `UniverseColorTest`를 한 JVM에서 돌리면 나중에 실행된 클래스가 등록 순간을 받지 못해 `@BeforeAll`에서 실패했다.
   - 준비 코드를 공유하거나 Universe의 Singleton을 없애는 방법은 기존 테스트나 원본 설계를 고쳐야 해서, 테스트 설정 한 줄로 JVM을 나눴다.
@@ -862,7 +841,7 @@ JUnit 테스트는 게임 창을 띄우지 않고 돈다(NFR-5). 그래서 테�
 | --- | --- |
 | 색 순환 중 판 전체 다시 그리기 | 블록이 9틱 빨강, 10틱 파랑, 20틱 초록, 30틱 빨강 |
 | 메뉴를 고른 순간의 다시 그리기 | 25틱 뒤 시계를 멈춘 채 Cycle by Generation을 고르면 바로 초록, Single Color를 고르면 바로 빨강 |
-| 메뉴 순서 | Grid, Go, Color |
+| 메뉴 순서 | Grid, Go, Color 순서다. 지금은 그 뒤에 사운드 기능의 Sound 메뉴가 더 있다 |
 | 연속 실행 지연 | Fast·Medium으로 6초 동안 돌리며 0.1초마다 이벤트 큐 대기를 잼. 색 순환을 켜든 끄든 최대 3 ms, 멈춘 뒤 큐가 비기까지 8 ms 안쪽 (지연이 생긴 원인과 고친 방법은 4.4절) |
 
 **확인하지 않은 것:** `colorPolicy`의 `volatile`은 스레드 사이에 값이 보이는지를 재현할 수 없어 JUnit으로 테스트하지는 않았다.

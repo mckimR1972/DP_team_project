@@ -5,7 +5,7 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd Turn On Color Cycling(E)
+mainframe sd Switch Color Mode(E): 순환 모드를 고름
 
 actor "사용자" as User
 participant ":LifeGame" as System
