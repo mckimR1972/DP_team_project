@@ -4,7 +4,6 @@ Gradle HTML 보고서(`build/reports/tests/test/`)를 브라우저로 열어 캡
 
 - 실행: `.\gradlew.bat clean test --rerun-tasks --console=plain`
 - 코드: Freezing 화면들은 Freezing을 합친 직후의 코드에서 찍었다. 그 뒤 테스트 파일을 기능별 폴더로 옮겼지만 Freezing 테스트 클래스와 메서드는 같다
-- `test-all.png`만 통계 테스트 정리와 테스트 전용 멤버 삭제가 들어간 뒤의 코드에서 같은 명령으로 다시 실행해 캡처했다. 통계 테스트 정리로 전체가 384개에서 375개가 됐고, Freezing 테스트 90개는 그대로다
 - 환경: Windows 11, JDK 17, Gradle 9.5.1
 
 | 화면 | 내용 | 결과 |
