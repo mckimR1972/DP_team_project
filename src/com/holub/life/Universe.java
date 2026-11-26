@@ -348,11 +348,6 @@ public class Universe extends JPanel
         }
     }
 
-	/** 판의 가로(=세로) 셀 수를 반환한다. */
-	public int widthInCells()
-	{	return outermostCell.widthInCells();
-	}
-
 	/** 판의 스냅샷을 [행][열] 순서로 반환한다. */
 	public boolean[][] liveCells()
 	{	int width = outermostCell.widthInCells();
