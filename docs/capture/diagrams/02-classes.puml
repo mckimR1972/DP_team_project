@@ -2,19 +2,19 @@
 !include theme.puml
 hide empty members
 class PatternTools {
-  -mode : Mode
+  -mode : PatternTools.Mode
   -stampTimer : Timer
-  ~setPlacementGuard(guard : Predicate<Rectangle>) : void
+  ~setPlacementGuard(guard : Predicate<Rectangle>)
 }
 class BoardEditor {
   +capture(name : String, area : Rectangle) : PatternTemplate
   +place(pattern : PatternTemplate, origin : Point) : boolean
-  +beginStroke() : void
+  +beginStroke()
   +endStroke() : boolean
-  +undo() : void
+  +undo()
 }
 class PatternLibrary {
-  +save(pattern : PatternTemplate) : void
+  +save(pattern : PatternTemplate)
   +patterns() : List<PatternTemplate>
 }
 class PatternTemplate {
@@ -24,19 +24,19 @@ class PatternTemplate {
 class PlacePatternCommand {
   -added : Set<Point>
   ~execute() : boolean
-  ~undo() : void
-  ~include(next : PlacePatternCommand) : void
+  ~undo()
+  ~include(next : PlacePatternCommand)
 }
 class PatternCells {
   ~isAlive(cell : Point) : boolean
   ~setAlive(cell : Point, alive : boolean) : boolean
 }
 class PatternPath {
-  {static} ~visit(from : Point, to : Point, visitor : Consumer<Point>) : void
+  {static} ~visit(from : Point, to : Point, visitor : Consumer<Point>)
 }
 interface Cell <<interface>> {
   +isAliveAt(row : int, column : int) : boolean
-  +userClicked(here : Point, surface : Rectangle) : void
+  +userClicked(here : Point, surface : Rectangle)
   +createMemento() : Storable
 }
 class Neighborhood

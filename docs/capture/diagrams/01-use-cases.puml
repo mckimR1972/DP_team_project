@@ -3,7 +3,7 @@
 left to right direction
 skinparam nodesep 30
 skinparam ranksep 45
-actor "게임 사용자" as User
+actor "사용자" as User
 rectangle "Life Game" {
   usecase "Edit Cells" as Edit
   usecase "Capture Template(E)" as Capture

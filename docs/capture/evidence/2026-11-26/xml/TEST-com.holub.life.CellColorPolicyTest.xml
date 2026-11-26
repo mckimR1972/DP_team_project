@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.CellColorPolicyTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2026-11-26T07:24:38.751Z" hostname="DESKTOP-4CP7K21" time="0.532">
+  <properties/>
+  <testcase name="&quot;fixed color is null&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.074"/>
+  <testcase name="&quot;period is 0&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.004"/>
+  <testcase name="&quot;period is -10&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.002"/>
+  <testcase name="&quot;no colors&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.003"/>
+  <testcase name="&quot;only one color&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.003"/>
+  <testcase name="&quot;colors array is null&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.002"/>
+  <testcase name="&quot;a color is null&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.002"/>
+  <testcase name="onlyTheCyclingPolicyChangesWithAge()" classname="com.holub.life.CellColorPolicyTest" time="0.005"/>
+  <testcase name="age 0" classname="com.holub.life.CellColorPolicyTest" time="0.003"/>
+  <testcase name="age 9" classname="com.holub.life.CellColorPolicyTest" time="0.002"/>
+  <testcase name="age 10" classname="com.holub.life.CellColorPolicyTest" time="0.001"/>
+  <testcase name="age 30" classname="com.holub.life.CellColorPolicyTest" time="0.002"/>
+  <testcase name="age 1000" classname="com.holub.life.CellColorPolicyTest" time="0.004"/>
+  <testcase name="age &quot;0&quot;: &quot;RED&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.043"/>
+  <testcase name="age &quot;9&quot;: &quot;RED&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.003"/>
+  <testcase name="age &quot;10&quot;: &quot;BLUE&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.002"/>
+  <testcase name="age &quot;19&quot;: &quot;BLUE&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.001"/>
+  <testcase name="age &quot;20&quot;: &quot;GREEN&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.002"/>
+  <testcase name="age &quot;29&quot;: &quot;GREEN&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.003"/>
+  <testcase name="age &quot;30&quot;: &quot;RED&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.002"/>
+  <testcase name="age &quot;1000&quot;: &quot;BLUE&quot;" classname="com.holub.life.CellColorPolicyTest" time="0.002"/>
+  <testcase name="cyclingPolicyKeepsItsOwnCopyOfTheColors()" classname="com.holub.life.CellColorPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

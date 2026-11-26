@@ -1,6 +1,6 @@
 {
-  "source_commit": "cfba2ed27be43eb09cff295154960fb8a276fa7e",
-  "date": "2026-11-25",
+  "source_commit": "f9f7726130db92ca3a3fa964b05cc7645ed6a0ae",
+  "date": "2026-11-26",
   "format": "png",
   "renderer": "PlantUML 1.2026.10",
   "renderer_sha256": "e9bc9e6b2eb715e8c0c929f3dcb5fc1923be13f37599b09c293c66d354e88686",
@@ -8,11 +8,11 @@
   "text_hash_policy": "UTF-8 with LF newlines",
   "png_dimensions": {
     "diagrams/01-use-cases.png": [
-      1980,
+      1908,
       915
     ],
     "diagrams/02-classes.png": [
-      2415,
+      2344,
       1623
     ],
     "diagrams/03-capture-save.png": [
@@ -33,17 +33,17 @@
     ]
   },
   "sha256": {
-    "diagrams/manifest.json": "9d0b4be4aea54b159c05e09f773320f7f9f5fc48b09926e6765a52fde63c3642",
+    "diagrams/manifest.json": "61b33758fad958537493a73bd300722ab7a889d801d49de62f109ec27c86562d",
     "diagrams/theme.puml": "eb9ce6340a775dccfd52bf6711afc2ee04d823712d29b84bdb3ea84bf36e7725",
     "tools/build_diagrams.py": "5439e0564cfe96e57af7d635981e1f734e3852cab8aef8af543c5be2e4a117d0",
-    "diagrams/01-use-cases.puml": "908c2612c58841a94b64021774e57abbd717e03c8e282e39ae7926eeb3adf53f",
-    "diagrams/01-use-cases.png": "d0d372dd7b4964df0117e1f9b94b6f35a339b2128925a973432074ce0011a061",
-    "diagrams/02-classes.puml": "8191f2d32aa5e37085e35276dafa187eb1e2c67addd31ca721b33e4d50790021",
-    "diagrams/02-classes.png": "38a0f5e8c84fbb59d27a68c81e6f11613f4facf38bf3235b28f90129cb63a589",
+    "diagrams/01-use-cases.puml": "c399f32c7f6b27e832996a582cf040ef03aa1f0483bf5718d67f8ced61dc2f4f",
+    "diagrams/01-use-cases.png": "3456d77960b31f49318d0a34efc3fc70fc7170597c79df66e8c56db5def10af1",
+    "diagrams/02-classes.puml": "1b0007de1a815190dbcc838279126bab0a921688b2da63829bae0a38a9c3295f",
+    "diagrams/02-classes.png": "55566e1a80294247d081c8c2ad1c8bafa3eaa7c30660bbb0c806847d66ba35b7",
     "diagrams/03-capture-save.puml": "92adbb8f62dcf473193d814ca9421859150b71ca7a0f4a50068a11437dcd053d",
-    "diagrams/03-capture-save.png": "d013d6bf5d3deebbd19659b9f25e5159bcf7ec297f147cba7e2a8cb71e660bd0",
+    "diagrams/03-capture-save.png": "d00c669ca7778782a14896431b2b6fdd530469856a69c40e4ce45dcc57cbc195",
     "diagrams/04-stroke-undo.puml": "4848116530dbcbd6a5d1c0168de741f2b2435665abdc9d881c68e70a6865b0d7",
-    "diagrams/04-stroke-undo.png": "48e9fdb74d114b7a2a1e44df823adceac5488374c85622263ec0a13de0a5932b",
+    "diagrams/04-stroke-undo.png": "761cdb550dd9978bbaf545515e2fe04dc7a8a535944a5037aa13863f30c5d7ce",
     "diagrams/05-edit-states.puml": "ef0720d1482c1dc2409d2337e0e70a258b93b4dec07d4ff2370f625e4f591db6",
     "diagrams/05-edit-states.png": "bd1a1982f42a272f518eae231341f91a71ea9c977223eb24030b2a48130fb642",
     "diagrams/06-integration.puml": "d0cb2eaa91e1c6b405813311dde39b0ee40e202e50820cd112476060f917f0b0",

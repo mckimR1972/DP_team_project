@@ -79,7 +79,7 @@ def uml_conventions(diagram, classes, theme):
             'Use-case scope/names differ from the capture convention')
     require(re.findall(r'^\s*rectangle "([^"]+)"', diagram, re.M) == ['Life Game'],
             'Use-case diagram must have one system boundary')
-    require('actor "게임 사용자"' in diagram and not re.search(r'#[0-9A-Fa-f]{6}', diagram),
+    require('actor "사용자"' in diagram and not re.search(r'#[0-9A-Fa-f]{6}', diagram),
             'Use the UML actor and monochrome use cases')
     require('Place Template(E)\n--\nextension points\n반복 배치"' in diagram
             and 'Place <.. Stroke : <<extend>>' in diagram
@@ -96,12 +96,14 @@ def uml_conventions(diagram, classes, theme):
             'Neighborhood composition/multiplicity differs')
     for line in classes.splitlines():
         if '-->' in line or '*--' in line:
-            require(re.fullmatch(r'\w+ "[^"]+" (?:-->|\*--) "[^"]+" \w+(?: : \w+)?', line),
-                    'Association/composition lacks multiplicity: ' + line)
+            require(re.fullmatch(r'\w+ "[^"]+" (?:-->|\*--) "[^"]+" \w+ : \w+', line),
+                    'Association/composition lacks multiplicity or field role: ' + line)
         if '..>' in line:
             require(re.fullmatch(r'\w+ \.\.> \w+ : <<(?:use|create)>>', line),
                     'Dependency needs a use/create label: ' + line)
     require('{static} ~visit(' in classes, 'Static operation must be underlined')
+    require(': void' not in classes, 'Omit void return types from UML operations')
+    require('-mode : PatternTools.Mode' in classes, 'Qualify nested types with the outer class')
     require(not re.search(r'\b(?:PR\s*#\d+|[a-f0-9]{7,40})\b', classes),
             'Keep development history outside the class diagram')
 
@@ -117,7 +119,7 @@ def uml_conventions(diagram, classes, theme):
             static = member.startswith('{static} ')
             if static:
                 member = member[len('{static} '):]
-            method = re.fullmatch(r'([+~#-])(\w+)\((.*)\) : (.+)', member)
+            method = re.fullmatch(r'([+~#-])(\w+)\((.*)\)(?: : (.+))?', member)
             field = re.fullmatch(r'([+~#-])(\w+) : (.+)', member)
             require(method or field, 'Use one fully typed member per line: ' + member)
             symbol, name = (method or field).group(1, 2)
@@ -131,11 +133,19 @@ def uml_conventions(diagram, classes, theme):
                     pair = re.fullmatch(r'\s*(\w+)\s*:\s*(.+?)\s*', param)
                     require(pair, 'Missing parameter type: ' + member)
                     params.append(pair[2] + pair[1])
-                signature = access + ('static' if static else '') + method[4] + name + '(' + ','.join(params) + ')'
+                return_type = method[4] or 'void'
+                signature = access + ('static' if static else '') + return_type + name + '(' + ','.join(params) + ')'
                 require(re.sub(r'\s+', '', signature) in source,
                         f'Java operation signature differs: {cls}.{name}')
             else:
-                signature = access + ('static' if static else '') + field[3] + name
+                field_type = field[3]
+                if field_type.startswith(cls + '.'):
+                    inner = field_type[len(cls) + 1:]
+                    require(re.search(r'\b(?:enum|class|interface)\s+' + re.escape(inner) + r'\b',
+                                      (REPO / 'src/com/holub/life' / (cls + '.java')).read_text(encoding='utf-8')),
+                            f'Nested type missing: {field_type}')
+                    field_type = inner
+                signature = access + ('static' if static else '') + field_type + name
                 require(re.search(re.escape(re.sub(r'\s+', '', signature)) + r'[=;]', source),
                         f'Java field declaration differs: {cls}.{name}')
             members += 1
@@ -155,6 +165,10 @@ def main():
     links, link_anchors = local_links(documents)
     capture_docs = [ROOT / 'capture.md', ROOT / 'README.md']
     texts = [p.read_text(encoding='utf-8') for p in capture_docs]
+    for path, body in zip(capture_docs, texts):
+        require(not re.search(r'(?:\bPR\s*#?\s*\d+|/pull/\d+|/commit/[a-f0-9]+|\b[0-9a-f]{7,40}\b|^## 개발 이력)',
+                              body, re.M),
+                f'Remove Git development history from the feature document: {path.name}')
     require(len(contracts(texts[0])) == 6 and contracts(texts[0]) == contracts(texts[1]),
             'Shared/detailed operation contracts disagree')
     usecases = ['Capture Template(E)', 'Place Template(E)', 'Place Template Continuously(E)',
@@ -213,8 +227,11 @@ def main():
     for cls, method in selected:
         require(any(s['name'].endswith('.' + cls) and method + '()' in s['cases'] for s in evidence['suites']),
                 f'Selected JUnit method absent in evidence: {cls}.{method}')
-    require(len(evidence['screenshots']) == 5 and len(evidence.get('raw_screenshots', [])) == 4,
-            'Expected a test summary and four dated Swing screens with raw originals')
+    require({s['file'] for s in evidence['screenshots']} == {
+                'life-placement.png', 'life-selection.png',
+                'life-template-drag.png', 'life-template-drag-undo.png'}
+            and len(evidence['screenshots']) == 4 and not evidence.get('raw_screenshots'),
+            'Expected four unmodified Swing output images')
     require(all(s['date'] == evidence['date'] and s['source_commit'] == baseline
                 for s in evidence['screenshots']), 'Screenshot date/commit differs')
     for screenshot in evidence['screenshots'] + evidence.get('raw_screenshots', []):
