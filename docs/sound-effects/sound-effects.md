@@ -86,7 +86,6 @@ notifyBoardChanged( BoardChangeEvent.Kind.GENERATION, before );  // 통계와 �
 사운드 작업에서 `Universe`에 추가한 메서드 중 지금도 쓰는 것은 다음과 같다.
 
 - `liveCells()`: 판 전체를 `[행][열]` 순서의 `boolean[][]`로 복사해서 돌려준다. 지금은 이벤트를 만들 때 쓴다.
-- `widthInCells()`: 판 한 변의 셀 수.
 - `setPlayhead(int column)`: 해당 열 왼쪽에 폭 3픽셀짜리 초록 세로선을 그린다. `-1`이면 지운다. 판 전체가 아니라 이전 선과 새 선 자리만 `repaint()`한다.
 
 ### 2.2 Cell 계층: 좌표로 셀 상태 묻기

@@ -25,9 +25,8 @@ package "com.holub.life" {
     + {static} instance() : Universe
     + addBoardChangeListener(listener : BoardChangeListener)
     + removeBoardChangeListener(listener : BoardChangeListener)
-    + liveCells() : boolean[][]
-    + widthInCells() : int
-    + setPlayhead(column : int)
+    + **liveCells() : boolean[][]**
+    + **setPlayhead(column : int)**
     - notifyBoardChanged(kind : Kind, before : boolean[][])
   }
 
