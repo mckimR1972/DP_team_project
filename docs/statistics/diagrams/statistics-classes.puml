@@ -1,0 +1,98 @@
+@startuml statistics-classes
+!pragma layout elk
+top to bottom direction
+skinparam defaultFontName "Malgun Gothic"
+skinparam defaultFontSize 15
+skinparam dpi 150
+skinparam monochrome true
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam roundcorner 0
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 65
+skinparam classAttributeIconSize 0
+skinparam minClassWidth 400
+skinparam classBackgroundColor white
+skinparam classBorderColor black
+skinparam ArrowColor black
+skinparam ArrowFontSize 13
+hide circle
+hide empty members
+
+class Life {
+    -universe : Universe
+    -statistics : Statistics
+    {static} ~connectStatistics(universe : Universe, panel : StatisticsPanel) : Statistics
+    +dispose()
+}
+
+class Universe {
+    -boardListeners : Set<BoardChangeListener>
+    -outermostCell : Cell
+    -generation : long
+    +addBoardChangeListener(listener : BoardChangeListener)
+    +removeBoardChangeListener(listener : BoardChangeListener)
+    +notifyBoardChanged(kind : BoardChangeEvent.Kind)
+    +liveCells() : boolean[][]
+    -createBoardChangeEvent(kind : BoardChangeEvent.Kind, before : boolean[][]) : BoardChangeEvent
+}
+
+interface BoardChangeListener <<interface>> {
+    +onBoardChanged(event : BoardChangeEvent)
+}
+
+class BoardChangeEvent {
+    +kind() : BoardChangeEvent.Kind
+    +generation() : long
+    +boardSize() : int
+    +copyAliveCells() : boolean[][]
+    +copyBirths() : List<Point>
+    +copyDeaths() : List<Point>
+    +aliveColors() : List<Color>
+}
+
+class Statistics {
+    -onUpdated : Consumer<Statistics.Summary>
+    -currentSummary : Statistics.Summary
+    +onBoardChanged(event : BoardChangeEvent)
+    -calculate(event : BoardChangeEvent) : Statistics.Summary
+}
+
+class StatisticsPanel {
+    +showStatistics(summary : Statistics.Summary)
+}
+
+class "Statistics.Summary" as Summary <<record>> {
+    +generation() : long
+    +livingCells() : int
+    +livingRatio() : double
+    +births() : int
+    +deaths() : int
+    +hasGenerationDelta() : boolean
+    +colorCounts() : List<Statistics.ColorCount>
+}
+
+class "Statistics.ColorCount" as ColorCount <<record>> {
+    +color() : Color
+    +cells() : int
+    +ratio() : double
+}
+
+interface Cell <<interface>> {
+    +isAliveAt(row : int, column : int) : boolean
+    +colorAt(row : int, column : int) : Color
+}
+
+Life "1" --> "  universe\n  1\n " Universe
+Life "1" --> "  statistics\n  1\n " Statistics
+Life ..> StatisticsPanel : <<create>>
+Universe "1" --> "  boardListeners\n  0..*\n " BoardChangeListener
+Statistics ..|> BoardChangeListener
+Universe "1" --> "  outermostCell\n  1\n " Cell
+Universe ..> BoardChangeEvent : <<create>>
+Statistics ..> BoardChangeEvent : <<use>>
+Statistics "0..1" --> "  currentSummary\n  0..1\n " Summary
+StatisticsPanel ..> Summary : <<use>>
+Summary "1" --> "  colorCounts\n  0..*\n " ColorCount
+@enduml

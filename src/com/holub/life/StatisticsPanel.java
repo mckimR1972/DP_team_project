@@ -19,7 +19,7 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
-/** Displays completed statistics; it neither reads nor changes the game board. */
+/** Statistics가 계산한 결과를 화면에 표시한다. 게임판 조회나 상태 변경은 수행하지 않는다. */
 public final class StatisticsPanel extends JPanel {
     private static final String UNAVAILABLE = "—";
     private static final int ROW_HEIGHT = 22;
@@ -38,7 +38,7 @@ public final class StatisticsPanel extends JPanel {
     private final JLabel deaths = valueLabel("deaths");
     private final JPanel colorCounts = new JPanel();
 
-    /** Construct and update this view on the Swing EDT. */
+    /** 패널 생성과 화면 갱신은 Swing 이벤트 처리 스레드(EDT)에서 수행해야 한다. */
     public StatisticsPanel() {
         requireEventDispatchThread();
         setName("statistics.panel");
@@ -90,7 +90,10 @@ public final class StatisticsPanel extends JPanel {
         add(Box.createVerticalGlue());
     }
 
-    /** Replace every displayed value, including unavailable generation deltas. */
+    /**
+     * 전달받은 통계 결과로 모든 표시 값을 갱신한다.
+     * 세대 변화량이 유효하지 않으면 탄생·사망 표시를 "—"로 바꾼다.
+     */
     public void showStatistics(Statistics.Summary summary) {
         requireEventDispatchThread();
         Objects.requireNonNull(summary, "summary");
@@ -112,7 +115,8 @@ public final class StatisticsPanel extends JPanel {
             empty.setFont(empty.getFont().deriveFont(Font.PLAIN, NOTE_FONT_SIZE));
             colorCounts.add(empty);
         }
-        // Presentation order stays fixed as colors appear, disappear or change count.
+        // 빨강 → 파랑 → 초록 순서를 유지한다.
+        // 그 밖의 색상은 색상값순으로 뒤에 표시한다.
         for (Statistics.ColorCount count : summary.colorCounts().stream()
                 .sorted(Comparator.comparingInt((Statistics.ColorCount item) -> colorOrder(item.color()))
                         .thenComparingInt(item -> item.color().getRGB()))
@@ -161,7 +165,7 @@ public final class StatisticsPanel extends JPanel {
     }
 
     private static String formatPercentage(double value) {
-        // Summary already contains a percentage, not a fraction.
+        // Summary의 비율은 이미 백분율이므로 100을 곱하지 않고 소수 둘째 자리까지 표시한다.
         return String.format(Locale.ROOT, "%.2f%%", value);
     }
 
@@ -196,7 +200,7 @@ public final class StatisticsPanel extends JPanel {
         row.add(caption, BorderLayout.CENTER);
         row.add(value, BorderLayout.EAST);
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
-        // Equal minimum/maximum heights prevent BoxLayout from shrinking one section differently.
+        // 최소·선호·최대 높이를 같게 지정하여 모든 통계 행의 높이를 일정하게 유지한다.
         row.setMinimumSize(new Dimension(0, ROW_HEIGHT));
         row.setPreferredSize(new Dimension(230, ROW_HEIGHT));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, ROW_HEIGHT));

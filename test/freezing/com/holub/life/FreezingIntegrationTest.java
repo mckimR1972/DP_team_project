@@ -40,6 +40,7 @@ import org.mockito.MockedStatic;
 
 import static com.holub.life.BoardChangeEvent.Kind.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static com.holub.life.StatisticsPanelTestSupport.recordingPanel;
 import static org.mockito.Mockito.mockStatic;
 
 /**
@@ -67,6 +68,7 @@ class FreezingIntegrationTest {
             sound.add(new SoundDelta(new HashSet<>(event.copyBirths()), new HashSet<>(event.copyDeaths())));
     };
     private Statistics statistics;
+    private final List<Statistics.Summary> summaries = new ArrayList<>();
     private StatisticsPanel panel;
     private JTabbedPane tabs;
     @TempDir Path directory;
@@ -84,7 +86,7 @@ class FreezingIntegrationTest {
     void connectActualTools() throws Exception {
         LifeTestSupport.resetBoard();
         LifeTestSupport.onEdt(() -> {
-            panel = new StatisticsPanel();
+            panel = recordingPanel(summaries::add);
             tabs = Life.createSidebar(universe, panel);
             statistics = Life.connectStatistics(universe, panel);
             universe.addBoardChangeListener(soundStandIn);
@@ -917,7 +919,7 @@ class FreezingIntegrationTest {
 
     // --------------------------------------------------------------- helpers
 
-    private Statistics.Summary summary() { return statistics.current().orElseThrow(); }
+    private Statistics.Summary summary() { return summaries.get(summaries.size() - 1); }
     private List<BoardChangeEvent.Kind> kinds() { return events.stream().map(BoardChangeEvent::kind).toList(); }
     private static boolean alive(int row, int column) { return cells.isAliveAt(row, column); }
 

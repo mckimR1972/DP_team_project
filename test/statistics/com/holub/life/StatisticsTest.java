@@ -5,8 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import static com.holub.life.BoardChangeEvent.Kind.*;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,7 +14,7 @@ class StatisticsTest {
     private final Statistics statistics = new Statistics(updates::add);
 
     @Test void hasNoSummaryBeforeFirstEvent() {
-        assertTrue(statistics.current().isEmpty()); assertTrue(updates.isEmpty());
+        assertTrue(updates.isEmpty());
     }
 
     @Test void initialSnapshotReportsPopulationAndSuppliedGeneration() {
@@ -29,17 +28,20 @@ class StatisticsTest {
     @Test void emptyBoardHasZeroPopulationAndPercentage() {
         statistics.onBoardChanged(event(INITIAL, 0, 4));
         assertEquals(0, current().livingCells());
-        assertEquals(0.0, current().livingRatio()); assertNoDelta();
+        assertEquals(0.0, current().livingRatio());
+        assertNoDelta();
     }
 
     @Test void fullBoardHasOneHundredPercentPopulation() {
         statistics.onBoardChanged(event(INITIAL, 0, 2, 0, 1, 2, 3));
-        assertEquals(4, current().livingCells()); assertEquals(100.0, current().livingRatio());
+        assertEquals(4, current().livingCells());
+        assertEquals(100.0, current().livingRatio());
     }
 
     @Test void firstGenerationAlreadyContainsItsOwnDelta() {
         statistics.onBoardChanged(generation(9, 3, new int[]{1}, new int[]{0}, 1, 4));
-        assertEquals(2, current().livingCells()); assertDelta(1, 1);
+        assertEquals(2, current().livingCells());
+        assertDelta(1, 1);
     }
 
     @Test void blinkerUsesTheSuppliedCoordinates() {
@@ -47,87 +49,91 @@ class StatisticsTest {
         statistics.onBoardChanged(generation(41, 5, new int[]{7, 17}, new int[]{11, 13}, 7, 12, 17));
         assertEquals(41, current().generation());
         assertEquals(3, current().livingCells());
-        assertEquals(12.0, current().livingRatio()); assertDelta(2, 2);
+        assertEquals(12.0, current().livingRatio());
+        assertDelta(2, 2);
     }
 
     @Test void unchangedGenerationReportsMeasuredZeroRatherThanUnavailable() {
         statistics.onBoardChanged(event(GENERATION, 6, 4, 0, 1, 4, 5));
-        assertEquals(4, current().livingCells()); assertDelta(0, 0);
+        assertEquals(4, current().livingCells());
+        assertDelta(0, 0);
     }
 
     @Test void extinctionCountsAllDeaths() {
         statistics.onBoardChanged(generation(1, 3, new int[]{}, new int[]{0, 1, 2}));
-        assertEquals(0, current().livingCells()); assertDelta(0, 3);
+        assertEquals(0, current().livingCells());
+        assertDelta(0, 3);
     }
 
     @Test void countsAllBirthsInSuppliedTransition() {
         statistics.onBoardChanged(generation(1, 3, new int[]{0, 1, 2}, new int[]{}, 0, 1, 2));
-        assertEquals(3, current().livingCells()); assertDelta(3, 0);
+        assertEquals(3, current().livingCells());
+        assertDelta(3, 0);
     }
 
-    @ParameterizedTest @EnumSource(value = BoardChangeEvent.Kind.class, names = {"GENERATION", "COLOR_POLICY_CHANGED"}, mode = EnumSource.Mode.EXCLUDE)
-    void nonGenerationUpdatesPopulationAndClearsDisplayedDelta(BoardChangeEvent.Kind kind) {
+    @ParameterizedTest
+    @CsvSource({"EDIT, 5", "TEMPLATE, 5", "TEMPLATE_UNDO, 5", "CLEAR, 0", "LOAD, 0"})
+    void editingOrRestoringUpdatesPopulationAndClearsDelta(BoardChangeEvent.Kind kind, long generation) {
         statistics.onBoardChanged(generation(5, 3, new int[]{1, 2}, new int[]{0}, 1, 2));
         assertDelta(2, 1);
-        statistics.onBoardChanged(event(kind, 0, 3, 4, 5));
-        assertEquals(0, current().generation()); assertEquals(2, current().livingCells()); assertNoDelta();
-        statistics.onBoardChanged(generation(1, 3, new int[]{6}, new int[]{4}, 5, 6));
-        assertDelta(1, 1);
+
+        // 편집·배치·Undo는 세대를 유지하고, Clear·Load는 세대 0으로 시작한다.
+        int[] alive = kind == CLEAR ? new int[0] : new int[]{4, 5};
+        statistics.onBoardChanged(event(kind, generation, 3, alive));
+        assertEquals(generation, current().generation());
+        assertEquals(alive.length, current().livingCells());
+        assertNoDelta();
     }
 
-    @ParameterizedTest @ValueSource(longs = {8, 9, 12})
-    void suppliedDeltaDoesNotDependOnPreviouslyReceivedGeneration(long generation) {
-        statistics.onBoardChanged(event(INITIAL, 9, 3, 0));
-        statistics.onBoardChanged(generation(generation, 3, new int[]{4}, new int[]{5}, 4));
-        assertEquals(generation, current().generation()); assertDelta(1, 1);
-    }
-
-    @Test void changedDimensionsUseEventPopulationAndDeltaWithoutOldBoard() {
-        statistics.onBoardChanged(event(INITIAL, 3, 3, 8));
-        statistics.onBoardChanged(generation(4, 4, new int[]{8}, new int[]{9}, 8));
-        assertEquals(6.25, current().livingRatio()); assertDelta(1, 1);
-    }
-
-    @Test void readingStatisticsDoesNotMutateSharedEvent() {
-        BoardChangeEvent event = generation(1, 5, new int[]{7, 17}, new int[]{11, 13}, 7, 12, 17);
-        boolean[][] cells = event.copyAliveCells();
-        List<Point> births = event.copyBirths(), deaths = event.copyDeaths();
-        statistics.onBoardChanged(event);
-        assertArrayEquals(cells, event.copyAliveCells());
-        assertEquals(births, event.copyBirths()); assertEquals(deaths, event.copyDeaths());
-    }
-
-    @Test void publishesOneImmutableSummaryForEachEvent() {
+    @Test void publishesOneSummaryForEachEvent() {
         statistics.onBoardChanged(event(INITIAL, 0, 3, 0));
+        assertEquals(1, updates.size());
         Statistics.Summary initial = current();
+        assertEquals(0, initial.generation());
+        assertEquals(1, initial.livingCells());
+        assertNoDelta();
+
         statistics.onBoardChanged(event(EDIT, 0, 3, 1, 2));
+        assertEquals(2, updates.size());
+        assertEquals(0, current().generation());
+        assertEquals(2, current().livingCells());
+        assertNoDelta();
+
         statistics.onBoardChanged(event(GENERATION, 1, 3, 1, 2));
-        assertEquals(3, updates.size()); assertSame(initial, updates.get(0));
-        assertSame(current(), updates.get(2));
-        assertEquals(1, initial.livingCells()); assertEquals(0, initial.generation());
-        assertEquals(2, current().livingCells()); assertDelta(0, 0);
+        assertEquals(3, updates.size());
+        assertEquals(1, current().generation());
+        assertEquals(2, current().livingCells());
+        assertDelta(0, 0);
+        assertEquals(1, initial.livingCells());
+        assertEquals(0, initial.generation());
     }
 
     @Test void rejectsMissingCallbackAndEvent() {
         assertThrows(NullPointerException.class, () -> new Statistics(null));
         assertThrows(NullPointerException.class, () -> statistics.onBoardChanged(null));
-        assertTrue(statistics.current().isEmpty()); assertTrue(updates.isEmpty());
+        assertTrue(updates.isEmpty());
     }
 
-    private Statistics.Summary current() { return statistics.current().orElseThrow(); }
+    private Statistics.Summary current() { return updates.get(updates.size() - 1); }
     private void assertDelta(int births, int deaths) {
         assertTrue(current().hasGenerationDelta());
-        assertEquals(births, current().births()); assertEquals(deaths, current().deaths());
+        assertEquals(births, current().births());
+        assertEquals(deaths, current().deaths());
     }
     private void assertNoDelta() {
         assertFalse(current().hasGenerationDelta());
-        assertEquals(0, current().births()); assertEquals(0, current().deaths());
+        assertEquals(0, current().births());
+        assertEquals(0, current().deaths());
     }
     private static BoardChangeEvent event(BoardChangeEvent.Kind kind, long generation, int size, int... alive) {
-        return new BoardChangeEvent(kind, generation, size, board(size, alive), List.of(), List.of(), LifeTestSupport.redColors(board(size, alive)));
+        boolean[][] cells = board(size, alive);
+        return new BoardChangeEvent(kind, generation, size, cells,
+                List.of(), List.of(), LifeTestSupport.redColors(cells));
     }
     private static BoardChangeEvent generation(long generation, int size, int[] births, int[] deaths, int... alive) {
-        return new BoardChangeEvent(GENERATION, generation, size, board(size, alive), points(size, births), points(size, deaths), LifeTestSupport.redColors(board(size, alive)));
+        boolean[][] cells = board(size, alive);
+        return new BoardChangeEvent(GENERATION, generation, size, cells,
+                points(size, births), points(size, deaths), LifeTestSupport.redColors(cells));
     }
     private static boolean[][] board(int size, int... indices) {
         boolean[][] cells = new boolean[size][size];

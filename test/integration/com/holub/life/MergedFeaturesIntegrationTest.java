@@ -31,6 +31,7 @@ import org.mockito.MockedStatic;
 
 import static com.holub.life.BoardChangeEvent.Kind.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static com.holub.life.StatisticsPanelTestSupport.recordingPanel;
 import static org.mockito.Mockito.mockStatic;
 
 /** Real board, clock, pattern controls and statistics. No MIDI device is opened. */
@@ -41,6 +42,7 @@ class MergedFeaturesIntegrationTest {
     private final List<BoardChangeEvent> events = new ArrayList<>();
     private final BoardChangeListener recorder = events::add;
     private Statistics statistics;
+    private final List<Statistics.Summary> summaries = new ArrayList<>();
     private StatisticsPanel panel;
     private JTabbedPane tabs;
     @TempDir Path directory;
@@ -63,7 +65,7 @@ class MergedFeaturesIntegrationTest {
         LifeTestSupport.resetBoard();
         LifeTestSupport.onEdt(() -> {
             sound.clear();
-            panel = new StatisticsPanel();
+            panel = recordingPanel(summaries::add);
             tabs = Life.createSidebar(universe, panel);
             statistics = Life.connectStatistics(universe, panel);
             universe.addBoardChangeListener(recorder);
@@ -320,7 +322,7 @@ class MergedFeaturesIntegrationTest {
         });
     }
 
-    private Statistics.Summary summary() { return statistics.current().orElseThrow(); }
+    private Statistics.Summary summary() { return summaries.get(summaries.size() - 1); }
     private List<BoardChangeEvent.Kind> kinds() { return events.stream().map(BoardChangeEvent::kind).toList(); }
 
     private void chooseBlinker() {
