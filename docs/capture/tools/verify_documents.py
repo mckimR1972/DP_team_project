@@ -206,7 +206,7 @@ def main():
     require(evidence['source_commit'] == baseline, 'Test evidence baseline differs')
     keys = ['tests', 'failures', 'errors', 'skipped']
     totals = {k: sum(s[k] for s in evidence['suites']) for k in keys}
-    require(totals == evidence['totals'] == dict(tests=384, failures=0, errors=0, skipped=0), 'Test totals disagree')
+    require(totals == evidence['totals'] == dict(tests=375, failures=0, errors=0, skipped=0), 'Test totals disagree')
     require(len(evidence['suites']) == 30, 'Expected 30 recorded JUnit suites')
     require(sum(s['tests'] for s in evidence['suites'] if s['name'].rsplit('.', 1)[-1].startswith('Pattern')) == 39,
             'Pattern suite subtotal differs')
@@ -287,7 +287,7 @@ def main():
                   document_sha256={p.relative_to(REPO).as_posix(): digest(p) for p in capture_docs})
     output = BUILD / 'verification.json'
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
-    print(f'PASS: {links} local links ({link_anchors} anchors); 6 matching contracts; 384 recorded JUnit + 17 Swing checks; '
+    print(f'PASS: {links} local links ({link_anchors} anchors); 6 matching contracts; 375 recorded JUnit + 17 Swing checks; '
           f'12 rendered diagrams; {typed_members} typed UML members; PNG artifact hashes; unchanged source baseline')
     print(output)
 

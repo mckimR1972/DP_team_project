@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.ClockIntegrationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-26T08:47:38.781Z" hostname="DESKTOP-4CP7K21" time="2.949">
+  <properties/>
+  <testcase name="tickOutsideEdtIsDeliveredOnceOnEdt()" classname="com.holub.life.ClockIntegrationTest" time="0.069"/>
+  <testcase name="automaticTimerPublishesOrderedGenerationsOnEdtAndStops()" classname="com.holub.life.ClockIntegrationTest" time="0.175"/>
+  <testcase name="haltBeforeFirstDeliveryCancelsPendingAutomaticTick()" classname="com.holub.life.ClockIntegrationTest" time="0.092"/>
+  <testcase name="singleStepMenuUsesTheSharedGenerationPathOnEdt()" classname="com.holub.life.ClockIntegrationTest" time="0.006"/>
+  <testcase name="selectedMenuSuppressesTicksUntilSelectionEnds()" classname="com.holub.life.ClockIntegrationTest" time="0.008"/>
+  <testcase name="changingSpeedRestartsOneTimerWithoutLeavingOldTicksRunning()" classname="com.holub.life.ClockIntegrationTest" time="0.388"/>
+  <testcase name="singleStepWhileRunningAdvancesOneGenerationAndHalts()" classname="com.holub.life.ClockIntegrationTest" time="0.094"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

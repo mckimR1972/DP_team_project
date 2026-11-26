@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.PatternToolsTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-26T08:48:42.576Z" hostname="DESKTOP-4CP7K21" time="3.271">
+  <properties/>
+  <testcase name="focusLossStopsHeldGesture()" classname="com.holub.life.PatternToolsTest" time="1.417"/>
+  <testcase name="dotAndLargerTemplatesStampWithoutErasing()" classname="com.holub.life.PatternToolsTest" time="0.168"/>
+  <testcase name="outsideReleaseStopsStampingAndRemovesGlobalListener()" classname="com.holub.life.PatternToolsTest" time="0.161"/>
+  <testcase name="guardAppliesToEveryStampAndCompletionEventsFireOnce()" classname="com.holub.life.PatternToolsTest" time="0.166"/>
+  <testcase name="cancelInDrawModeDoesNotStopSimulation()" classname="com.holub.life.PatternToolsTest" time="0.019"/>
+  <testcase name="holdingStillDoesNotToggleOrCreateExtraUndoEntries()" classname="com.holub.life.PatternToolsTest" time="0.425"/>
+  <testcase name="cancelEndsStrokeButKeepsItUndoable()" classname="com.holub.life.PatternToolsTest" time="0.158"/>
+  <testcase name="invalidLargeStampLeavesBoardUntouchedAndCanReturnInside()" classname="com.holub.life.PatternToolsTest" time="0.088"/>
+  <testcase name="captureAndExternalBoardChangesDoNotLeaveAStaleStroke()" classname="com.holub.life.PatternToolsTest" time="0.157"/>
+  <testcase name="dragAndUndoPreserveTheAgeColorsOfExistingCells()" classname="com.holub.life.PatternToolsTest" time="0.171"/>
+  <testcase name="fastDragFillsIntermediateAnchorsInBothDirections()" classname="com.holub.life.PatternToolsTest" time="0.084"/>
+  <testcase name="oneUndoRevertsOneWholeDragButKeepsPreviousClick()" classname="com.holub.life.PatternToolsTest" time="0.224"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

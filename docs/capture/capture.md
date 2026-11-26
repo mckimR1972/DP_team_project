@@ -3,7 +3,7 @@
 Life Game의 보드 일부를 템플릿으로 저장하고 반복 배치하는 추가 기능을 설명한다. 팀 전체 보고서에 포함할 캡처 담당 장으로, 기능 유스케이스·GoF 적용과 대안·UML·Operation Contract·대표 JUnit 목적과 결과를 함께 담는다.
 
 - 문서 확인일·기능 검사 실행일: 2026-11-26 (Asia/Seoul).
-- 전체 JUnit **384**회 중 Pattern 계열 **39**회 포함. 실패·오류·건너뜀 0. 별도 Swing **17 checks** 통과.
+- 전체 JUnit **375**회 중 Pattern 계열 **39**회 포함. 실패·오류·건너뜀 0. 별도 Swing **17 checks** 통과.
 - 상세 구현 결정·전체 테스트·재검증 방법: [캡처 상세 문서](README.md).
 
 ## 제출 요구사항과 본문 위치
@@ -317,8 +317,8 @@ Glider의 빈 모서리만 실제 동결 영역과 겹치도록 배치한다. �
 
 | 구분 | 결과 |
 |---|---|
-| 전체 JUnit | **384**회, 실패 0, 오류 0, 건너뜀 0 |
-| Pattern 계열 JUnit | **39**회, 위 384회에 포함 |
+| 전체 JUnit | **375**회, 실패 0, 오류 0, 건너뜀 0 |
+| Pattern 계열 JUnit | **39**회, 위 375회에 포함 |
 | 별도 Swing 검사 | **17 checks** 통과, JUnit 개수에 포함하지 않음 |
 | 실행일 | 2026-11-26 (Asia/Seoul) |
 | 환경 | Windows, JDK 17.0.6+10, Gradle 9.5.1, JUnit Jupiter 6.0.3, Mockito 5.23.0 |
@@ -327,7 +327,7 @@ Glider의 빈 모서리만 실제 동결 영역과 겹치도록 배치한다. �
 .\gradlew.bat test patternUiTest --rerun-tasks --no-daemon --console=plain
 ```
 
-[결과 JSON](evidence/2026-11-26/results.json), [JUnit XML](evidence/2026-11-26/xml), [실행 로그](evidence/2026-11-26/verification.log), [실제 Swing 결과 화면](evidence/2026-11-26/life-template-drag-undo.png)에 해당 실행의 근거를 보관한다. 테스트 전용 생성자 제거 후 전체 검사를 다시 실행했다. 이전 실행 기록은 수정하거나 합산하지 않는다.
+[결과 JSON](evidence/2026-11-26-integrated/results.json), [JUnit XML](evidence/2026-11-26-integrated/xml), [실행 로그](evidence/2026-11-26-integrated/verification.log), [실제 Swing 결과 화면](evidence/2026-11-26-integrated/life-template-drag-undo.png)에 해당 실행의 근거를 보관한다. 테스트 전용 생성자 제거와 통계·프리징의 최신 변경을 통합한 코드로 2026-11-26에 전체 검사를 다시 실행했다. [같은 날의 이전 실행](evidence/2026-11-26/results.json)은 별도 증거로 보존하며 실행 수를 합산하지 않는다.
 
 모델 검사는 실제 게임이 쓰는 `BoardEditor(Cell, Consumer<EditKind>)` 생성 경로를 사용한다. 완료 알림이 필요한 검사는 전달한 콜백에서 결과를 수집하고, 보드 상태만 검사할 때는 동작 없는 콜백을 전달한다. 테스트에서만 쓰던 단일 인자 생성자는 두지 않는다.
 

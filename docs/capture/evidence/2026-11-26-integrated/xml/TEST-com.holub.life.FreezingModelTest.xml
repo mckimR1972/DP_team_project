@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.holub.life.FreezingModelTest" tests="50" skipped="0" failures="0" errors="0" timestamp="2026-11-26T08:48:11.406Z" hostname="DESKTOP-4CP7K21" time="6.369">
+  <properties/>
+  <testcase name="c_cellsOutsideFollowB3S23()" classname="com.holub.life.FreezingModelTest" time="0.108"/>
+  <testcase name="regionsWithDifferentDurationsExpireIndependently()" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="stateObjectsDriveTheRegion()" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="normalStateIsStatelessAndShared()" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="1x1 region at (&quot;0&quot;,&quot;0&quot;)" classname="com.holub.life.FreezingModelTest" time="0.037"/>
+  <testcase name="1x1 region at (&quot;63&quot;,&quot;0&quot;)" classname="com.holub.life.FreezingModelTest" time="0.006"/>
+  <testcase name="1x1 region at (&quot;0&quot;,&quot;63&quot;)" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="1x1 region at (&quot;63&quot;,&quot;63&quot;)" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="1x1 region at (&quot;7&quot;,&quot;7&quot;)" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="1x1 region at (&quot;8&quot;,&quot;8&quot;)" classname="com.holub.life.FreezingModelTest" time="0.003"/>
+  <testcase name="1x1 region at (&quot;7&quot;,&quot;8&quot;)" classname="com.holub.life.FreezingModelTest" time="0.003"/>
+  <testcase name="1x1 region at (&quot;31&quot;,&quot;32&quot;)" classname="com.holub.life.FreezingModelTest" time="0.003"/>
+  <testcase name="1x1 region at (&quot;56&quot;,&quot;55&quot;)" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="aFrozenDeadCellHasNoColorAndABirthAfterReleaseStartsAtAgeZero()" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="d_frozenLiveCellsCountAsNeighborsOfOutsideCells()" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="anEmptyRegionOnAnEmptyBoardDoesNothing()" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="anExpiredOrReleasedAreaCanBeFrozenAgain()" classname="com.holub.life.FreezingModelTest" time="0.001"/>
+  <testcase name="theListOfRegionsCannotBeChangedFromOutside()" classname="com.holub.life.FreezingModelTest" time="0.003"/>
+  <testcase name="b_frozenDeadCellIsNotBornEvenWithThreeNeighbors()" classname="com.holub.life.FreezingModelTest" time="0.005"/>
+  <testcase name="f_forcedReleaseReleaseAllAndResetLeaveNothingBehind()" classname="com.holub.life.FreezingModelTest" time="0.003"/>
+  <testcase name="theWholeBoardCanBeFrozen()" classname="com.holub.life.FreezingModelTest" time="0.029"/>
+  <testcase name="a_frozenLiveCellDoesNotDieWhileAnUnfrozenLoneCellDoes()" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="d_outsideCellsDoNotChangeFrozenCells()" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="holdNextStateReplacesOnlyThePendingStateUntilTransition()" classname="com.holub.life.FreezingModelTest" time="0.001"/>
+  <testcase name="aFrozenCellKeepsItsAgeAndColorAndResumesAfterRelease()" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="aRegionAcrossFourNeighborhoodBlocksIsHeldAsOne()" classname="com.holub.life.FreezingModelTest" time="0.006"/>
+  <testcase name="emptyNullAndOutsideAreasAreRejected()" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="overlapIsRejectedButTouchingAreasAreAllowed()" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="seed 1" classname="com.holub.life.FreezingModelTest" time="0.871"/>
+  <testcase name="seed 2" classname="com.holub.life.FreezingModelTest" time="0.305"/>
+  <testcase name="seed 3" classname="com.holub.life.FreezingModelTest" time="0.581"/>
+  <testcase name="seed 5" classname="com.holub.life.FreezingModelTest" time="0.177"/>
+  <testcase name="seed 8" classname="com.holub.life.FreezingModelTest" time="0.177"/>
+  <testcase name="seed 13" classname="com.holub.life.FreezingModelTest" time="0.772"/>
+  <testcase name="seed 21" classname="com.holub.life.FreezingModelTest" time="0.624"/>
+  <testcase name="seed 34" classname="com.holub.life.FreezingModelTest" time="0.184"/>
+  <testcase name="seed 55" classname="com.holub.life.FreezingModelTest" time="0.189"/>
+  <testcase name="seed 89" classname="com.holub.life.FreezingModelTest" time="0.21"/>
+  <testcase name="seed 144" classname="com.holub.life.FreezingModelTest" time="0.923"/>
+  <testcase name="seed 233" classname="com.holub.life.FreezingModelTest" time="0.809"/>
+  <testcase name="listenersHearInstallReleaseGenerationAndReset()" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="aGliderIsStoppedByAFrozenEmptyWallAndStaysStoppedAfterRelease()" classname="com.holub.life.FreezingModelTest" time="0.045"/>
+  <testcase name="[1] 0" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="[2] -1" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="[3] -100" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="[4] -2147483648" classname="com.holub.life.FreezingModelTest" time="0.001"/>
+  <testcase name="theNullObjectCellIgnoresHolds()" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="aStillLifeInsideAndOutsideStaysTheSame()" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <testcase name="areaIsClampedToTheBoard()" classname="com.holub.life.FreezingModelTest" time="0.002"/>
+  <testcase name="e_installAtGenerationTenForFiveIsFrozenThroughFifteenAndFreeFromSixteen()" classname="com.holub.life.FreezingModelTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

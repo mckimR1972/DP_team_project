@@ -3,7 +3,7 @@
 영역의 생존 모양을 저장하고 재사용하는 캡처 기능의 기준 문서다. 기능 요구, 설계 선택, 타 기능 연결, 테스트 근거를 한곳에서 관리한다.
 
 - 문서 확인일·기능 검사 실행일: 2026-11-26 (Asia/Seoul).
-- 전체 JUnit **384**회, Pattern 계열 **39**회 포함, 실패·오류·건너뜀 0. 별도 Swing **17 checks** 통과.
+- 전체 JUnit **375**회, Pattern 계열 **39**회 포함, 실패·오류·건너뜀 0. 별도 Swing **17 checks** 통과.
 - 팀 보고서용: [캡처 기능 명세 및 설계](capture.md). 이 상세 문서는 전체 근거와 유지보수 설명을 보관한다.
 - 실행 방법: [프로젝트 README](../../README.md). 코드·테스트 기준이 바뀌면 해당 계약과 결과를 함께 갱신한다.
 
@@ -470,29 +470,29 @@ IT-01~IT-06의 실제 검사 연결은 [테스트 계획](#verification)에 있�
 
 실행일: 2026-11-26 (Asia/Seoul). 명령: `.\gradlew.bat test patternUiTest --rerun-tasks --no-daemon --console=plain`.
 환경: Windows, Temurin JDK 17.0.6+10, Gradle 9.5.1, JUnit Jupiter 6.0.3, Mockito 5.23.0.
-아래 수치는 테스트 전용 생성자 제거 후 전체 검사를 다시 실행한 결과다. 테스트 이름·개수·기존 검증 조건을 유지했으며, 11개 생성자 호출에만 콜백 인자를 명시했다.
+아래 수치는 테스트 전용 생성자 제거와 통계·프리징의 최신 변경을 통합한 코드로 2026-11-26에 전체 검사를 다시 실행한 결과다. 캡처 테스트는 이름·개수·기존 검증 조건을 유지했으며, 11개 생성자 호출에만 콜백 인자를 명시했다. 통계 기능의 검사 정리가 반영돼 전체 집계는 이전 실행보다 9회 줄었지만, 캡처의 Pattern 계열 39회와 별도 Swing 17 checks는 그대로다.
 
 | 결과 | 수치/상태 |
 |---|---|
-| 전체 JUnit | **384**, 실패 0, 오류 0, 건너뜀 0 |
+| 전체 JUnit | **375**, 실패 0, 오류 0, 건너뜀 0 |
 | Pattern 이름의 JUnit | **39**: Feature 10 + Cells 2 + History 4 + Path 9 + Tools 12 + Completion 2 |
-| 실제 프리징 통합 클래스 | FreezingIntegrationTest **37** (384에 포함) |
-| 색상·캡처·통계·사운드 통합 클래스 | MergedFeaturesIntegrationTest **12** (384에 포함) |
+| 실제 프리징 통합 클래스 | FreezingIntegrationTest **37** (375에 포함) |
+| 색상·캡처·통계·사운드 통합 클래스 | MergedFeaturesIntegrationTest **12** (375에 포함) |
 | 별도 Swing 실행기 | **17 checks 통과** (JUnit 수에 포함하지 않음) |
 
-[결과 JSON](evidence/2026-11-26/results.json), [전체 콘솔 기록](evidence/2026-11-26/verification.log), [원본 JUnit XML](evidence/2026-11-26/xml)에 수치·메서드·검증값을 보관한다. 아래 화면 4개는 같은 실행에서 생성한 원본 이미지다.
-[이전 통합 검사](evidence/2026-11-23/results.json)와 [초기 145회 기록](evidence/2026-11-18/results.json)은 별도 실행의 과거 증거다. 원본을 보존하며 실행 수를 합산하지 않는다.
+[결과 JSON](evidence/2026-11-26-integrated/results.json), [전체 콘솔 기록](evidence/2026-11-26-integrated/verification.log), [원본 JUnit XML](evidence/2026-11-26-integrated/xml)에 수치·메서드·검증값을 보관한다. 아래 화면 4개는 같은 실행에서 생성한 원본 이미지다.
+[같은 날의 이전 실행](evidence/2026-11-26/results.json), [이전 통합 검사](evidence/2026-11-23/results.json), [초기 145회 기록](evidence/2026-11-18/results.json)은 별도 실행의 과거 증거다. 원본을 보존하며 실행 수를 합산하지 않는다.
 
 | 같은 실행의 화면 | 확인할 내용 |
 |---|---|
-| [영역 선택](evidence/2026-11-26/life-selection.png) | 역방향 선택과 저장 활성화 |
-| [저장·재배치](evidence/2026-11-26/life-placement.png) | 저장한 모양의 재배치 |
-| [연속 배치](evidence/2026-11-26/life-template-drag.png) | 이동 경로의 추가 셀 |
-| [드래그 Undo](evidence/2026-11-26/life-template-drag-undo.png) | 이전 셀을 유지하며 한 작업 복원 |
+| [영역 선택](evidence/2026-11-26-integrated/life-selection.png) | 역방향 선택과 저장 활성화 |
+| [저장·재배치](evidence/2026-11-26-integrated/life-placement.png) | 저장한 모양의 재배치 |
+| [연속 배치](evidence/2026-11-26-integrated/life-template-drag.png) | 이동 경로의 추가 셀 |
+| [드래그 Undo](evidence/2026-11-26-integrated/life-template-drag-undo.png) | 이전 셀을 유지하며 한 작업 복원 |
 
 ### 5. 완료된 통합 검사
 
-다음 메서드는 위 384회 실행에 포함돼 통과했다. IT는 시나리오 묶음이며 별도의 실행 수가 아니다.
+다음 메서드는 위 375회 실행에 포함돼 통과했다. IT는 시나리오 묶음이며 별도의 실행 수가 아니다.
 
 | ID | 실제 검사 | 검증 내용 |
 |---|---|---|
@@ -564,7 +564,7 @@ IT-01~IT-06의 실제 검사 연결은 [테스트 계획](#verification)에 있�
 | R-08 | T-08,T-12,T-22,T-24,T-25와 기존 회귀 | ADR-02,ADR-06 |
 | R-09 | T-14,T-15,T-23 | ADR-05,ADR-07 |
 
-T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를 사용한 IT-01/IT-02와 같지 않다. 실제 프리징·통계 통합 검사는 별도의 IT 항목에 연결하며 현재 전체 384회 실행에 포함된다.
+T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를 사용한 IT-01/IT-02와 같지 않다. 실제 프리징·통계 통합 검사는 별도의 IT 항목에 연결하며 현재 전체 375회 실행에 포함된다.
 
 <a id="diagrams"></a>
 
@@ -686,7 +686,7 @@ python docs/capture/tools/verify_documents.py
 - 두 문서의 연산 계약 6개·유스케이스 이름 5개, 구현 심볼·Java 인용·대표 JUnit 8개를 대조한다.
 - 유스케이스의 범위·경계·이름·확장 표기, 클래스의 인터페이스·합성·다중성·표시한 멤버의 실제 Java 타입을 확인한다.
 - 두 Markdown을 GFM으로 변환한 브라우저에서 본문 그림 12개의 로딩·목차·가로 잘림을 검사한다. GitHub 서버 화면과 동일하다고 가정하지 않는다.
-- 원본 XML 30개의 JUnit 384회, 별도 Swing 17 checks 로그·결과 화면 해시와 기준 코드 유지 여부를 검사한다.
+- 원본 XML 30개의 JUnit 375회, 별도 Swing 17 checks 로그·결과 화면 해시와 기준 코드 유지 여부를 검사한다.
 - PNG 6개와 원본·테마·생성기의 해시, 기록된 PNG 크기와 렌더러 제한을 검사한다. 제거한 형식이 다이어그램 폴더에 다시 생기면 실패한다.
 
 미리보기와 화면 기록은 `build/capture-docs/preview/`, 검사 결과는 `build/capture-docs/verification.json`에 생성한다. 재생성 가능한 미리보기는 Git에 넣지 않는다. 자동 검사 뒤에도 PNG 6개와 본문 그림의 한글·겹침·가독성을 직접 확인한다.

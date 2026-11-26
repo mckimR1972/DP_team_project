@@ -1,5 +1,5 @@
 {
-  "source_commit": "f9f7726130db92ca3a3fa964b05cc7645ed6a0ae",
+  "source_commit": "265cb37f732402445b5e05e0f2068b5f93acf456",
   "date": "2026-11-26",
   "format": "png",
   "renderer": "PlantUML 1.2026.10",
@@ -33,7 +33,7 @@
     ]
   },
   "sha256": {
-    "diagrams/manifest.json": "61b33758fad958537493a73bd300722ab7a889d801d49de62f109ec27c86562d",
+    "diagrams/manifest.json": "ea822b405c53e426fa82703f73f326b9ad761062ae152a37c0c4e52a9d8bf9d2",
     "diagrams/theme.puml": "eb9ce6340a775dccfd52bf6711afc2ee04d823712d29b84bdb3ea84bf36e7725",
     "tools/build_diagrams.py": "5439e0564cfe96e57af7d635981e1f734e3852cab8aef8af543c5be2e4a117d0",
     "diagrams/01-use-cases.puml": "c399f32c7f6b27e832996a582cf040ef03aa1f0483bf5718d67f8ced61dc2f4f",

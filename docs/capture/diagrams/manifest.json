@@ -1,7 +1,7 @@
 {
-  "version": "3.1",
+  "version": "3.2",
   "date": "2026-11-26",
-  "source_commit": "f9f7726130db92ca3a3fa964b05cc7645ed6a0ae",
+  "source_commit": "265cb37f732402445b5e05e0f2068b5f93acf456",
   "diagrams": [
     {
       "id": "D-01",
@@ -70,5 +70,5 @@
       "document": "README.md#integration"
     }
   ],
-  "evidence": "evidence/2026-11-26/results.json"
+  "evidence": "evidence/2026-11-26-integrated/results.json"
 }

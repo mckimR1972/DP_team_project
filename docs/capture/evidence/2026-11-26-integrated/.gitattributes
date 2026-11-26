@@ -1,0 +1,4 @@
+# Preserve the exact JUnit output bytes used by results.json hashes.
+*.xml -text whitespace=cr-at-eol
+# Gradle output includes trailing spaces; preserve the captured log as evidence.
+*.log -whitespace
