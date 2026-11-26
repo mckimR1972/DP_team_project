@@ -186,7 +186,7 @@ R \text{ is frozen at generation } t \iff g_R + 1 \le t \le g_R + n_R
 
 ## 2. 기존 코드에서 바뀐 부분
 
-원본 클래스 중 `Cell`, `Neighborhood`, `Resident`, `Universe`, `Life`를 고쳤다. 원본은 Holub 코드 그대로(저장소의 첫 커밋)다. 아래 표의 "Freezing 전"과 코드의 `-` 줄은 Freezing을 붙이기 직전의 dev 코드(`d215c7a`)이고, 그중 Holub 원본에 없던 것(셀의 나이, 통계·사운드 이벤트, 캡처·배치 편집 중 틱 건너뛰기)은 다른 기능이 더한 것이다. Holub 코드의 오류를 고친 내용은 [docs/fixes/](../fixes/)에 있다.
+원본 클래스 중 `Cell`, `Neighborhood`, `Resident`, `Universe`, `Life`를 고쳤다. 원본은 Holub 코드 그대로다. 아래 표의 "Freezing 전"과 코드의 `-` 줄은 Freezing을 붙이기 직전의 코드이고, 그중 Holub 원본에 없던 것(셀의 나이, 통계·사운드 이벤트, 캡처·배치 편집 중 틱 건너뛰기)은 다른 기능이 더한 것이다. Holub 코드의 오류를 고친 내용은 [docs/fixes/](../fixes/)에 있다.
 
 ### 2.1 Cell 계층: 좌표로 다음 생사만 바꾼다
 
@@ -462,15 +462,15 @@ void afterGeneration() {
 
 ### 2.5 다른 기능과 맞물린 부분
 
-| 기능 (PR) | 그 기능의 패턴 | 맞물린 곳 | 지금 상태 | 그 기능 코드 수정 |
+| 기능 | 그 기능의 패턴 | 맞물린 곳 | 지금 상태 | 그 기능 코드 수정 |
 | --- | --- | --- | --- | --- |
-| 통계 (#10) | Observer (`BoardChangeListener`) | 세대 번호, 출생·사망 수, 생존 수 | 세대 번호는 `Universe` 하나. 고정은 이벤트를 만들기 전에 끝나므로 고정된 셀은 출생·사망 목록에 없다. 설치·해제는 셀을 바꾸지 않아 이벤트를 보내지 않는다 | 없음 |
-| 사운드 (#3) | Observer, Command | 세대마다 받는 출생·사망 좌표 | 통계와 같은 이벤트를 받으므로 고정된 셀은 소리를 내지 않는다. 재생선은 고정된 살아 있는 셀을 계속 연주한다 | 없음 |
-| 색 순환 (#8, #11) | Strategy (`CellColorPolicy`) | 셀의 나이와 색 | 고정된 셀은 나이가 멈추고, 풀리면 이어서 센다 | `Resident.transition()`에 조건 하나 |
-| 캡처·템플릿 (#9, #13) | Command (`PlacePatternCommand`), 배치 가드 | 템플릿 배치, 되돌리기 | 캡처 쪽이 열어 둔 `setPlacementGuard`에 연결했다. 가드는 `BoardEditor.place()` 안에서 검사해 누른 채 반복 배치도 우회하지 못한다. 영역 선택을 시작하면 되돌리기 기록을 지운다 | 없음 |
-| 드래그 그리기 (#5) | `Universe`의 브러시 | 고정된 셀 편집 | 브러시가 고정된 셀을 건너뛴다 | `Universe` 브러시에 검사 두 곳 |
-| Tick 수정 (#16) | `Clock` | 한 세대 진행 | 실행 중 Tick을 누르면 멈추고 한 세대만 진행하며, 남은 세대가 정확히 1 준다 | 없음 |
-| 사이드바 (#10) | `Life.createSidebar()` | 탭 | Freezing 탭을 세 번째로 더했다 | `Life`에 세 줄 |
+| 통계 | Observer (`BoardChangeListener`) | 세대 번호, 출생·사망 수, 생존 수 | 세대 번호는 `Universe` 하나. 고정은 이벤트를 만들기 전에 끝나므로 고정된 셀은 출생·사망 목록에 없다. 설치·해제는 셀을 바꾸지 않아 이벤트를 보내지 않는다 | 없음 |
+| 사운드 | Observer, Command | 세대마다 받는 출생·사망 좌표 | 통계와 같은 이벤트를 받으므로 고정된 셀은 소리를 내지 않는다. 재생선은 고정된 살아 있는 셀을 계속 연주한다 | 없음 |
+| 색 순환 | Strategy (`CellColorPolicy`) | 셀의 나이와 색 | 고정된 셀은 나이가 멈추고, 풀리면 이어서 센다 | `Resident.transition()`에 조건 하나 |
+| 캡처·템플릿 | Command (`PlacePatternCommand`), 배치 가드 | 템플릿 배치, 되돌리기 | 캡처 쪽이 열어 둔 `setPlacementGuard`에 연결했다. 가드는 `BoardEditor.place()` 안에서 검사해 누른 채 반복 배치도 우회하지 못한다. 영역 선택을 시작하면 되돌리기 기록을 지운다 | 없음 |
+| 드래그 그리기 | `Universe`의 브러시 | 고정된 셀 편집 | 브러시가 고정된 셀을 건너뛴다 | `Universe` 브러시에 검사 두 곳 |
+| Tick 수정 | `Clock` | 한 세대 진행 | 실행 중 Tick을 누르면 멈추고 한 세대만 진행하며, 남은 세대가 정확히 1 준다 | 없음 |
+| 사이드바 | `Life.createSidebar()` | 탭 | Freezing 탭을 세 번째로 더했다 | `Life`에 세 줄 |
 
 ### 2.6 원본 설계 패턴과 맞물린 부분
 
@@ -930,15 +930,15 @@ Strategy와 State는 구조가 비슷하지만 전환의 주체가 다르다. �
 
 **설계 과정**
 
-| 시점 | 커밋 | 한 일 |
-| --- | --- | --- |
-| 2026-11-11 | `ec3f314` | State 구조(`FreezingState` 등 클래스 여섯 개)와 `Cell.holdNextState()`, 별도 Freezing 탭. 캡처 기능의 초기 커밋 위에서 작업 |
-| 2026-11-11 | `93eaf3d` | 기본 오류 수정·JUnit·Gradle(PR #1) 반영 |
-| 2026-11-20 | `feea0df` | dev(`d215c7a`) 병합. 색·캡처·드래그·사운드·통계와 통합하면서 4.5절의 두 결정을 내리고 스냅샷 읽기를 `isAliveAt()`으로 바꿈 |
-| 2026-11-20 | `43c1b6f` | 모델 테스트와 통합 테스트를 JUnit으로 추가 |
-| 2026-11-20 | `ec3a504`, `b36a569` | 문서 정리, 실제 `SoundEffects`와 함께 돌리는 테스트 |
+| 순서 | 한 일 |
+| --- | --- |
+| 1 | State 구조(`FreezingState` 등 클래스 여섯 개)와 `Cell.holdNextState()`, 별도 Freezing 탭. 캡처 기능의 초기 구현 위에서 작업 |
+| 2 | 기본 오류 수정·JUnit·Gradle 반영 |
+| 3 | 다른 기능과 병합. 색·캡처·드래그·사운드·통계와 통합하면서 4.5절의 두 결정을 내리고 스냅샷 읽기를 `isAliveAt()`으로 바꿈 |
+| 4 | 모델 테스트와 통합 테스트를 JUnit으로 추가 |
+| 5 | 문서 정리, 실제 `SoundEffects`와 함께 돌리는 테스트 |
 
-4.1절과 4.2절의 결정은 첫 커밋부터 지금까지 바뀌지 않았다. 4.5절의 결정은 다른 기능이 dev에 들어온 뒤 병합 과정에서 생긴 충돌(세대 번호가 두 곳, 고정 중 색 변화)을 풀면서 내렸다.
+4.1절과 4.2절의 결정은 처음 구현부터 지금까지 바뀌지 않았다. 4.5절의 결정은 다른 기능과 병합하는 과정에서 생긴 충돌(세대 번호가 두 곳, 고정 중 색 변화)을 풀면서 내렸다.
 
 ## 5. 테스트
 
@@ -971,7 +971,7 @@ Freezing 외 다른 기능의 테스트 285개도 모두 통과한다. 기존 �
 - **나이는 간격 1인 색 규칙으로 읽는다.** `CyclingColorPolicy(1, 색 7개)`를 쓰면 살아 있는 셀의 색으로 나이를 알 수 있어, 게임 코드에 나이를 읽는 메서드를 넣지 않았다.
 - **통합 테스트는 실제 `Universe`를 쓴다.** Mockito가 `MenuSite`를 대신해 `Universe`가 등록한 메뉴 콜백을 받아 두고, 테스트가 그 콜백(Go > Tick, Grid > Clear 등)을 직접 부른다. 시계는 실제 `Clock`이다. Load와 Store의 파일 선택 창은 Mockito로 `Files`를 대신한다. Swing 조작은 이벤트 스레드에서 한다.
 - **독립 계산과 비교한다.** 무작위 비교 테스트는 고정 규칙(1.3절)을 따로 짠 계산과, 매 세대 모든 칸의 생사와 나이를 비교한다.
-- **테스트 전용 메서드를 `src/`에 넣지 않았다.** 테스트는 Freezing 관리자를 `LifeTestSupport.freezing()`으로 얻는다. 이 도우미는 게임 코드가 쓰는 `Universe`의 `freezingTools` 필드와 `FreezingTools.manager()`를 거친다. 영역의 상태 객체도 게임 코드가 쓰는 `state` 필드를 리플렉션으로 읽는다. 처음 구현에 있던 테스트 전용 접근자(`Universe.freezing()`, `FreezingRegion.startGeneration()`·`duration()`·`state()`)는 점검에서 찾아 지웠다(#28).
+- **테스트 전용 메서드를 `src/`에 넣지 않았다.** 테스트는 Freezing 관리자를 `LifeTestSupport.freezing()`으로 얻는다. 이 도우미는 게임 코드가 쓰는 `Universe`의 `freezingTools` 필드와 `FreezingTools.manager()`를 거친다. 영역의 상태 객체도 게임 코드가 쓰는 `state` 필드를 리플렉션으로 읽는다. 처음 구현에 있던 테스트 전용 접근자(`Universe.freezing()`, `FreezingRegion.startGeneration()`·`duration()`·`state()`)는 점검에서 찾아 지웠다.
 
 ### 5.3 테스트 케이스와 요구사항
 
