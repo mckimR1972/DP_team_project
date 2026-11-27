@@ -57,9 +57,28 @@
 
 ## 5. 테스트
 
-| 테스트 | 확인하는 것 |
-| --- | --- |
-| `UniverseStoreTest.draggingDrawsACellForEveryPositionPassed` | 끌면서 지나간 위치마다 셀이 그려진다 |
-| `UniverseStoreTest.draggingFromALiveCellErases` | 살아 있는 셀에서 시작하면 지운다 |
-| `UniverseStoreTest.draggingOffTheBoardStopsAtTheEdge` | 보드 밖으로 끌면 가장자리에서 멈춘다 |
-| `MergedFeaturesIntegrationTest.ordinaryDraggingPublishesOncePerChangedMouseEventAndSupportsErasing` | 셀이 바뀐 마우스 이벤트마다 `EDIT` 이벤트를 한 번 보내고, 지우기도 된다 |
+2절의 요구사항을 확인하는 기존 JUnit 테스트 9개를 골라 실행했다. 모두 통과했다.
+
+```
+.\gradlew.bat clean test --rerun --tests "com.holub.life.UniverseStoreTest.dragging*" --tests ...
+```
+
+(나머지 `--tests`는 아래 표의 테스트 이름을 그대로 넘긴다.)
+
+| 테스트 | 확인하는 것 | 요구사항 |
+| --- | --- | --- |
+| `UniverseStoreTest.draggingDrawsACellForEveryPositionPassed` | 끌면서 지나간 위치마다 셀이 그려지고, 건너뛴 칸도 채워진다 | FR-1, FR-3 |
+| `UniverseStoreTest.draggingFromALiveCellErases` | 살아 있는 셀에서 시작하면 지운다 | FR-2 |
+| `UniverseStoreTest.draggingOffTheBoardStopsAtTheEdge` | 보드 밖으로 끌면 가장자리에서 멈춘다 | FR-4 |
+| `MergedFeaturesIntegrationTest.ordinaryDraggingPublishesOncePerChangedMouseEventAndSupportsErasing` | 셀이 바뀐 마우스 이벤트마다 `EDIT` 이벤트를 한 번 보내고, 같은 칸을 다시 지나면 보내지 않는다. 지우기도 된다 | FR-5, NFR-2 |
+| `UniverseEventsTest.clicksPublishExactRowMajorCoordinatesAndToggleState` | 클릭 한 번은 셀 하나만 바꾼다 | NFR-1 |
+| `FreezingIntegrationTest.draggingThroughAFrozenAreaSkipsItsCellsBothWhenDrawingAndErasing` | 끌기가 고정 영역 안의 셀은 건너뛴다 | NFR-3 |
+| `FreezingIntegrationTest.aStrokeThatStartsOnAFrozenCellIsIgnoredEntirely` | 고정된 셀에서 시작한 획은 무시한다 | NFR-3 |
+| `FreezingIntegrationTest.openingTheFreezingTabEndsTemplatePlacementSoTheBrushWorksAgain` | 템플릿 배치가 끝나면 드래그 그리기가 다시 동작한다 | NFR-3 |
+| `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | `isAliveAt()`이 블록 안의 셀까지 찾아 생사를 돌려준다 | NFR-4 |
+
+![드래그 그리기 테스트 결과 요약](evidence/test-drag-summary.png)
+
+![드래그 그리기 테스트 메서드별 결과](evidence/test-drag-methods.png)
+
+Gradle HTML 보고서(`build/reports/tests/test/`)를 캡처했다. 위는 전체 요약이고, 아래는 테스트 클래스별 화면에서 메서드 표만 모은 것이다.
