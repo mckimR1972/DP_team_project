@@ -1,0 +1,27 @@
+@startuml usecase-drag
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam usecaseBackgroundColor #F1F1F1
+left to right direction
+skinparam ranksep 70
+
+actor "사용자" as User
+
+rectangle "Life Game" {
+  usecase Edit as "Edit Cells
+--
+extension points
+끌기"
+  usecase "Draw Cells by Dragging(E)" as Drag
+}
+
+User -- Edit
+
+Edit <.. Drag : <<extend>>
+note on link
+  condition: {버튼을 누른 채 끎}
+  extension point: 끌기
+end note
+@enduml
