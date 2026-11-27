@@ -488,11 +488,45 @@ void afterGeneration() {
 
 ![Install Freezing(E)의 시스템 시퀀스 다이어그램](diagram/ssd-install.png)
 
+**Install Freezing(E)**: 영역을 고정하기까지 사용자가 보내는 시스템 연산 다섯 개를 순서대로 보인다.
+
+1. `setFreezingDuration(n)`으로 지속 세대를 정한다. 1~999만 받고 처음 값은 5다.
+2. `startRegionSelection()`으로 영역 선택 모드에 들어가면 게임이 멈춘다.
+3. 원하는 영역이 나올 때까지 `selectRegion(start, end)`를 되풀이한다(loop). 시스템은 매번 활성 영역과 겹치는지에 따라 "설치할 수 있음" 또는 "설치할 수 없음"을 돌려준다(alt).
+4. 마지막에 `installFreezing()`으로 설치하거나, `cancelRegionSelection()`으로 선택을 그만둔다(alt).
+
+설치에 성공하면 고정된 영역, 남은 세대 n, 고정되는 세대 구간(지금 세대가 g일 때 g+1 ~ g+n)을 받는다. 빈 영역이거나 활성 영역과 겹치면 설치할 수 없는 이유를 받는다. 지속 세대 정하기와 영역 고르기를 따로 유스케이스로 떼지 않고 한 SSD 안의 단계로 둔 것은, 둘 다 설치라는 하나의 목표를 위한 단계이기 때문이다. 연산 계약은 CO1~CO5다.
+
 ![Release Freezing(E)의 시스템 시퀀스 다이어그램](diagram/ssd-release.png)
+
+**Release Freezing(E)**: 영역이 풀리는 네 가지 경로를 하나의 alt로 나란히 놓았다.
+
+- **영역 하나 풀기**: `releaseFreezing(region)`을 보내면 남은 Freezing 영역 목록을 받는다.
+- **모두 풀기**: `releaseAllFreezing()`을 보내면 빈 영역 목록을 받는다.
+- **Clear Board 확장("판을 비운 후")**: 원본 `clearBoard()`의 결과에 "빈 Freezing 영역 목록"이 더해진다.
+- **Store / Load Board 확장("불러온 후")**: 원본 `loadBoard(file)`은 불러오기에 성공했을 때만 영역이 비워지고, 취소하거나 읽지 못하면 판과 영역이 그대로다(alt).
+
+마지막 노트는 네 경로에 공통인 결과다. 풀린 영역의 셀은 지금 생사 그대로 남고 다음 세대부터 Life 규칙을 따른다. 사용자가 직접 시작하는 해제(User goal)와 다른 유스케이스에 붙는 해제(«extend»)를 한 그림에 둬서, 어느 쪽이든 결과가 같다는 것을 보였다. 연산 계약은 CO6~CO9다.
 
 ![Keep Region Frozen(E)의 시스템 시퀀스 다이어그램](diagram/ssd-keep-frozen.png)
 
+**Keep Region Frozen(E)**: Advance Generation을 확장하는 유스케이스를, 사용자가 직접 보내는 `stepOneGeneration()`으로 보였다. 사전 조건은 활성 영역이 있고 영역을 고르는 중이 아닌 것이다(첫 노트). 결과는 남은 세대 수로 갈린다(alt).
+
+- **남은 세대가 2 이상**: 다음 세대의 생사(영역 안은 설치 순간 그대로)와 함께, 영역마다 남은 세대가 1 준다.
+- **남은 세대가 1**: 이번이 마지막 고정 세대라, 그 영역이 목록과 화면에서 사라진다(자동 해제).
+
+게임이 실행 중이면 세대 간격마다 같은 결과를 받는다(loop). 시계는 게임 안에 있으므로 입력으로 그리지 않았다. 이 유스케이스는 확장 지점 두 곳("다음 세대 계산 후"에서 생사를 되돌리고, "세대 확정 후"에서 남은 세대를 줄임)에 붙지만, 사용자 쪽에서는 한 번의 결과로 보인다는 점이 이 SSD에서 드러난다. 연산 계약은 CO10이다.
+
 ![Protect Frozen Region(E)의 시스템 시퀀스 다이어그램](diagram/ssd-protect.png)
+
+**Protect Frozen Region(E)**: 활성 영역이 있을 때(첫 노트), 다른 두 유스케이스를 확장하는 경우를 바깥 alt로 나눴다.
+
+- **Edit Cells 확장("셀 변경 전")**: `editCell(row, column)`에서 고른 셀이 고정 영역 안에 있으면 셀이 그대로이고, 고정된 셀은 바꿀 수 없다는 안내를 받는다. 영역 밖이면 원본대로 바뀐 셀을 받는다.
+- **Place Template(E) 확장("배치 전")**: `placeTemplate(origin)`에서 템플릿 사각형이 고정 영역과 겹치면 그 자리에는 배치하지 않는다. 겹치지 않으면 템플릿이 놓인 판을 받는다.
+
+마지막 노트처럼 끌어서 그리거나 반복 배치할 때도 지나가는 칸과 자리마다 같은 검사를 한다. 이 SSD에는 새 시스템 연산이 없고, 원본(`editCell`)과 캡처·템플릿 기능(`placeTemplate`)의 연산에 사후 조건만 더했다. 다른 기능의 클래스를 고치지 않고 확장한 설계가 시스템 연산 수준에서도 그대로 드러난다. 연산 계약은 CO11, CO12다.
+
+시스템 연산을 모으면 다음과 같다.
 
 | 시스템 연산 | 실제 입력 | 유스케이스 | 이 기능과의 관계 |
 | --- | --- | --- | --- |
@@ -744,7 +778,7 @@ CO6과 CO7은 셀을 바꾸지 않는다. 풀린 영역의 셀은 지금 생사 
 
 ![Freezing 클래스 다이어그램](diagram/class-freezing.png)
 
-위 그림은 3.3절 시퀀스 다이어그램에 나온 클래스와 메시지를 모두 한 장에 모은 것이다. 위에서 아래로 틱이 흘러가는 순서(`Life` → `Universe` → `FreezingTools` → `FreezingManager` → `FreezingRegion` → 상태 객체)로 놓았고, 아래쪽 왼편이 State 패턴, 오른편이 원본 Composite(`Cell` 계층)다. 멤버는 Freezing 기능과 관련된 것만 적었다.
+위 그림은 3.3절 시퀀스 다이어그램에 나온 클래스와 메시지를 모두 한 장에 모은 것이다. 틱이 흘러가는 순서대로 맨 위에 `Life` → `Universe`, 그 아래에 `FreezingTools` → `FreezingManager`, 다시 그 아래에 `FreezingRegion`을 놓았고, 왼쪽 아래가 State 패턴, 오른쪽 아래가 원본 Composite(`Cell` 계층)다. 멤버는 Freezing 기능과 관련된 것만 적었다.
 
 그림을 그린 규칙은 다음과 같다.
 
