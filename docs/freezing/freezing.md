@@ -744,7 +744,7 @@ CO6과 CO7은 셀을 바꾸지 않는다. 풀린 영역의 셀은 지금 생사 
 
 ![Freezing 클래스 다이어그램](diagram/class-freezing.png)
 
-위 그림은 3.3절 시퀀스 다이어그램에 나온 클래스와 메시지를 모두 한 장에 모은 것이다. 위에서 아래로 틱이 흘러가는 순서(`Life` → `Universe` → `FreezingTools` → `FreezingManager` → `FreezingRegion` → 상태 객체)로 놓았고, 아래쪽 왼편이 State 패턴, 오른편이 원본 Composite(`Cell` 계층)다. 멤버는 Freezing 기능과 관련된 것만 적었다.
+위 그림은 3.3절 시퀀스 다이어그램에 나온 클래스와 메시지를 모두 한 장에 모은 것이다. 틱이 흘러가는 순서대로 맨 위에 `Life` → `Universe`, 그 아래에 `FreezingTools` → `FreezingManager`, 다시 그 아래에 `FreezingRegion`을 놓았고, 왼쪽 아래가 State 패턴, 오른쪽 아래가 원본 Composite(`Cell` 계층)다. 멤버는 Freezing 기능과 관련된 것만 적었다.
 
 그림을 그린 규칙은 다음과 같다.
 

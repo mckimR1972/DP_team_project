@@ -5,8 +5,8 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
-skinparam nodesep 70
-skinparam ranksep 80
+skinparam nodesep 55
+skinparam ranksep 50
 hide circle
 hide empty members
 
@@ -116,7 +116,7 @@ class Resident {
 }
 
 ' ---------------------------------------------------------------- 관계
-Life "1" --> "1" Universe : universe
+Life "1" -right-> "1" Universe : universe
 Universe "1" -right-> "1" PatternTools : patternTools
 PatternTools "1" -right-> "1" BoardEditor : editor
 Universe "1" --> "1" FreezingTools : freezingTools
@@ -124,13 +124,13 @@ Universe ..> FreezingManager : <<create>>\n<<use>>
 Universe "1" --> "1" Cell : outermostCell
 
 FreezingTools .left.> Clock : <<use>>
-FreezingTools "1" --> "1" FreezingManager : manager
+FreezingTools "1" -right-> "1" FreezingManager : manager
 FreezingTools "1" --> "0..*" FreezingRegion : entries
 
 FreezingManager "1" o--> "0..*" FreezingRegion : regions
-FreezingManager "0..1" --> "1" Cell : board
+FreezingManager "0..1" -right-> "1" Cell : board
 
-FreezingRegion "0..*" --> "1" FreezingState : state
+FreezingRegion "0..*" -left-> "1" FreezingState : state
 FreezingRegion ..> FrozenState : <<create>>
 FreezingRegion ..> Cell : <<use>>
 FreezingState <|.. FrozenState
@@ -147,12 +147,12 @@ note top of Universe
   배치 가드(Predicate)와 beforeSelect(Runnable)만 넘긴다
 end note
 
-note right of FreezingManager
+note top of FreezingManager
   Observer의 Subject: 영역 목록이 바뀌면
   listeners(FreezingTools.refresh)를 부른다
 end note
 
-note left of FreezingRegion
+note bottom of FreezingRegion
   State의 Context:
   고정 여부를 묻지 않고 state에 넘긴다
 end note
