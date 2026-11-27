@@ -245,7 +245,7 @@ Freezing의 처음 구현(2026-11-11)은 색 순환·통계·사운드가 없는
 | 항목 | 처음 구현 | 병합 뒤 | 바꾼 이유 |
 | --- | --- | --- | --- |
 | 세대 번호 | `FreezingManager`가 `private long generation`을 갖고 `beginGeneration()`에서 올림 | 카운터 삭제. `Universe`의 값을 `LongSupplier`로 읽음 | 통계가 들어오면서 `Universe`에도 세대 번호가 생겼다. 두 곳에서 세면 초기화 시점이 어긋날 때 숫자가 달라진다 |
-| 스냅샷 읽기 | `board.createMemento()`로 보드 전체를 복사한 뒤 `memento.isAlive(point)` | `board.isAliveAt(row, column)` | 사운드·드래그가 추가한 좌표 조회 메서드가 생겨 필요한 칸만 물을 수 있게 됐다 |
+| 스냅샷 읽기 | `board.createMemento()`로 보드 전체를 복사한 뒤 `memento.isAlive(point)` | `board.isAliveAt(row, column)` | 드래그 그리기 기능이 추가한 좌표 조회 메서드가 생겨 필요한 칸만 물을 수 있게 됐다 |
 | 고정된 칸의 나이 | 다루지 않음 | `heldThisGeneration`으로 나이 유지 | 색 순환이 들어오면서 고정 중에도 색이 바뀌는 문제가 생겼다 |
 | 사이드바 | `Universe`가 자체 `JTabbedPane`에 캡처 탭과 Freezing 탭을 둠 | `Life.createSidebar()`의 공용 탭에 세 번째로 추가 | 통계가 공용 탭을 `Life`에 만들었다 |
 | 테스트 | `main()` 방식의 `FreezingFeatureTest`, `FreezingUiTest` | JUnit `FreezingModelTest`, `FreezingIntegrationTest`, `FreezingSoundIntegrationTest` | `gradlew test` 한 번으로 돌리기 위해 |
