@@ -1,0 +1,19 @@
+@startuml
+!include ../theme.puml
+!pragma layout dot
+skinparam nodesep 45
+skinparam ranksep 50
+left to right direction
+actor "사용자" as User
+rectangle "Life Game" {
+  usecase "Capture Template(E)" as Capture
+  usecase Place as "Place Template(E)
+--
+extension points
+배치 전"
+  usecase "Undo Placement(E)" as Undo
+}
+User -- Capture
+User -- Place
+User -- Undo
+@enduml

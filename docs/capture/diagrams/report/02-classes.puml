@@ -1,0 +1,36 @@
+@startuml
+!include ../theme.puml
+hide empty members
+class PatternTools {
+  -mode : PatternTools.Mode
+  -saveSelection()
+  -undo()
+}
+class PatternLibrary {
+  +save(pattern : PatternTemplate)
+}
+class BoardEditor {
+  +capture(name : String, area : Rectangle) : PatternTemplate
+  +place(pattern : PatternTemplate, origin : Point) : boolean
+  +undo()
+}
+class PatternTemplate {
+  -name : String
+  -cells : boolean[][]
+}
+class PlacePatternCommand {
+  -added : Set<Point>
+  ~execute() : boolean
+  ~undo()
+}
+interface Cell <<interface>> {
+  +createMemento() : Storable
+}
+PatternTools "1" --> "1" BoardEditor : editor
+PatternTools "1" --> "1" PatternLibrary : library
+PatternLibrary "0..*" --> "0..*" PatternTemplate : patterns
+BoardEditor "0..*" --> "1" Cell : board
+BoardEditor ..> PatternTemplate : <<create>>
+BoardEditor "0..1" --> "0..100" PlacePatternCommand : history
+PlacePatternCommand "0..*" --> "1" PatternTemplate : pattern
+@enduml

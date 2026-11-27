@@ -27,24 +27,19 @@ rectangle "Life Game" {
     together {
     usecase "Run / Halt Game" as RunGame
     usecase "Step One Generation" as StepGame
-    usecase "View Basic Statistics(E)" as BasicStatistics
-    usecase "View Color Distribution(E)" as ColorStatistics
+    usecase "View Statistics(E)" as ViewStatistics
     }
     usecase "Advance Generation\n--\nextension points\n세대 확정 후" as AdvanceGeneration
 
     RunGame ..> AdvanceGeneration : <<include>>
     StepGame ..> AdvanceGeneration : <<include>>
-    BasicStatistics ..> AdvanceGeneration : <<extend>>
+    ViewStatistics ..> AdvanceGeneration : <<extend>>
     note on link
       condition: {통계 구독 중}
-    end note
-    ColorStatistics ..> AdvanceGeneration : <<extend>>
-    note on link
-      condition: {통계 구독 중}
+      extension point: 세대 확정 후
     end note
 }
 Player -- RunGame
 Player -- StepGame
-Player -- BasicStatistics
-Player -- ColorStatistics
+Player -- ViewStatistics
 @enduml

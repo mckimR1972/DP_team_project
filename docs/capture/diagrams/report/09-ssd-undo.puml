@@ -1,0 +1,12 @@
+@startuml
+!include ../theme.puml
+mainframe sd Undo Placement(E)
+actor "사용자" as User
+participant ":LifeGame" as Game
+User -> Game : undoPlacement()
+alt 진행 중 작업을 확정한 뒤 이력이 있음
+  Game --> User : 마지막 작업에서 추가한 셀만 제거
+else 되돌릴 작업이 없음
+  Game --> User : 보드와 재생 상태 유지
+end
+@enduml

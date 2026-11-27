@@ -5,7 +5,7 @@ skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam sequenceMessageAlign center
 hide footbox
-mainframe sd 재생선 한 스텝 (Hear Board Sweep(E))
+mainframe sd 재생선 한 스텝 (SoundEffects.playStep)
 
 participant "noteScheduler :\nScheduledExecutorService" as Q
 participant "effects :\nSoundEffects" as S

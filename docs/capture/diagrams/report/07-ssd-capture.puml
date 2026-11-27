@@ -1,0 +1,23 @@
+@startuml
+!include ../theme.puml
+mainframe sd Capture Template(E)
+actor "사용자" as User
+participant ":LifeGame" as Game
+note over User, Game : 영역 캡처를 선택하면 게임이 멈춘다.
+User -> Game : selectCaptureArea(start, end)
+Game --> User : 선택 사각형 표시
+alt 이름을 입력하고 저장
+  User -> Game : saveTemplate(name)
+  alt 유효한 선택과 이름, 파일 저장 성공
+    Game --> User : 목록에 새 템플릿 선택, 배치 준비
+  else 빈 모양 · 잘못된 이름 · 중복 · 저장 실패
+    Game --> User : 오류 안내, 선택 영역 유지
+  end
+else 이름 입력 취소
+  note over User, Game : 선택 영역을 유지한다. 다시 저장할 수 있다.
+end
+opt 캡처 또는 배치 편집을 끝냄
+  User -> Game : finishTemplateEditing()
+  Game --> User : 일반 그리기로 복귀
+end
+@enduml

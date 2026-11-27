@@ -1,0 +1,23 @@
+@startuml
+!include ../theme.puml
+!pragma layout dot
+skinparam nodesep 45
+skinparam ranksep 50
+state "일반 그리기\nDRAW" as Draw
+state "영역 선택\nCAPTURE" as Capture
+state "템플릿 배치 (PLACE)" as Place {
+  state "미리보기" as Preview
+  state "누른 작업 진행" as Held
+  [*] --> Preview
+  Preview --> Held : 왼쪽 버튼 누름
+  Held --> Held : 유지 · 드래그\n/ 위치별 찍기
+  Held --> Preview : 해제 또는 입력 중단\n/ 작업 확정
+}
+[*] --> Draw
+Draw --> Capture : 영역 캡처
+Draw --> Place : 선택한 템플릿 배치
+Capture --> Place : 저장 성공 또는 목록에서 배치
+Place --> Capture : 영역 캡처
+Capture --> Draw : 편집 종료
+Place --> Draw : 편집 종료\n/ 진행 중 작업 확정
+@enduml

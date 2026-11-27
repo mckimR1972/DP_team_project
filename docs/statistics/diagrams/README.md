@@ -7,16 +7,21 @@
 | 유스케이스 | [statistics-use-cases.puml](statistics-use-cases.puml) | [statistics-use-cases.png](statistics-use-cases.png) |
 | 클래스 | [statistics-classes.puml](statistics-classes.puml) | [statistics-classes.png](statistics-classes.png) |
 | 시퀀스 | [statistics-sequence.mmd](statistics-sequence.mmd) | [statistics-sequence.png](statistics-sequence.png) |
+| 상태 | [statistics-state.puml](statistics-state.puml) | [statistics-state.png](statistics-state.png) |
 
-## 유스케이스·클래스 PNG 다시 생성
+유스케이스 그림은 전체 그림에서 통계 조회와 세대 진행의 관계를 발췌한다. 통계 조회 이름은 `View Statistics(E)`로 통일하고, 기본 통계와 색상 분포는 본문의 조회 항목으로 설명한다.
+
+상태 그림은 Statistics의 최근 집계 결과를 기준으로 탄생·사망 표시 가능 여부의 전이를 나타낸다. 별도의 상태 클래스가 아니라 `currentSummary`와 `hasGenerationDelta` 값을 기준으로 구분한다.
+
+## 유스케이스·클래스·상태 PNG 다시 생성
 
 PlantUML 1.2026.10과 Java 21 이상을 사용한다. 다이어그램 렌더링용 Java 버전이며, 프로젝트의 Java toolchain 17 설정은 그대로 둔다. 실행 파일을 준비한 뒤 저장소 루트에서 다음 명령을 실행한다. `/path/to/plantuml-1.2026.10.jar`는 실제 파일 위치로 바꾼다.
 
 ```bash
-java -Djava.awt.headless=true -jar /path/to/plantuml-1.2026.10.jar -charset UTF-8 -tpng docs/statistics/diagrams/statistics-use-cases.puml docs/statistics/diagrams/statistics-classes.puml
+java -Djava.awt.headless=true -jar /path/to/plantuml-1.2026.10.jar -charset UTF-8 -tpng docs/statistics/diagrams/statistics-use-cases.puml docs/statistics/diagrams/statistics-classes.puml docs/statistics/diagrams/statistics-state.puml
 ```
 
-유스케이스와 클래스는 팀 UML 통일안에 따라 흑백과 표준 관계 표기를 사용한다. 유스케이스는 Smetana 배치 엔진을, 클래스는 ELK 배치 엔진을 사용한다.
+유스케이스와 클래스는 팀 UML 통일안에 따라 흑백과 표준 관계 표기를 사용한다. 유스케이스와 상태는 Smetana 배치 엔진을, 클래스는 ELK 배치 엔진을 사용한다.
 
 ## 시퀀스 PNG 다시 생성
 

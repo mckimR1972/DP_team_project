@@ -1,6 +1,6 @@
 # 다이어그램 표기 통일안 (유스케이스·클래스)
 
-기능별 문서의 유스케이스 다이어그램과 클래스 다이어그램을 나란히 놓으면 표기가 서로 다르다. 제출 전에 맞출 기준과, 기능별로 고칠 곳을 정리했다. 비교한 것은 2026-11-26 기준으로 열려 있는 각 기능의 문서 PR이다.
+다섯 기능의 문서가 유스케이스 다이어그램과 클래스 다이어그램을 같은 표기로 그리도록 정한 기준이다.
 
 ## 1. 그리는 범위
 
@@ -48,41 +48,6 @@
 - Holub 코드의 오류를 고친 것(`Resident.transition()`이 반대 값을 돌려주던 것 등)은 원본이 아니라 바뀐 점이다. 고친 내용은 `docs/original-improvements.md`를 가리킨다.
 - 바꾸기 전 그림이 이 오류를 따로 보일 필요는 없다. 다만 그림이나 본문에 "원본과 같다"고 적는 곳이 오류를 고친 부분이면, 고친 뒤와 같다고 적는다.
 
-## 5. 기능별로 고칠 곳
+## 5. 반영 상태
 
-**색 순환**
-
-- 클래스 다이어그램 두 장의 연관 끝에 역할 이름을 적는다. 두 그림 모두 `Neighborhood` → `Cell`에 `grid`, `Universe` → `Cell`에 `outermostCell`을 적고, 바꾼 뒤 그림은 `Resident` → `CellColorPolicy`에 `colorPolicy`도 적는다. `colorPolicy`는 static 필드이므로 밑줄을 긋는다.
-
-**Freezing**
-
-- 클래스 다이어그램의 역할 이름에서 가시성 기호를 뺀다. 예: `- grid` → `grid`, `- outermostCell` → `outermostCell`, `- universe` → `universe`.
-- 연관의 출발 쪽에도 다중성을 적는다. 예: `Universe "1" --> "1" Cell`, `Life "1" --> "1" Universe`.
-
-**사운드**
-
-- 클래스 다이어그램의 `Life ..> Universe : <<use>>`(의존)를 연관 `Life "1" --> "1" Universe : universe`로 바꾼다.
-- `Universe "1" o-- "*" BoardChangeListener`(집합)를 연관 `Universe "1" --> "0..*" BoardChangeListener : boardListeners`로 바꾼다.
-- `Kind`를 `BoardChangeEvent.Kind`로 적는다.
-- `Universe`의 `widthInCells()`를 뺀다. 게임 코드 어디에서도 부르지 않고, 사운드도 쓰지 않는다.
-
-**통계**
-
-- 유스케이스 다이어그램의 행위자 이름 "Game User"를 "사용자"로 바꾼다.
-- 통계도 세대마다 갱신되므로, 다른 기능처럼 Advance Generation의 확장 지점 "세대 확정 후"에 «extend»로 붙인다. 붙이지 않는다면 그 이유를 본문에 적는다.
-- 클래스 다이어그램의 다중성을 코드에 맞춘다. `Universe "1" --> "1" Cell : outermostCell`, `Life "1" --> "1" Universe : universe`, `Universe "1" --> "0..*" BoardChangeListener : boardListeners`.
-- 연관 끝에 역할 이름을 적는다. 예: `Life` → `Statistics`에 `statistics`.
-- 연산의 `: void`를 뺀다.
-- 글꼴을 다른 그림과 같은 "Malgun Gothic"으로 바꾼다. 지금 지정한 "Apple SD Gothic Neo"는 Windows에 없어서 다시 그리면 글꼴이 바뀐다.
-
-**캡처·템플릿**
-
-- 유스케이스 다이어그램의 행위자 이름 "게임 사용자"를 "사용자"로 바꾼다.
-- 클래스 다이어그램 연산의 `: void`를 뺀다.
-
-**코드를 정리한 뒤에 맞출 것**
-
-아래 멤버는 게임 코드에서는 쓰지 않고 테스트에서만 쓴다. 지금 그림은 코드와 맞으므로 그림만 먼저 고치지 않는다. 코드에서 지우면 그림에서도 함께 지운다.
-
-- 통계: `Statistics`의 `current()`.
-- Freezing: `Universe`의 `freezing()`, `FreezingRegion`의 `startGeneration`, `duration`.
+1~3장의 기준은 다섯 기능의 문서와 다이어그램에 모두 반영했다.

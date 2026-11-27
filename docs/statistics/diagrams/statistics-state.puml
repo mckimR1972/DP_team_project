@@ -1,0 +1,61 @@
+@startuml statistics-state
+!pragma layout smetana
+skinparam monochrome true
+skinparam dpi 150
+skinparam shadowing false
+skinparam defaultFontName "Malgun Gothic"
+skinparam defaultFontSize 16
+skinparam backgroundColor white
+skinparam stateBackgroundColor white
+skinparam noteBackgroundColor white
+skinparam ArrowColor black
+skinparam linetype polyline
+skinparam nodesep 65
+skinparam ranksep 70
+hide empty description
+mainframe stm Statistics - 세대 변화량 표시 상태
+
+state "집계 전" as NoSummary
+NoSummary : currentSummary == null
+
+state "변화량 표시 불가" as NoDelta
+NoDelta : currentSummary != null
+NoDelta : currentSummary.hasGenerationDelta() == false
+NoDelta : 탄생·사망 표시: "—"
+NoDelta : onBoardChanged(e) [kind != GENERATION]
+NoDelta : / 집계·전달
+
+state "변화량 표시 가능" as HasDelta
+HasDelta : currentSummary != null
+HasDelta : currentSummary.hasGenerationDelta() == true
+HasDelta : 탄생·사망 표시: 측정값 (0 포함)
+HasDelta : onBoardChanged(e) [kind == GENERATION]
+HasDelta : / 집계·전달
+HasDelta : onBoardChanged(e) [같은 세대의 색상 정책 변경]
+HasDelta : / 집계·전달 (기존 탄생·사망 유지)
+
+[*] --> NoSummary
+NoSummary -down-> NoDelta : onBoardChanged(e)\n[kind != GENERATION]\n/ 집계·전달
+NoSummary -down-> HasDelta : onBoardChanged(e)\n[kind == GENERATION]\n/ 집계·전달
+NoDelta -right-> HasDelta : onBoardChanged(e)\n[kind == GENERATION]\n/ 집계·전달
+HasDelta -left-> NoDelta : onBoardChanged(e)\n[초기·편집·복원 이벤트 또는\n다른 세대의 색상 정책 변경]\n/ 집계·전달
+
+legend bottom left
+  <b>표기와 코드의 대응</b>
+  kind = e.kind()
+  집계·전달은 아래 공통 처리의 약칭이며 별도의 메서드가 아니다.
+    Summary summary = calculate(e);
+    currentSummary = summary;
+    onUpdated.accept(summary);
+
+  초기·편집·복원 이벤트:
+    INITIAL, EDIT, TEMPLATE, TEMPLATE_UNDO, CLEAR, LOAD
+  같은 세대의 색상 정책 변경:
+    kind == COLOR_POLICY_CHANGED && currentSummary.generation() == e.generation()
+  가드는 이벤트를 처리하기 전의 currentSummary를 기준으로 판정한다.
+
+  유효한 BoardChangeEvent를 정상 처리하는 경우를 나타낸다.
+  모든 정상 이벤트에서 생존 수·비율·색상 분포는 새 입력으로 다시 집계한다.
+  onUpdated는 Life에서 StatisticsPanel.showStatistics에 연결한다.
+endlegend
+@enduml

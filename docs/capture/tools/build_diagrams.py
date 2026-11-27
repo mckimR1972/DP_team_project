@@ -31,11 +31,12 @@ def main():
     meta = json.loads((DIAGRAMS / 'manifest.json').read_text(encoding='utf-8'))
     dimensions = {}
     files = [DIAGRAMS / 'manifest.json', DIAGRAMS / 'theme.puml', Path(__file__)]
-    for item in meta['diagrams']:
-        source = DIAGRAMS / (item['slug'] + '.puml')
+    slugs = [item['slug'] for item in meta['diagrams']] + meta['readme_only']
+    for slug in slugs:
+        source = DIAGRAMS / (slug + '.puml')
         command = ['java', '-Djava.awt.headless=true', f'-DPLANTUML_LIMIT_SIZE={PNG_LIMIT}',
                    '-jar', str(args.jar.resolve()), '-charset', 'UTF-8', '-failfast2',
-                   '-tpng', '-o', str(DIAGRAMS), str(source)]
+                   '-tpng', '-o', str(source.parent), str(source)]
         subprocess.run(command, check=True)
         png = source.with_suffix('.png')
         data = png.read_bytes()
@@ -46,7 +47,7 @@ def main():
             raise RuntimeError(f'PNG may be clipped at the renderer limit: {png.name}')
         dimensions[png.relative_to(ROOT).as_posix()] = [width, height]
         files.extend([source, png])
-        print(f"Rendered {item['id']}: {png.name} ({width} x {height})")
+        print(f"Rendered {slug}: {png.name} ({width} x {height})")
     artifacts = {
         'source_commit': meta['source_commit'], 'date': meta['date'],
         'format': 'png', 'renderer': 'PlantUML 1.2026.10',

@@ -4,30 +4,21 @@ skinparam dpi 150
 skinparam shadowing false
 skinparam defaultFontName "Malgun Gothic"
 skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 80
 hide circle
 hide empty members
-skinparam ranksep 70
-skinparam nodesep 60
 
-interface Cell <<interface>> {
-  + figureNextState(north : Cell, south : Cell, east : Cell, west : Cell,\n    northeast : Cell, northwest : Cell, southeast : Cell, southwest : Cell) : boolean
-  + transition() : boolean
-  + isAliveAt(row : int, column : int) : boolean
-  + holdNextState(location : Point, alive : boolean) : boolean
-  + widthInCells() : int
-}
+' Freezing 전체 클래스 다이어그램
+' - 3.3절 시퀀스 다이어그램에 나오는 클래스와 메시지를 모두 담았다.
+' - 다른 담당 기능의 클래스(PatternTools, BoardEditor)는 이름만 둔다. docs/uml-conventions.md 1절
+' - 연관은 양쪽 끝 다중성, 역할 이름은 필드 이름(가시성 기호 없음). 반환 타입 void는 적지 않는다.
+' - FrozenState, NormalState는 FreezingState의 연산 네 개를 모두 구현한다. 같은 연산을 반복하지 않으려고 칸에 적지 않았다.
 
-class Neighborhood {
-  + transition() : boolean
-  + holdNextState(location : Point, alive : boolean) : boolean
-}
-
-class Resident {
-  - amAlive : boolean
-  - willBeAlive : boolean
-  - heldThisGeneration : boolean
-  + transition() : boolean
-  + holdNextState(location : Point, alive : boolean) : boolean
+' ---------------------------------------------------------------- 화면과 연결
+class Life {
+  ~ {static} createSidebar(universe : Universe, statisticsPanel : StatisticsPanel) : JTabbedPane
 }
 
 class Universe {
@@ -35,7 +26,6 @@ class Universe {
   ~ freezingControls() : JPanel
   ~ finishFreezingEditing()
   - setCell(cell : Point, alive : boolean) : boolean
-  # paintComponent(g : Graphics)
 }
 
 class Clock {
@@ -43,28 +33,27 @@ class Clock {
   + stop()
 }
 
-class Life {
-  ~ {static} createSidebar(universe : Universe, statisticsPanel : StatisticsPanel) : JTabbedPane
-}
-
 class PatternTools
+class BoardEditor
 
 class FreezingTools {
   - beforeSelect : Runnable
-  - selecting : boolean
-  - anchor : Point
-  - selection : Rectangle
   - duration : JSpinner
+  - selecting : boolean
+  - selection : Rectangle
   ~ beginSelection()
   ~ cancel()
   ~ reset()
   ~ isEditing() : boolean
+  ~ manager() : FreezingManager
   ~ blockedEdit()
   ~ paintOverlay(g : Graphics2D)
+  - selectThrough(end : Point)
   - installSelection()
   - refresh()
 }
 
+' ---------------------------------------------------------------- 모델 (Swing 없음)
 class FreezingManager {
   - currentGeneration : LongSupplier
   - listeners : List<Runnable>
@@ -98,87 +87,78 @@ interface FreezingState <<interface>> {
   + remainingGenerations() : int
 }
 
-class NormalState {
-  ~ {static} INSTANCE : NormalState
-  + beforeTransition(region : FreezingRegion, board : Cell) : boolean
-  + afterGeneration(region : FreezingRegion)
-  + isFrozen() : boolean
-  + remainingGenerations() : int
-}
-
 class FrozenState {
   - remaining : int
   ~ FrozenState(generations : int)
-  + beforeTransition(region : FreezingRegion, board : Cell) : boolean
-  + afterGeneration(region : FreezingRegion)
-  + isFrozen() : boolean
-  + remainingGenerations() : int
 }
+
+class NormalState {
+  ~ {static} INSTANCE : NormalState
+}
+
+' ---------------------------------------------------------------- 판 (원본 Composite)
+interface Cell <<interface>> {
+  + transition() : boolean
+  + isAliveAt(row : int, column : int) : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+}
+
+class Neighborhood {
+  + holdNextState(location : Point, alive : boolean) : boolean
+}
+
+class Resident {
+  - amAlive : boolean
+  - willBeAlive : boolean
+  - heldThisGeneration : boolean
+  + transition() : boolean
+  + holdNextState(location : Point, alive : boolean) : boolean
+}
+
+' ---------------------------------------------------------------- 관계
+Life "1" --> "1" Universe : universe
+Universe "1" -right-> "1" PatternTools : patternTools
+PatternTools "1" -right-> "1" BoardEditor : editor
+Universe "1" --> "1" FreezingTools : freezingTools
+Universe ..> FreezingManager : <<create>>\n<<use>>
+Universe "1" --> "1" Cell : outermostCell
+
+FreezingTools .left.> Clock : <<use>>
+FreezingTools "1" --> "1" FreezingManager : manager
+FreezingTools "1" --> "0..*" FreezingRegion : entries
+
+FreezingManager "1" o--> "0..*" FreezingRegion : regions
+FreezingManager "0..1" --> "1" Cell : board
+
+FreezingRegion "0..*" --> "1" FreezingState : state
+FreezingRegion ..> FrozenState : <<create>>
+FreezingRegion ..> Cell : <<use>>
+FreezingState <|.. FrozenState
+FreezingState <|.. NormalState
+FrozenState ..> FreezingRegion : <<use>>
 
 Cell <|.. Neighborhood
 Cell <|.. Resident
-Neighborhood "1" *-up-> "64" Cell : - grid
+Neighborhood "1" *-- "64" Cell : grid
 
-Life --> "1" Universe : - universe
-Universe --> "1" Cell : - outermostCell
-Universe --> "1" FreezingTools : - freezingTools
-Universe --> "1" PatternTools : - patternTools
-Universe ..> FreezingManager : <<create>>\n<<use>>
-
-FreezingTools --> "1" FreezingManager : - manager
-FreezingTools --> "0..*" FreezingRegion : - entries
-FreezingTools ..> Clock : <<use>>
-FreezingManager "1" o--> "0..*" FreezingRegion : - regions
-FreezingManager ..> FreezingRegion : <<create>>
-FreezingManager --> "1" Cell : - board
-
-FreezingRegion --> "1" FreezingState : - state
-FreezingRegion ..> Cell : <<use>>
-FreezingRegion ..> FrozenState : <<create>>
-FreezingState <|.. NormalState
-FreezingState <|.. FrozenState
-FrozenState ..> FreezingRegion : <<use>>
-FrozenState ..> NormalState : <<use>>
-
-note top of FreezingState : State
-note bottom of NormalState : ConcreteState\n값이 없어 객체 하나를 공유
-note bottom of FrozenState
-  ConcreteState
-  beforeTransition()에서 region.holdSnapshot()을 부르고,
-  남은 세대가 0이 되면 region.changeState(NormalState.INSTANCE)로
-  스스로 바꾼다: Keep Region Frozen(E)의 자동 해제
+' ---------------------------------------------------------------- 패턴 역할 (짧게)
+note top of Universe
+  Mediator: FreezingTools, PatternTools, 시계 틱을 잇는다.
+  배치 가드(Predicate)와 beforeSelect(Runnable)만 넘긴다
 end note
-note left of FreezingRegion
-  Context
-  고정 중인지 if로 묻지 않고 state에 넘긴다.
-  freeze()는 board.isAliveAt()으로 스냅샷을 읽고,
-  holdSnapshot()은 board.holdNextState()로 다음 생사를 바꾼다
-end note
-note right of FreezingTools
-  화면 담당
-  Install Freezing(E)의 입력(영역, 지속 세대)을 받아
-  manager에 넘긴다. 영역 선택을 시작하면
-  beforeSelect를 부르고 Clock.instance().stop()으로 멈춘다.
-  manager.addListener(this::refresh)로 변경을 받는다
-end note
+
 note right of FreezingManager
-  Install Freezing(E) : install()
-  Release Freezing(E) : release(), releaseAll(), reset()
-  Keep Region Frozen(E) : beforeTransition(), afterGeneration()
-  Protect Frozen Region(E) : isFrozen(), overlapsFrozen()
-  listeners에는 FreezingTools.refresh가
-  Runnable로만 들어 있다.
-  FreezingTools 타입도 Swing도 모른다
+  Observer의 Subject: 영역 목록이 바뀌면
+  listeners(FreezingTools.refresh)를 부른다
 end note
-note right of Universe
-  Mediator
-  FreezingManager를 만들어 FreezingTools에 넘기고,
-  세대 처리에서 계산과 전이 사이에
-  beforeTransition(), 세대 증가 뒤에 afterGeneration()을 부른다.
-  FreezingTools에는 Runnable(beforeSelect),
-  PatternTools에는 setPlacementGuard()로
-  Predicate(배치 가드)만 넘긴다. 두 도구는 서로를 모른다.
-  고정 칸: mousePressed는 획을 시작하지 않고
-  setCell()은 그 칸을 건너뛴다
+
+note left of FreezingRegion
+  State의 Context:
+  고정 여부를 묻지 않고 state에 넘긴다
+end note
+
+note bottom of FrozenState
+  ConcreteState: 남은 세대가 0이 되면
+  region.changeState(NormalState.INSTANCE)
 end note
 @enduml

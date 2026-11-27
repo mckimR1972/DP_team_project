@@ -77,7 +77,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 ### 2.1 유스케이스 목록
 
-기존 기능과 추가 기능을 나눠 적었다. 추가한 유스케이스는 이름 끝에 `(E)`를 붙였고, 기존 유스케이스 이름은 팀 전체 유스케이스 다이어그램과 같게 맞췄다.
+기존 기능과 추가 기능을 나눠 적었다. 추가한 유스케이스는 이름 끝에 `(E)`를 붙였다. 유스케이스 이름과 관계는 팀 전체 유스케이스 다이어그램([usecase-overview.png](../usecase-overview.png))의 사운드 부분과 같다.
 
 | 구분 | 유스케이스 | 사운드와의 관계 |
 |---|---|---|
@@ -88,18 +88,17 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 | 기존 | Clear Board, Store / Load Board | Clear와 Load로 바뀐 판을 재생선이 다음 스텝부터 연주한다 |
 | 기존 | Exit Game | 관계 없음 |
 | 추가 (UC-S1) | Hear Generation Sound(E) | Advance Generation을 확장한다. 조건은 소리가 켜져 있을 때다 |
-| 추가 (UC-S2) | Hear Board Sweep(E) | 사용자와 직접 연관. 게임 진행과 상관없이 동작한다 |
-| 추가 (UC-S3) | Toggle Sound(E) | 사용자와 직접 연관 |
-| 추가 (UC-S4) | Configure Sound(E) | 사용자와 직접 연관 |
+| 추가 (UC-S2) | Toggle Sound(E) | 사용자와 직접 연관. 켜져 있는 동안 재생선이 돈다 |
+| 추가 (UC-S3) | Configure Sound(E) | 사용자와 직접 연관 |
 
 ![사운드 이펙트 유스케이스 다이어그램](diagram/usecase.png)
 
-그림 원본은 [diagram/usecase.puml](diagram/usecase.puml)이다. 시스템 경계는 "Life Game" 상자 하나다. 기존 유스케이스는 사운드와 «include»·«extend»로 이어지는 Run / Halt Game, Step One Generation, Advance Generation만 그렸다. Edit Cells, Clear Board, Store / Load Board, Exit Game은 사운드와 이런 관계가 없어서 위 표에만 적었다. 그림에 있는 관계는 이렇다.
+그림 원본은 [diagram/usecase.puml](diagram/usecase.puml)이다. 시스템 경계는 "Life Game" 상자 하나다. 기존 유스케이스는 사운드와 «include»·«extend»로 이어지는 Run / Halt Game, Step One Generation, Advance Generation만 그렸다. Edit Cells, Clear Board, Store / Load Board, Exit Game은 사운드와 이런 관계가 없어서 위 표에만 적었다. Advance Generation에는 Freezing 기능이 쓰는 확장 지점("다음 세대 계산 후")도 있지만, 사운드와 관계가 없어 그림에는 적지 않았다. 그림에 있는 관계는 이렇다.
 
 - «include»: 게임을 실행하면(Run / Halt Game) 틱마다, Step One Generation을 고르면 한 번 세대가 진행된다(Advance Generation). 할 때마다 반드시 따라오는 일이라 include로 그렸다. Halt는 세대 진행을 멈추기만 한다.
 - «extend»: 세대가 확정된 뒤(확장점 "세대 확정 후") 소리가 켜져 있을 때만 Hear Generation Sound(E)가 끼어든다. 소리가 꺼져 있어도 세대 진행에는 아무 문제가 없어서 extend로 그렸다.
 - Hear Generation Sound(E)는 사용자가 직접 시작하는 일이 아니라 세대 진행에 붙어서 일어나서, 사용자와 선으로 잇지 않았다.
-- Hear Board Sweep(E)는 게임 진행과 관계없이 150ms 타이머로 돌아서 기존 유스케이스와 include·extend 관계가 없다.
+- 재생선은 따로 유스케이스로 두지 않았다. 사용자가 그때마다 요청하는 일이 아니라, 소리가 켜져 있는 동안 150ms 타이머로 계속 도는 동작이기 때문이다. 소리 전체를 켜고 끄는 Toggle Sound(E)(UC-S2)에 묶었고, 재생선이 하는 일은 요구사항 F7, F8과 연산 계약 CO3([sound-uml.md](sound-uml.md) 4.3절)에 적었다. 설정 창에서 재생선만 끄는 것은 Configure Sound(E)(UC-S3)다.
 
 ### 2.2 유스케이스 명세
 
@@ -131,42 +130,17 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 - 1d. 직전 세대 소리를 낸 지 120ms가 지나지 않았으면 이번 세대는 건너뛴다. 빠른 속도에서 소리가 뭉치지 않게 하려고 넣었다.
 - 3a. 한 세대에 12개 이상 생기면 같은 화음을 한 옥타브 위에서 조금 작게 한 번 더 낸다.
 - 4a. 작은 흔들림이 켜져 있으면 음마다 시작이 0~15ms 늦어지고 세기가 조금씩 달라지며, 가끔 한 옥타브 위 음이 섞인다.
-- 4b. 설정에서 끈 항목은 UC-S4의 설정 항목 표대로 동작이 바뀐다. 예를 들어 스트럼을 끄면 음 사이의 25ms 간격 없이 내고, 코드 진행을 끄면 늘 C 코드의 5음을 쓴다.
+- 4b. 설정에서 끈 항목은 UC-S3의 설정 항목 표대로 동작이 바뀐다. 예를 들어 스트럼을 끄면 음 사이의 25ms 간격 없이 내고, 코드 진행을 끄면 늘 C 코드의 5음을 쓴다.
 
-#### UC-S2 Hear Board Sweep(E)
-
-| 항목 | 내용 |
-|---|---|
-| 목표 | 게임을 멈춰 둔 상태에서도 지금 판의 모양을 소리로 듣는다 |
-| 액터 | 사용자 |
-| 시작 | 프로그램이 시작되면 150ms마다 저절로 진행한다 |
-| 사전 조건 | MIDI 신시사이저가 열려 있다. `Sound`가 `On`이다. 게임이 실행 중이든 멈춰 있든 상관없다 |
-| 사후 조건 | 재생선 위치가 판 위에 초록 선으로 표시되고, 선 아래 산 셀의 소리가 예약된다 |
-
-기본 흐름
-
-1. 150ms마다 시스템은 재생선을 4열 오른쪽으로 옮기고 그 자리에 초록 선을 그린다.
-2. 시스템은 재생선이 지나는 4열 안의 산 셀로 최대 3음을 낸다. 4스텝에 한 번은 조금 더 세게 내서 박자가 느껴지게 한다.
-3. 시스템은 현재 코드의 패드를 낸다. 산 셀이 많을수록 크게 내되 상한이 있다.
-4. 16스텝(64열, 약 2.4초)을 돌면 처음으로 돌아가고, 코드가 C → Am → F → G 순서로 바뀐다. 생성음과 재생선이 쓰는 5음도 함께 바뀐다.
-
-대안 흐름
-
-- 1a. 사용자가 셀을 편집하거나(Edit Cells, Draw Cells by Dragging(E)) Clear, Load, 템플릿 배치·되돌리기(Place Template(E), Undo Placement(E))를 하면 다음 스텝부터 바뀐 판을 연주한다.
-- 1b. 설정에서 재생선을 끄면 선을 지우고 연주하지 않는다. 패드는 따로 켜고 끈다.
-- 2a. 재생선이 지나는 4열에 산 셀이 없으면 그 스텝은 조용하다.
-- 3a. 판이 비어 있거나 설정에서 패드를 끄면 패드를 끈다. 재생선은 계속 움직인다.
-- 4a. 설정에서 코드 진행을 끄면 코드는 C에 머문다.
-
-#### UC-S3 Toggle Sound(E)
+#### UC-S2 Toggle Sound(E)
 
 | 항목 | 내용 |
 |---|---|
 | 목표 | 소리를 잠시 끄거나 다시 켠다 |
 | 액터 | 사용자 |
 | 시작 | 사용자가 `Sound` 메뉴에서 `Off` 또는 `On`을 고른다 |
-| 사전 조건 | MIDI 신시사이저가 열려 있다. 열 수 없으면 `Sound` 메뉴가 생기지 않는다 |
-| 사후 조건 | Off면 새 소리를 예약하지 않고, 다음 스텝에 패드를 끄고 재생선을 지운다. 이미 예약된 음은 예정대로 울리고 꺼진다. On이면 다음 스텝부터 다시 연주한다 |
+| 사전 조건 | MIDI 신시사이저가 열려 있다. 열 수 없으면 `Sound` 메뉴가 생기지 않는다. 프로그램을 시작하면 소리는 켜져 있다 |
+| 사후 조건 | Off면 새 소리를 예약하지 않고, 다음 스텝에 패드를 끄고 재생선을 지운다. 이미 예약된 음은 예정대로 울리고 꺼진다. On이면 다음 스텝부터 재생선이 다시 돌며 판을 연주한다 |
 
 기본 흐름
 
@@ -180,7 +154,9 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 - 2a. Off인 동안에도 판이 바뀐 내용은 계속 받아 둔다. 그래서 On으로 바꾸면 그 사이에 편집한 판을 바로 연주한다.
 - 2b. Off를 고르기 전에 이미 예약된 음은 예정대로 울리고 꺼진다.
 
-#### UC-S4 Configure Sound(E)
+켜져 있는 동안 재생선은 150ms마다 4열씩 움직여 16스텝(약 2.4초)에 판을 한 바퀴 돈다. 지나는 구간의 산 셀을 연주하고, 밑에는 현재 코드의 패드를 깐다. 게임이 실행 중이든 멈춰 있든 같고, 셀 편집(Edit Cells, Draw Cells by Dragging(E)), Clear, Load, 템플릿 배치·되돌리기(Place Template(E), Undo Placement(E))로 바뀐 판은 다음 스텝부터 연주한다. 자세한 동작은 요구사항 F7, F8에 있다.
+
+#### UC-S3 Configure Sound(E)
 
 | 항목 | 내용 |
 |---|---|
@@ -229,11 +205,11 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 | F4 | 12개 이상 생긴 세대는 한 옥타브 위 화음을 조금 작게 겹친다 | UC-S1 | `smallGenerationsHaveNoBurstLayer`, `burstLayerDoublesNotesAnOctaveHigherAndQuieter`, `largeBirthEventKeepsTheBurstLayer` |
 | F5 | 변화가 없는 세대와, 세대 진행이 아닌 판 변경(편집·Clear·Load·템플릿·색 변경)은 세대 소리를 내지 않는다 | UC-S1 | `stableAndEmptyGenerationsNeverScheduleGenerationSounds`, `nonGenerationEventUpdatesSweepWithoutGenerationSounds`, `realColorMenuRefreshesStatisticsWithoutSchedulingGenerationSound` |
 | F6 | 같은 변화가 되풀이되면 12번에 걸쳐 무음까지 줄이고, 새 변화가 오면 원래 크기로 돌아간다. 판이 전멸하면 마무리 화음을 한 번 낸다 | UC-S1 | `RepeatTrackerTest` 3개, `scalingLowersLoudnessOnly`, `endingChordIsAboveThePadOfTheSameChord`, `extinctionPlaysOneEndingAndLaterEmptyTicksStaySilent` |
-| F7 | 재생선은 150ms마다 4열씩 움직이며 그 구간의 산 셀을 최대 3음으로 연주하고, 판 위에 초록 선으로 보인다. 게임이 멈춰 있어도 동작하고 편집한 판을 반영한다 | UC-S2 | `sweepPlaysOnlyCellsInTheColumnBlock`, `sweepLimitsVoicesAndAccentsTheBeat`, `sweepOfAnEmptyBlockIsSilent`, `playheadIsDrawnOverTheBoardAndCanBeRemoved`, `initialSnapshotIsReadyBeforeTheFirstScheduledSweep` |
+| F7 | 재생선은 150ms마다 4열씩 움직이며 그 구간의 산 셀을 최대 3음으로 연주하고, 4스텝마다 조금 세게 낸다. 산 셀이 없는 구간은 조용하다. 판 위에 초록 선으로 보인다. 게임이 멈춰 있어도 동작하고 편집한 판을 반영한다 | UC-S2 | `sweepPlaysOnlyCellsInTheColumnBlock`, `sweepLimitsVoicesAndAccentsTheBeat`, `sweepOfAnEmptyBlockIsSilent`, `playheadIsDrawnOverTheBoardAndCanBeRemoved`, `initialSnapshotIsReadyBeforeTheFirstScheduledSweep` |
 | F8 | 재생선이 한 바퀴 돌 때마다 코드가 C → Am → F → G로 바뀌고 패드도 같은 코드를 따른다. 패드는 산 셀이 많을수록 커지고 빈 판이면 꺼진다 | UC-S2 | `sameCellChangesPitchAcrossTheProgression`, `progressionWrapsAround`, `padFollowsTheProgression`, `padGrowsWithLiveCellsUpToACapAndStopsOnAnEmptyBoard` |
 | F9 | 작은 흔들림은 세기를 ±8, 시작을 0~15ms 바꾸고, 12% 확률로 한 옥타브 올린다 | UC-S1, UC-S2 | `humanizingKeepsNotesValidAndVariesThem`, `timingJitterStaysSmall` |
-| F10 | `Sound` → `Off`면 새 소리를 예약하지 않고 다음 스텝에 패드와 재생선을 멈춘다. 이미 예약된 음은 예정대로 끝난다. `On`으로 바꾸면 Off 동안 바뀐 판을 연주한다 | UC-S3 | `disabledSoundStillReceivesEditsForTheNextSweep` |
-| F11 | 설정 창에서 9개 항목을 하나씩 끄고, 5개 항목의 악기를 바꿀 수 있다 | UC-S4 | `SoundSettingsTest` 3개 |
+| F10 | `Sound` → `Off`면 새 소리를 예약하지 않고 다음 스텝에 패드와 재생선을 멈춘다. 이미 예약된 음은 예정대로 끝난다. `On`으로 바꾸면 Off 동안 바뀐 판을 연주한다 | UC-S2 | `disabledSoundStillReceivesEditsForTheNextSweep` |
+| F11 | 설정 창에서 9개 항목을 하나씩 끄고, 5개 항목의 악기를 바꿀 수 있다 | UC-S3 | `SoundSettingsTest` 3개 |
 | F12 | Freezing으로 고정된 셀은 세대 소리를 내지 않고, 풀린 첫 세대부터 다시 들린다. 재생선은 고정된 산 셀도 연주한다 | UC-S1, UC-S2 | `FreezingSoundIntegrationTest` 3개 |
 
 ### 3.2 비기능 요구사항
@@ -252,7 +228,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 |---|---|---|
 | Observer | `Universe` → `BoardChangeListener` → `SoundEffects` | 게임 로직이 사운드를 모르는 채로 판의 변화를 알린다 |
 | Command | `Runnable` → `ScheduledExecutorService` → `MidiChannel` | 시간차가 필요한 소리를, 화면을 맡은 스레드가 기다리지 않고 낸다 |
-| Composite (기존 구조 확장) | `Cell`, `Neighborhood`, `Resident`의 `isAliveAt()` | 여러 겹으로 나뉜 판에서 좌표 하나의 생사를 묻는다 |
+| Composite (기존 구조 재사용) | `Cell`, `Neighborhood`, `Resident`의 `isAliveAt()` (드래그 그리기 기능이 더함) | 여러 겹으로 나뉜 판에서 좌표 하나의 생사를 묻는다. 사운드는 판을 복사할 때(`Universe.liveCells()`) 이 연산을 쓴다 |
 
 ### 4.1 Observer: 판의 변화를 사운드에 알린다
 
@@ -290,23 +266,23 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 스케줄러가 바쁘면 실행 시각이 몇 ms 밀릴 수 있지만 효과음에서는 들리지 않는 정도였다. 그리고 설치할 때 악기를 처음 정하는 한 번을 빼면 `MidiChannel`과 재생선 상태는 이 스레드에서만 만지기 때문에, 채널에 잠금을 따로 걸지 않아도 됐다. 설정 창에서 악기를 바꿀 때도 채널을 직접 바꾸지 않고 `applyInstruments`를 명령으로 넣는다.
 
-### 4.3 Composite 확장: 좌표로 셀 상태를 묻는다
+### 4.3 Composite 재사용: 좌표로 셀 상태를 묻는다
 
-소리를 만들려면 r행 c열 셀이 살아 있는지 물어야 하는데, 원래 `Cell`에는 그런 연산이 없었다. 판은 8×8 `Neighborhood` 안에 다시 8×8 `Neighborhood`가 들어 있는 트리라서, 묻는 쪽이 이 구조를 몰라도 되게 해야 했다.
+소리를 만들려면 r행 c열 셀이 살아 있는지 물어야 하는데, 원본 `Cell`에는 그런 연산이 없었다. 판은 8×8 `Neighborhood` 안에 다시 8×8 `Neighborhood`가 들어 있는 트리라서, 묻는 쪽이 이 구조를 몰라도 되어야 했다. 드래그 그리기 기능이 이 Composite 구조에 `isAliveAt(row, column)`을 더해 두어서, 사운드는 이 연산을 고치지 않고 그대로 쓴다.
 
 | 역할 | 클래스 |
 |---|---|
-| Component | `Cell` (`isAliveAt(row, column)` 추가) |
+| Component | `Cell` (`isAliveAt(row, column)`, 드래그 그리기 기능이 더함) |
 | Composite | `Neighborhood` |
 | Leaf | `Resident` |
 
-그래서 기존 Composite 구조에 연산 하나를 더했다. `Neighborhood`는 좌표를 나눠 어느 하위 칸인지 찾고, 그 칸 안의 좌표로 바꿔 넘긴다. `Resident`는 자기 상태를 답한다. `Universe`는 칸마다 가장 바깥 셀에만 물으면 되고, 판이 몇 겹인지 몰라도 된다. 판 바깥의 이웃을 대신하는 `Cell.DUMMY`도 `Cell`을 구현해서 `isAliveAt()`을 갖지만(항상 `false`), 트리에 들어가지 않으므로 Leaf로 보지 않았다.
+`Neighborhood`는 좌표를 나눠 어느 하위 칸인지 찾고, 그 칸 안의 좌표로 바꿔 넘긴다. `Resident`는 자기 상태를 답한다. 그래서 사운드 작업에서 더한 `Universe.liveCells()`는 칸마다 가장 바깥 셀에만 물으면 되고, 판이 몇 겹인지 몰라도 된다. 판 바깥의 이웃을 대신하는 `Cell.DUMMY`도 `Cell`을 구현해서 `isAliveAt()`을 갖지만(항상 `false`), 트리에 들어가지 않으므로 Leaf로 보지 않았다.
 
-`Cell`을 고치지 않는 방법도 두 가지 있었다. Load/Store에 쓰는 Memento를 다시 쓰는 방법은 5장에 적었다. `Universe`가 `boolean[][]`을 따로 들고 있는 방법은 클릭·Clear·Load·세대 진행 때마다 실제 셀과 맞춰 줘야 하고, 한 곳만 빠져도 소리와 화면이 어긋난다.
+이 연산을 쓰지 않는 방법도 두 가지 있었다. Load/Store에 쓰는 Memento를 다시 쓰는 방법은 5장에 적었다. `Universe`가 `boolean[][]`을 따로 들고 있는 방법은 클릭·Clear·Load·세대 진행 때마다 실제 셀과 맞춰 줘야 하고, 한 곳만 빠져도 소리와 화면이 어긋난다.
 
-대신 `Cell` 구현 3개(`Neighborhood`, `Resident`, `Cell.DUMMY`)를 모두 고쳐야 했고, 칸 하나를 읽을 때마다 바깥 `Neighborhood`, 안쪽 `Neighborhood`, `Resident` 순서로 호출이 세 번 이어진다. 판이 64×64라 부담은 작았다.
+`isAliveAt()`으로 읽으면 칸 하나를 읽을 때마다 바깥 `Neighborhood`, 안쪽 `Neighborhood`, `Resident` 순서로 호출이 세 번 이어진다. 판이 64×64라 부담은 작았다.
 
-이 연산은 나중에 다른 기능에서도 쓰게 됐다. 드래그 그리기, 캡처·템플릿(`PatternCells`), Freezing 영역의 상태 저장(`FreezingRegion`), 공통 이벤트의 판 복사(`Universe.liveCells()`)가 모두 `isAliveAt()`으로 셀 상태를 읽는다.
+이 연산은 사운드 말고도 캡처·템플릿(`PatternCells`)과 Freezing 영역의 상태 저장(`FreezingRegion`)이 셀 상태를 읽는 데 쓴다.
 
 ### 4.4 기존 패턴을 그대로 쓴 부분
 
@@ -322,7 +298,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 | Decorator | 음 목록에 흔들림(`humanized`), 볼륨 조절(`scaled`), 대량 생성 레이어를 겹쳐 적용하는 부분 | 겹쳐 적용한다는 점은 Decorator와 비슷하다. 하지만 대상이 동작을 가진 객체가 아니라 음 값(`Note`)의 목록이고, 적용 순서도 정해져 있다. 목록을 받아 새 목록을 돌려주는 메서드로 충분했다 | 사용자가 효과를 골라 순서를 바꿔 쌓을 수 있게 할 때 |
 | Mediator | `SoundEffects`가 `NoteMapper`, `RepeatTracker`, `SoundSettings`, MIDI 채널을 조율하는 구조 | Mediator는 서로 직접 부르던 객체들이 중재자를 거쳐 주고받게 하는 패턴이다. 여기서는 `NoteMapper`와 `RepeatTracker`가 서로를 부를 일이 처음부터 없다. 조율하는 쪽이 하나일 뿐 중재할 상호작용이 없다 | 이 객체들이 서로 값을 주고받아야 할 때 |
 | Singleton | `SoundEffects` | 프로그램 시작 때 `Life`에서 한 번만 만들면 되고, 다른 곳에서 찾을 일이 없다. 전역 접근점을 두는 대신 `Universe`를 인자로 받아 무엇에 의존하는지 드러냈다 | 다른 기능이 사운드에 직접 요청해야 할 때 |
-| Memento | 판 상태를 읽을 때 Load/Store용 `createMemento()`, `transfer()`를 다시 쓰기 | `Cell`을 고치지 않아도 되는 장점이 있다. 하지만 `createMemento()`는 부를 때마다 판 전체를 산 셀 목록으로 복사하고, 칸 하나를 물을 때도 그 목록을 처음부터 찾는다. 필요한 것만 담는 Memento를 따로 만들면 `Cell.Memento`가 `Storable`을 상속해서 파일 입출력(`load`, `flush`)까지 구현해야 한다. `Neighborhood.transfer()`가 `activeEdges`를 바꾸기 때문에 저장할 때만 쓰던 경로를 매 틱 부르게 되는 문제도 있어서, `isAliveAt()`을 추가하는 쪽(4.3)을 골랐다 | 설정 저장이나 되돌리기를 넣을 때 (판 읽기가 아니라 설정 쪽) |
+| Memento | 판 상태를 읽을 때 Load/Store용 `createMemento()`, `transfer()`를 다시 쓰기 | 이미 있는 저장 경로를 그대로 쓸 수 있다. 하지만 `createMemento()`는 부를 때마다 판 전체를 산 셀 목록으로 복사하고, 칸 하나를 물을 때도 그 목록을 처음부터 찾는다. 필요한 것만 담는 Memento를 따로 만들면 `Cell.Memento`가 `Storable`을 상속해서 파일 입출력(`load`, `flush`)까지 구현해야 한다. `Neighborhood.transfer()`가 `activeEdges`를 바꾸기 때문에 저장할 때만 쓰던 경로를 매 틱 부르게 되는 문제도 있어서, 드래그 그리기 기능이 더한 `isAliveAt()`을 쓰는 쪽(4.3)을 골랐다 | 설정 저장이나 되돌리기를 넣을 때 (판 읽기가 아니라 설정 쪽) |
 
 ## 6. JUnit 테스트
 
@@ -332,7 +308,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 ![전체 테스트 결과](evidence/test-all.png)
 
-사운드와 관련된 테스트는 52개다. 사운드만 다루는 테스트 클래스 4개에 46개가 있고, 기존 클래스에 사운드용으로 더한 테스트와 Freezing과 함께 보는 테스트가 6개다.
+사운드와 관련된 테스트는 52개다. 사운드만 다루는 테스트 클래스 4개에 46개가 있고, 기존 테스트 클래스에서 사운드가 쓰는 연산을 확인하는 테스트 3개와 Freezing과 함께 보는 테스트 3개, 모두 6개가 더 있다.
 
 | 구분 | 테스트 클래스 | 개수 | 대상 |
 |---|---|---|---|
@@ -340,7 +316,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 | 사운드 | [`RepeatTrackerTest`](../../test/sound/com/holub/life/sound/RepeatTrackerTest.java) | 3 | 반복 페이드 |
 | 사운드 | [`SoundSettingsTest`](../../test/sound/com/holub/life/sound/SoundSettingsTest.java) | 3 | 설정 값 |
 | 사운드 | [`SoundEffectsIntegrationTest`](../../test/sound/com/holub/life/SoundEffectsIntegrationTest.java) | 17 | 실제 `Universe`·`Statistics`와 연결한 `SoundEffects`. MIDI, 스케줄러, 메뉴 등록은 테스트용 가짜로 바꿨다. 통계 기능을 합칠 때 추가됐다 |
-| 관련 | [`NeighborhoodTest`](../../test/original/com/holub/life/NeighborhoodTest.java) | 12개 중 1 | `isAliveAt()` |
+| 관련 | [`NeighborhoodTest`](../../test/original/com/holub/life/NeighborhoodTest.java) | 12개 중 1 | `isAliveAt()`. 드래그 그리기 기능에서 더한 테스트로, 사운드가 판을 복사할 때 이 연산을 쓴다 |
 | 관련 | [`UniverseStoreTest`](../../test/original/com/holub/life/UniverseStoreTest.java) | 8개 중 2 | 판 복사, 재생선 그리기 |
 | 관련 | [`FreezingSoundIntegrationTest`](../../test/integration/com/holub/life/FreezingSoundIntegrationTest.java) | 3 | Freezing과 함께 쓸 때. Freezing 기능을 합칠 때 추가됐다 |
 
@@ -373,7 +349,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 | 테스트 | 어떤 내용에 대한 테스트인가 | 확인 방법과 기대 결과 | 요구사항 |
 |---|---|---|---|
-| `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | Composite에 추가한 `isAliveAt()`이 여러 겹으로 나뉜 판에서 좌표를 제대로 찾는지 | 두 겹으로 나뉜 판에서 클릭한 3행 2열만 `true`이고, 행과 열을 바꾼 2행 3열은 `false`다 | F1, F7 |
+| `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 사운드가 판을 복사할 때 쓰는 `isAliveAt()`(드래그 그리기 기능이 더함)이 여러 겹으로 나뉜 판에서 좌표를 제대로 찾는지 | 두 겹으로 나뉜 판에서 클릭한 3행 2열만 `true`이고, 행과 열을 바꾼 2행 3열은 `false`다 | F1, F7 |
 | `UniverseStoreTest.playheadIsDrawnOverTheBoardAndCanBeRemoved` | 재생선이 판 위에 보이고 지워지는지 | 판을 이미지로 그려 재생선 자리의 픽셀이 초록색(0, 170, 80)이고, `-1`로 지우면 그 픽셀이 바뀐다 | F7 |
 | `SoundEffectsIntegrationTest.realBlinkerUpdatesStatisticsAndSchedulesBirthAndDeathSoundsOnce` | 실제 세대 진행이 Observer를 거쳐 소리로 이어지는지 | 블링커를 그리는 동안은 예약이 없다. 한 틱 뒤 생성 화음이 나고 타악기는 정확히 한 번 친다. 같은 이벤트로 통계도 세대 1로 바뀐다 | F1, F3 |
 | `SoundEffectsIntegrationTest.stableAndEmptyGenerationsNeverScheduleGenerationSounds` | 변화가 없는 세대는 조용한지 | 블록(2×2)만 있는 판과 빈 판에서 여러 틱을 진행해도 예약된 소리가 없다 | F5 |

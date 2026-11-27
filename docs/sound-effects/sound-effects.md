@@ -2,7 +2,7 @@
 
 게임판의 변화를 소리로 들려주는 확장 기능이다.
 
-사운드 코드는 `src/com/holub/life/sound` 패키지에 모았다. 기존 코드에서 고친 곳은 `Universe`, `Cell`, `Neighborhood`, `Resident`, `Life` 다섯 파일이다.
+사운드 코드는 `src/com/holub/life/sound` 패키지에 모았다. 기존 코드에서 고친 곳은 `Universe`, `Life` 두 파일이다. 판의 셀을 좌표로 읽을 때는 드래그 그리기 기능이 `Cell` 계층에 더한 `isAliveAt()`을 그대로 쓴다(2.2).
 
 처음에는 사운드 전용 리스너(`Universe.GenerationListener`)로 세대 변화를 받았다. 이후 통계 기능을 합치면서 통계와 사운드가 같은 이벤트(`BoardChangeEvent`)를 받도록 바뀌었다. 이 문서는 바뀐 뒤의 지금 코드를 기준으로 설명하고, 처음 구조는 바뀐 과정을 설명할 때만 함께 적었다. 유스케이스 명세와 요구사항은 [sound-effects-spec.md](sound-effects-spec.md)에 있다.
 
@@ -16,16 +16,17 @@
 
 ### 1.1 유스케이스
 
-확장한 유스케이스는 이름 끝에 `(E)`를 붙였다. 기존 유스케이스 이름은 팀 전체 유스케이스 그림과 같게 맞췄고, 유스케이스별 상세 흐름은 [sound-effects-spec.md](sound-effects-spec.md) 2장에 있다.
+확장한 유스케이스는 이름 끝에 `(E)`를 붙였다. 유스케이스 이름과 관계는 팀 전체 유스케이스 그림의 사운드 부분과 같고, 유스케이스별 상세 흐름은 [sound-effects-spec.md](sound-effects-spec.md) 2장에 있다.
 
 ![사운드 이펙트 유스케이스 다이어그램](diagram/usecase.png)
 
 | 유스케이스 | 내용 |
 |---|---|
 | Hear Generation Sound(E) | 세대마다 생긴 셀은 화음, 사라진 셀은 타악기로 들린다. 세대를 확정한 뒤(Advance Generation의 확장점) 소리가 켜져 있으면 동작한다. |
-| Hear Board Sweep(E) | 재생선이 판을 반복해서 훑으며 산 셀을 연주한다. 게임이 멈춰 있어도 동작한다. |
-| Toggle Sound(E) | `Sound` 메뉴에서 소리 전체를 켜고 끈다. 끄면 재생선도 사라진다. |
+| Toggle Sound(E) | `Sound` 메뉴에서 소리 전체를 켜고 끈다. 켜져 있는 동안 재생선이 판을 반복해서 훑으며 산 셀을 연주하고, 끄면 재생선도 사라진다. |
 | Configure Sound(E) | 설정 창에서 기능별 on/off와 악기를 바꾼다. |
+
+재생선은 소리가 켜져 있는 동안 타이머로 계속 도는 동작이라 유스케이스를 따로 두지 않고 Toggle Sound(E)에 묶었다. 게임이 멈춰 있어도 돈다.
 
 ### 1.2 소리를 정하는 규칙
 
@@ -88,9 +89,9 @@ notifyBoardChanged( BoardChangeEvent.Kind.GENERATION, before );  // 통계와 �
 - `liveCells()`: 판 전체를 `[행][열]` 순서의 `boolean[][]`로 복사해서 돌려준다. 지금은 이벤트를 만들 때 쓴다.
 - `setPlayhead(int column)`: 해당 열 왼쪽에 폭 3픽셀짜리 초록 세로선을 그린다. `-1`이면 지운다. 판 전체가 아니라 이전 선과 새 선 자리만 `repaint()`한다.
 
-### 2.2 Cell 계층: 좌표로 셀 상태 묻기
+### 2.2 Cell 계층: 좌표로 셀 상태 묻기 (재사용)
 
-`Universe`가 판을 읽으려면 "r행 c열 셀이 살아 있는가"를 물을 수 있어야 하는데, 원래 `Cell` 인터페이스에는 그런 연산이 없었다. `Cell` 주석에 따르면 `isAlive()`는 "이 블록 안에 산 셀이 하나라도 있는가"를 묻는 것이라 용도가 다르다. 그래서 `Cell`에 `isAliveAt(row, column)`을 추가했다.
+`Universe`가 판을 읽으려면 "r행 c열 셀이 살아 있는가"를 물을 수 있어야 하는데, 원본 `Cell` 인터페이스에는 그런 연산이 없었다. `Cell` 주석에 따르면 `isAlive()`는 "이 블록 안에 산 셀이 하나라도 있는가"를 묻는 것이라 용도가 다르다. 좌표로 묻는 연산은 드래그 그리기 기능이 `Cell`에 `isAliveAt(row, column)`으로 더해 두었고, 사운드는 고치지 않고 그대로 쓴다. `liveCells()`가 판을 복사할 때 칸마다 `outermostCell.isAliveAt(row, column)`을 부른다.
 
 ```java
 // Cell
@@ -110,7 +111,7 @@ public boolean isAliveAt(int row, int column)
 }
 ```
 
-`Cell.DUMMY`는 항상 `false`를 돌려준다. 인터페이스에 메서드가 하나 늘었으므로 앞으로 `Cell`을 새로 구현하는 클래스는 이것도 구현해야 한다. 이 메서드는 나중에 드래그 그리기, 캡처·템플릿 기능(`PatternCells`), Freezing 영역의 상태 저장(`FreezingRegion`)에서도 셀 상태를 읽는 데 쓰이고 있다.
+`Cell.DUMMY`는 항상 `false`를 돌려준다. 이 메서드는 사운드 말고도 캡처·템플릿 기능(`PatternCells`)과 Freezing 영역의 상태 저장(`FreezingRegion`)이 셀 상태를 읽는 데 쓴다.
 
 ### 2.3 Life: 사운드 붙이기
 
@@ -231,7 +232,7 @@ private void play( MidiChannel channel, NoteMapper.Note note,
 
 Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리를 되돌릴 일이 없으니 undo나 이력은 필요 없었고, 명령마다 클래스를 만들면 파일만 늘어난다고 판단했다.
 
-### 4.3 Composite (기존 구조 확장)
+### 4.3 Composite (기존 구조 재사용)
 
 | 역할 | 클래스 |
 |---|---|
@@ -239,7 +240,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | Composite | `Neighborhood` |
 | Leaf | `Resident` |
 
-판은 원래 8×8 `Neighborhood` 안에 8×8 `Neighborhood`가 들어 있는 Composite 구조다. 여기에 `isAliveAt()`를 추가하면서 같은 구조를 따랐다. `Neighborhood`는 좌표를 나눠서 하위 셀에 넘기고, `Resident`는 자기 상태를 답한다. `Universe`는 `outermostCell.isAliveAt(row, column)`만 부르면 되고, 판이 몇 단계로 중첩돼 있는지 알 필요가 없다. 판 바깥의 이웃을 대신하는 `Cell.DUMMY`도 `Cell`을 구현해서 `isAliveAt()`을 갖지만(항상 `false`), 트리에 들어가지 않으므로 Leaf로 보지 않았다.
+판은 원래 8×8 `Neighborhood` 안에 8×8 `Neighborhood`가 들어 있는 Composite 구조다. 드래그 그리기 기능이 여기에 `isAliveAt()`을 더하면서 같은 구조를 따랐고, 사운드는 이 연산을 그대로 쓴다. `Neighborhood`는 좌표를 나눠서 하위 셀에 넘기고, `Resident`는 자기 상태를 답한다. `Universe`의 `liveCells()`는 `outermostCell.isAliveAt(row, column)`만 부르면 되고, 판이 몇 단계로 중첩돼 있는지 알 필요가 없다. 판 바깥의 이웃을 대신하는 `Cell.DUMMY`도 `Cell`을 구현해서 `isAliveAt()`을 갖지만(항상 `false`), 트리에 들어가지 않으므로 Leaf로 보지 않았다.
 
 대신 칸 하나를 읽을 때마다 바깥 `Neighborhood`, 안쪽 `Neighborhood`, `Resident` 순서로 세 번 호출이 이어진다. 세대 알림 때문에 틱마다 판(4096칸)을 두 번 읽게 되지만, 화면을 다시 그리는 비용에 비하면 작아서 그대로 두었다.
 
@@ -270,11 +271,11 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 
 ### 5.2 판 상태를 어떻게 읽을까
 
-`Cell`을 고치지 않는 방법으로는 Holub 코드의 Load/Store용 Memento(`createMemento()`, `transfer()`)를 쓰는 것이 있다. `createMemento()`로 산 셀 목록을 받을 수는 있지만, 부를 때마다 판 전체를 새 목록(`LinkedList`)에 복사하고, 칸 하나를 물을 때도 `isAlive(Point)`가 그 목록을 처음부터 찾는다. 필요한 것만 담는 Memento를 따로 만들어 `transfer()`에 넘기는 방법도 있지만, `Cell.Memento`가 `Storable`을 상속해서 쓰지도 않을 파일 입출력(`load`, `flush`)까지 구현해야 한다. 또 `Neighborhood.transfer()`는 `activeEdges`를 바꾸기 때문에, 저장할 때만 쓰던 경로를 게임 진행 중에 매 틱 부르게 된다.
+Holub 코드의 Load/Store용 Memento(`createMemento()`, `transfer()`)를 쓰는 방법이 있다. `createMemento()`로 산 셀 목록을 받을 수는 있지만, 부를 때마다 판 전체를 새 목록(`LinkedList`)에 복사하고, 칸 하나를 물을 때도 `isAlive(Point)`가 그 목록을 처음부터 찾는다. 필요한 것만 담는 Memento를 따로 만들어 `transfer()`에 넘기는 방법도 있지만, `Cell.Memento`가 `Storable`을 상속해서 쓰지도 않을 파일 입출력(`load`, `flush`)까지 구현해야 한다. 또 `Neighborhood.transfer()`는 `activeEdges`를 바꾸기 때문에, 저장할 때만 쓰던 경로를 게임 진행 중에 매 틱 부르게 된다.
 
-`Universe`가 따로 `boolean[][]`을 들고 있는 방법도 있었다. `Cell`은 안 고쳐도 되지만 클릭, Clear, Load, 세대 진행이 있을 때마다 실제 셀과 맞춰 줘야 한다. 한 군데라도 빠지면 소리와 화면이 어긋난다.
+`Universe`가 따로 `boolean[][]`을 들고 있는 방법도 있었다. 이러면 클릭, Clear, Load, 세대 진행이 있을 때마다 실제 셀과 맞춰 줘야 한다. 한 군데라도 빠지면 소리와 화면이 어긋난다.
 
-결국 `Cell`에 `isAliveAt()`를 추가했다. `Cell` 구현 3개(`Neighborhood`, `Resident`, `DUMMY`)를 모두 고쳐야 하지만, 셀 상태의 원본이 한 곳에만 있고 기존 Composite 구조를 그대로 따라가면 된다.
+결국 드래그 그리기 기능이 `Cell`에 더한 `isAliveAt()`을 쓰기로 했다. 셀 상태의 원본이 한 곳에만 있고 기존 Composite 구조를 그대로 따라가며, 사운드 쪽에서 `Cell` 계층을 고치지 않아도 된다.
 
 ### 5.3 음을 시간차를 두고 어떻게 낼까
 
@@ -329,13 +330,13 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | `sound.NoteMapperTest` | 23 | 사운드 작업에서 작성 |
 | `sound.RepeatTrackerTest` | 3 | 사운드 작업에서 작성 |
 | `sound.SoundSettingsTest` | 3 | 사운드 작업에서 작성 |
-| `NeighborhoodTest` | 12 | 기존 11개 + `isAliveAt` 1개 |
+| `NeighborhoodTest` | 12 | 기존 11개 + `isAliveAt` 1개 (드래그 그리기 기능에서 작성) |
 | `UniverseStoreTest` | 8 | 기존 3개 + 사운드용 2개 (나머지 3개는 드래그 그리기) |
 | `ResidentTest` | 18 | 기존 그대로 |
 | `SoundEffectsIntegrationTest` | 17 | 통계 기능을 합칠 때 추가. 실제 `Universe`, `Statistics`와 연결한 `SoundEffects` |
 | `FreezingSoundIntegrationTest` | 3 | Freezing 기능을 합칠 때 추가. 고정된 셀과 소리 |
 
-사운드 작업에서 추가한 테스트는 32개다(`NoteMapperTest` 23, `RepeatTrackerTest` 3, `SoundSettingsTest` 3, `NeighborhoodTest` 1, `UniverseStoreTest` 2). 이와 별도로 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. 이후 다른 기능을 합치면서 `SoundEffects`를 실제로 실행하는 통합 테스트 20개가 더해졌다.
+사운드 작업에서 추가한 테스트는 31개다(`NoteMapperTest` 23, `RepeatTrackerTest` 3, `SoundSettingsTest` 3, `UniverseStoreTest` 2). `NeighborhoodTest`의 `isAliveAt` 테스트는 드래그 그리기 기능에서 작성했지만, 사운드가 판을 읽을 때 쓰는 연산이라 위 표에 함께 적었다. 이와 별도로 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. 이후 다른 기능을 합치면서 `SoundEffects`를 실제로 실행하는 통합 테스트 20개가 더해졌다.
 
 아래 캡처는 모두 2026-11-26 16:58(KST)에 `./gradlew test --rerun`으로 돌린 결과다. 화면 맨 위에도 실행 날짜와 명령을 적었다.
 
@@ -383,8 +384,8 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | | `scalingLowersLoudnessOnly` | 볼륨을 줄여도 음 높이와 좌우는 그대로 |
 | | `endingChordIsAboveThePadOfTheSameChord` | 마무리 화음은 3음이고, 첫 음이 같은 코드 패드의 첫 음보다 두 옥타브 위다 (F 코드로 확인) |
 | 설정 | `SoundSettingsTest` 3개 | 처음엔 모두 켜짐 + 첫 번째 악기, 스트럼을 꺼도 재생선은 그대로, 악기를 바꾸면 리스너가 딱 한 번 불림 |
-| 게임 쪽 변경 | `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 2단계로 중첩된 판에서 클릭한 (3, 2)만 살아 있고, 행과 열을 바꾼 (2, 3)은 `false` |
-| | `UniverseStoreTest.liveCellsSnapshotIsIndexedByRowThenColumn` | 스냅샷이 `[행][열]` 순서다 |
+| 판 읽기 | `UniverseStoreTest.liveCellsSnapshotIsIndexedByRowThenColumn` | 스냅샷이 `[행][열]` 순서다 |
+| | `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 판 복사가 쓰는 `isAliveAt()`(드래그 그리기 기능에서 더함)이 2단계로 중첩된 판에서 클릭한 (3, 2)만 살아 있다고 답하고, 행과 열을 바꾼 (2, 3)은 `false`다 |
 | 실제 세대와 연결 (통합) | `realBlinkerUpdatesStatisticsAndSchedulesBirthAndDeathSoundsOnce` | 블링커를 그리는 동안은 예약이 없고, 한 틱 뒤 생성 화음과 타악기 한 번이 예약된다 |
 | | `stableAndEmptyGenerationsNeverScheduleGenerationSounds` | 블록만 있는 판과 빈 판은 틱을 진행해도 조용하다 |
 | | `nonGenerationEventUpdatesSweepWithoutGenerationSounds` (작업 종류 7개) | 편집, Clear, Load, 템플릿, 색 변경 등은 세대 소리 없이 재생선 판만 바꾼다 |
@@ -428,7 +429,7 @@ void oscillatorFadesToSilence()
 }
 ```
 
-`isAliveAt()`이 중첩된 판에서 좌표를 제대로 찾아가는지 보는 테스트다. 행과 열을 바꿔 넣는 실수를 잡으려고 (2, 3)이 `false`인지도 같이 확인한다.
+드래그 그리기 기능에서 작성한 테스트로, 사운드가 판을 복사할 때 쓰는 `isAliveAt()`이 중첩된 판에서 좌표를 제대로 찾아가는지 본다. 행과 열을 바꿔 넣는 실수를 잡으려고 (2, 3)이 `false`인지도 같이 확인한다.
 
 ```java
 @Test

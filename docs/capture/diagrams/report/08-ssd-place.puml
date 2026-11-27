@@ -1,0 +1,21 @@
+@startuml
+!include ../theme.puml
+mainframe sd Place Template(E)
+actor "사용자" as User
+participant ":LifeGame" as Game
+note over User, Game : 템플릿을 선택해 배치 모드에 들어오면 게임이 멈춘다.
+loop 한 번 누른 동안 요청한 각 위치 (클릭 · 유지 · 드래그)
+  User -> Game : placeTemplate(origin)
+  alt 사각형 전체가 보드 안이고 동결 영역과 겹치지 않음
+    Game --> User : 새 셀이 추가됨 (모두 살아 있으면 그대로)
+  else 보드 밖 또는 동결 영역과 겹침
+    Game --> User : 해당 위치 배치 거부, 앞서 놓은 셀 유지
+  end
+end
+User -> Game : finishPlacementStroke()
+Game --> User : 변경이 있으면 작업 전체를 한 번에 되돌릴 수 있음
+opt 배치 편집을 끝냄
+  User -> Game : finishTemplateEditing()
+  Game --> User : 배치 결과를 유지하고 일반 그리기로 복귀
+end
+@enduml

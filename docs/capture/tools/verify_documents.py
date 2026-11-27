@@ -71,29 +71,53 @@ def contracts(text):
             re.findall(r'^### (OC-\d\d)[^\n]*\n(.*?)(?=^### |^## |\Z)', text, re.M | re.S)}
 
 
-def uml_conventions(diagram, classes, theme):
-    names = ['Capture Template(E)', 'Place Template(E)', 'Place Template Continuously(E)',
-             'Undo Placement(E)', 'Finish Template Editing(E)']
+USE_CASES = {'E-01': 'Capture Template(E)', 'E-02': 'Place Template(E)', 'E-03': 'Undo Placement(E)'}
+
+
+def report_scope(text, diagram, items):
+    team = (REPO / 'docs/usecase-overview.puml').read_text(encoding='utf-8')
+    for alias, name in zip(('Capture', 'Place', 'Undo'), USE_CASES.values()):
+        declaration = rf'^\s*usecase (?:{alias} as "{re.escape(name)}\n|"{re.escape(name)}" as {alias}$)'
+        require(re.search(declaration, team, re.M) and f'User -- {alias}' in team,
+                'Goal or actor connection differs from the system use-case diagram: ' + name)
     labels = re.findall(r'^\s*usecase (?:\w+ as )?"([^"\n]+)', diagram, re.M)
-    require(len(labels) == 6 and set(labels) == {'Edit Cells', *names},
-            'Use-case scope/names differ from the capture convention')
-    require(re.findall(r'^\s*rectangle "([^"]+)"', diagram, re.M) == ['Life Game'],
-            'Use-case diagram must have one system boundary')
-    require('actor "사용자"' in diagram and not re.search(r'#[0-9A-Fa-f]{6}', diagram),
-            'Use the UML actor and monochrome use cases')
-    require('Place Template(E)\n--\nextension points\n반복 배치"' in diagram
-            and 'Place <.. Stroke : <<extend>>' in diagram
-            and 'note top on link\n  condition: {' in diagram
-            and 'extension point: 반복 배치' in diagram,
-            'Missing extension point or linked condition')
+    require(sorted(labels) == sorted(USE_CASES.values()), 'Incorrect use-case diagram scope')
+    require(re.findall(r'^\s*rectangle "([^"]+)"', diagram, re.M) == ['Life Game']
+            and 'actor "사용자" as User' in diagram, 'Wrong system boundary or actor')
+    require(sorted(re.findall(r'^User -- (\w+)$', diagram, re.M)) == ['Capture', 'Place', 'Undo']
+            and '<<extend>>' not in diagram and '<<include>>' not in diagram
+            and 'Place Template(E)\n--\nextension points\n배치 전"' in diagram, 'Incorrect diagram relationships')
+    require(dict(re.findall(r'^### (E-\d+) (.+)$', text, re.M)) == USE_CASES,
+            'Specification goals differ from the diagram')
+    require(set(re.findall(r'\bE-\d\d\b', text)) == set(USE_CASES), 'Unknown use-case reference')
+    operations = contracts(text)
+    expected = {f'OC-{n:02}' for n in range(1, 7)}
+    require(set(operations) == expected, 'Expected six operation contracts')
+    by_goal = {key: {} for key in USE_CASES}
+    for key, rows in operations.items():
+        row = next((row for row in rows if row.startswith('| 시스템 연산 / 관련 UC |')), '')
+        spec = re.fullmatch(r'\| 시스템 연산 / 관련 UC \| `([\w]+\([^)]*\))` / (E-\d\d(?:, E-\d\d)*) \|', row)
+        require(spec is not None, 'Missing system signature or goal in ' + key)
+        for goal in spec[2].split(', '):
+            by_goal[goal][key] = spec[1]
+    for goal, name in USE_CASES.items():
+        row = next((line for line in text.splitlines() if line.startswith('| ' + goal + ' ' + name + ' |')), '')
+        require(set(re.findall(r'OC-\d\d', row)) == set(by_goal[goal]) and by_goal[goal],
+                'Traceability table differs from contracts for ' + goal)
+        item = next(item for item in items if item['title'] == name + ' 시스템 시퀀스')
+        source = (ROOT / 'diagrams' / (item['slug'] + '.puml')).read_text(encoding='utf-8')
+        require(f'mainframe sd {name}' in source and 'participant ":LifeGame" as Game' in source
+                and set(re.findall(r'^\s*User -> Game : (.+)$', source, re.M)) == set(by_goal[goal].values()),
+                'System sequence and contracts disagree for ' + name)
+
+
+def uml_conventions(classes, theme):
     require('skinparam monochrome true' in theme and 'hide circle' in theme,
             'Shared theme must be monochrome with class circles hidden')
     declarations = re.findall(r'^(?:class|interface) .*$', classes, re.M)
     require(all('<<' not in line or line.startswith('interface Cell <<interface>>')
                 for line in declarations), 'Move class role stereotypes to prose')
     require('interface Cell <<interface>>' in classes, 'Cell interface marker missing')
-    require('Neighborhood "1" *-- "64" Cell' in classes and 'o--' not in classes,
-            'Neighborhood composition/multiplicity differs')
     for line in classes.splitlines():
         if '-->' in line or '*--' in line:
             require(re.fullmatch(r'\w+ "[^"]+" (?:-->|\*--) "[^"]+" \w+ : \w+', line),
@@ -101,7 +125,6 @@ def uml_conventions(diagram, classes, theme):
         if '..>' in line:
             require(re.fullmatch(r'\w+ \.\.> \w+ : <<(?:use|create)>>', line),
                     'Dependency needs a use/create label: ' + line)
-    require('{static} ~visit(' in classes, 'Static operation must be underlined')
     require(': void' not in classes, 'Omit void return types from UML operations')
     require('-mode : PatternTools.Mode' in classes, 'Qualify nested types with the outer class')
     require(not re.search(r'\b(?:PR\s*#\d+|[a-f0-9]{7,40})\b', classes),
@@ -156,7 +179,8 @@ def uml_conventions(diagram, classes, theme):
 def main():
     manifest = json.loads((ROOT / 'diagrams/manifest.json').read_text(encoding='utf-8'))
     items = manifest['diagrams']
-    require(len(items) == 6 and len({d['id'] for d in items}) == 6, 'Expected six distinct diagrams')
+    require({d['id'] for d in items} == {f'D-{n:02}' for n in range(1, 10)} and len(items) == 9,
+            'Expected nine distinct report diagrams')
     baseline = manifest['source_commit']
     diff = subprocess.run(['git', '-c', 'safe.directory=' + REPO.as_posix(),
                            'diff', '--quiet', baseline, '--', 'src', 'test', 'build.gradle'], cwd=REPO)
@@ -169,26 +193,30 @@ def main():
         require(not re.search(r'(?:\bPR\s*#?\s*\d+|/pull/\d+|/commit/[a-f0-9]+|\b[0-9a-f]{7,40}\b|^## 개발 이력)',
                               body, re.M),
                 f'Remove Git development history from the feature document: {path.name}')
-    require(len(contracts(texts[0])) == 6 and contracts(texts[0]) == contracts(texts[1]),
-            'Shared/detailed operation contracts disagree')
-    usecases = ['Capture Template(E)', 'Place Template(E)', 'Place Template Continuously(E)',
-                'Undo Placement(E)', 'Finish Template Editing(E)']
-    diagram = (ROOT / 'diagrams/01-use-cases.puml').read_text(encoding='utf-8')
-    typed_members = uml_conventions(
-        diagram, (ROOT / 'diagrams/02-classes.puml').read_text(encoding='utf-8'),
-        (ROOT / 'diagrams/theme.puml').read_text(encoding='utf-8'))
-    for number, name in enumerate(usecases, 1):
-        label = f'E-{number:02} {name}'
-        require(all(re.search(r'^#{3,4} ' + re.escape(label) + r'$', text, re.M) for text in texts),
-                f'Use-case name differs between documents: {label}')
-    expected_images = {(ROOT / 'diagrams' / (d['slug'] + '.png')).resolve() for d in items}
+    diagram_dir = ROOT / 'diagrams'
+    report_dir = diagram_dir / 'report'
+    report_scope(texts[0], (report_dir / '01-use-cases.puml').read_text(encoding='utf-8'), items)
+    theme = (diagram_dir / 'theme.puml').read_text(encoding='utf-8')
+    classes = (report_dir / '02-classes.puml').read_text(encoding='utf-8')
+    require('BoardEditor "0..1" --> "0..100" PlacePatternCommand : history' in classes,
+            'Placement history relation differs from the model')
+    typed_members = uml_conventions(classes, theme)
+    detailed_classes = (diagram_dir / '02-classes.puml').read_text(encoding='utf-8')
+    require('Neighborhood "1" *-- "64" Cell' in detailed_classes and '{static} ~visit(' in detailed_classes,
+            'Detailed class diagram lost board composition or static path operation')
+    uml_conventions(detailed_classes, theme)
+    report_slugs = {item['slug'] for item in items}
+    readme_slugs = ({slug for slug in report_slugs if '/' not in slug} | set(manifest['readme_only'])
+                   | set(manifest.get('readme_shared', [])))
+    image_sets = {path: {(diagram_dir / (slug + '.png')).resolve() for slug in slugs}
+                  for path, slugs in zip(capture_docs, (report_slugs, readme_slugs))}
     for path, body in zip(capture_docs, texts):
         for snippet in re.findall(r'```java\n(.*?)```', body, re.S):
             normalized = re.sub(r'\s+', '', snippet)
             require(any(normalized in re.sub(r'\s+', '', source.read_text(encoding='utf-8'))
                         for source in (REPO / 'src').rglob('*.java')), 'Quoted Java snippet differs from source')
         images = re.findall(r'!\[[^\]]*\]\(([^)]+)\)', body)
-        require(len(images) == 6 and {(path.parent / p).resolve() for p in images} == expected_images,
+        require(len(images) == len(image_sets[path]) and {(path.parent / p).resolve() for p in images} == image_sets[path],
                 f'Inline diagram set differs: {path}')
         for cls, symbol in re.findall(r'\b([A-Z][A-Za-z0-9]+)\.([a-z][A-Za-z0-9_]*)', body):
             if symbol == 'java':
@@ -246,15 +274,14 @@ def main():
     require(artifacts['source_commit'] == baseline, 'Diagram baseline differs')
     require(artifacts['format'] == 'png' and artifacts['date'] == manifest['date'],
             'Diagram format/date differs')
-    diagram_dir = ROOT / 'diagrams'
     require(not list(diagram_dir.rglob('*.svg')) and not list(diagram_dir.rglob('*.pdf')),
             'Removed diagram formats are still present')
-    require({p.resolve() for p in diagram_dir.glob('*.png')} == expected_images,
-            'Expected exactly the six diagram PNGs')
+    require({p.resolve() for p in diagram_dir.rglob('*.png')} == set.union(*image_sets.values()),
+            'Diagram inventory differs from report and README')
     expected_artifacts = {'diagrams/manifest.json', 'diagrams/theme.puml', 'tools/build_diagrams.py'}
-    for item in items:
-        expected_artifacts.update(f'diagrams/{item["slug"]}{ext}' for ext in ['.puml', '.png'])
-        relative = 'diagrams/' + item['slug'] + '.png'
+    for slug in report_slugs | readme_slugs:
+        expected_artifacts.update(f'diagrams/{slug}{ext}' for ext in ['.puml', '.png'])
+        relative = 'diagrams/' + slug + '.png'
         png = (ROOT / relative).read_bytes()
         require(png[:8] == b'\x89PNG\r\n\x1a\n', 'Invalid PNG: ' + relative)
         dimensions = struct.unpack('>II', png[16:24])
@@ -274,21 +301,21 @@ def main():
             'Wrong browser document set')
     for result in browser['results']:
         require(digest(REPO / result['document']) == result['sourceSha256'], 'Markdown preview is stale; re-render')
-        require(len(result['images']) == 6 and all(i['loaded'] and i['visible'] and i['display'][0] >= 500 for i in result['images'])
+        require(len(result['images']) == len(image_sets[REPO / result['document']]) and all(i['loaded'] and i['visible'] and i['display'][0] >= 500 for i in result['images'])
                 and not result['missingAnchors'] and not result['horizontalOverflow'] and not result['errors'],
                 'Browser rendering check failed')
     report = dict(status='passed', checked_at=datetime.now(timezone.utc).isoformat(), source_commit=baseline,
                   markdown_documents=len(documents), local_links=links, markdown_anchor_links=link_anchors,
-                  matching_operation_contracts=6, matching_usecase_names=5, selected_junit_methods=len(selected),
+                  system_operation_contracts=6, matching_usecase_names=len(USE_CASES), selected_junit_methods=len(selected),
                   recorded_junit=totals, recorded_junit_suites=30, recorded_swing_checks=swing['checks'],
                   test_execution_date=evidence['date'], note='Recorded test evidence verified; JUnit was not rerun by this tool.',
-                  inline_diagrams=12, browser=browser, png_diagrams=6, typed_uml_members=typed_members,
+                  inline_diagrams=sum(map(len, image_sets.values())), browser=browser, png_diagrams=len(report_slugs | readme_slugs), typed_uml_members=typed_members,
                   artifact_hashes=len(artifacts['sha256']),
                   document_sha256={p.relative_to(REPO).as_posix(): digest(p) for p in capture_docs})
     output = BUILD / 'verification.json'
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
-    print(f'PASS: {links} local links ({link_anchors} anchors); 6 matching contracts; 375 recorded JUnit + 17 Swing checks; '
-          f'12 rendered diagrams; {typed_members} typed UML members; PNG artifact hashes; unchanged source baseline')
+    print(f'PASS: {links} local links ({link_anchors} anchors); 6 contracts traced to 3 use cases and SSDs; 375 recorded JUnit + 17 Swing checks; '
+          f'15 rendered diagram instances; {typed_members} typed UML members; PNG artifact hashes; unchanged source baseline')
     print(output)
 
 
