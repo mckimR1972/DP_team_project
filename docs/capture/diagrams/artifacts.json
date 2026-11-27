@@ -43,21 +43,13 @@
       822,
       701
     ],
-    "diagrams/01-use-cases.png": [
-      1908,
-      915
-    ],
     "diagrams/02-classes.png": [
       2344,
       1623
-    ],
-    "diagrams/05-edit-states.png": [
-      1634,
-      1046
     ]
   },
   "sha256": {
-    "diagrams/manifest.json": "25f820694f178f18949eb1f52959ed12eef160c842df2c6b998a2b56d9f94bcd",
+    "diagrams/manifest.json": "e6197d8a0f4ff2d655f6c3479e5f71c9d32a1279ac9c41511eae98f977e450f6",
     "diagrams/theme.puml": "eb9ce6340a775dccfd52bf6711afc2ee04d823712d29b84bdb3ea84bf36e7725",
     "tools/build_diagrams.py": "7f6fc36209e5511fb43385d9ff6027b9ededcccbe5c0d2d062eea48a8049f945",
     "diagrams/report/01-use-cases.puml": "7059cf576d474e10f91560c86f64ae47ce5d156ba0168c0d634714f436d3960e",
@@ -78,11 +70,7 @@
     "diagrams/report/08-ssd-place.png": "4d2954a83c1231e42d32040c46fccab243790fd765ff003223125a0afbc5a667",
     "diagrams/report/09-ssd-undo.puml": "f3bb5950d9cdac632ed4050212c629c37cbed703905b8d077ec71c466220411f",
     "diagrams/report/09-ssd-undo.png": "ef45cc376b967749cf82a105460c684cd0af8bd1df214240925bec1ff41f9a9f",
-    "diagrams/01-use-cases.puml": "c399f32c7f6b27e832996a582cf040ef03aa1f0483bf5718d67f8ced61dc2f4f",
-    "diagrams/01-use-cases.png": "3456d77960b31f49318d0a34efc3fc70fc7170597c79df66e8c56db5def10af1",
     "diagrams/02-classes.puml": "1b0007de1a815190dbcc838279126bab0a921688b2da63829bae0a38a9c3295f",
-    "diagrams/02-classes.png": "55566e1a80294247d081c8c2ad1c8bafa3eaa7c30660bbb0c806847d66ba35b7",
-    "diagrams/05-edit-states.puml": "ef0720d1482c1dc2409d2337e0e70a258b93b4dec07d4ff2370f625e4f591db6",
-    "diagrams/05-edit-states.png": "bd1a1982f42a272f518eae231341f91a71ea9c977223eb24030b2a48130fb642"
+    "diagrams/02-classes.png": "55566e1a80294247d081c8c2ad1c8bafa3eaa7c30660bbb0c806847d66ba35b7"
   }
 }

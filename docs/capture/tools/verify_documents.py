@@ -71,7 +71,7 @@ def contracts(text):
             re.findall(r'^### (OC-\d\d)[^\n]*\n(.*?)(?=^### |^## |\Z)', text, re.M | re.S)}
 
 
-USE_CASES = {'E-01': 'Capture Template(E)', 'E-02': 'Place Template(E)', 'E-04': 'Undo Placement(E)'}
+USE_CASES = {'E-01': 'Capture Template(E)', 'E-02': 'Place Template(E)', 'E-03': 'Undo Placement(E)'}
 
 
 def report_scope(text, diagram, items):
@@ -206,7 +206,8 @@ def main():
             'Detailed class diagram lost board composition or static path operation')
     uml_conventions(detailed_classes, theme)
     report_slugs = {item['slug'] for item in items}
-    readme_slugs = {slug for slug in report_slugs if '/' not in slug} | set(manifest['readme_only'])
+    readme_slugs = ({slug for slug in report_slugs if '/' not in slug} | set(manifest['readme_only'])
+                   | set(manifest.get('readme_shared', [])))
     image_sets = {path: {(diagram_dir / (slug + '.png')).resolve() for slug in slugs}
                   for path, slugs in zip(capture_docs, (report_slugs, readme_slugs))}
     for path, body in zip(capture_docs, texts):

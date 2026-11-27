@@ -9,7 +9,7 @@
       "title": "캡처·템플릿 유스케이스",
       "summary": "사용자는 모양을 저장하고, 템플릿을 배치하고, 마지막 배치를 되돌린다.",
       "note": "Place Template(E)의 확장 지점은 배치 전이다. 동결 보호의 확장 관계는 Freezing 그림에 있다.",
-      "requirements": "R-01~R-09 / E-01, E-02, E-04",
+      "requirements": "R-01~R-09 / E-01, E-02, E-03",
       "tests": "T-01~T-25",
       "code": "PatternTools, BoardEditor, PatternLibrary, Universe",
       "document": "capture.md#system-use-cases"
@@ -91,7 +91,7 @@
       "id": "D-09",
       "slug": "report/09-ssd-undo",
       "title": "Undo Placement(E) 시스템 시퀀스",
-      "requirements": "E-04 / R-06, R-08, R-09 / OC-05",
+      "requirements": "E-03 / R-06, R-08, R-09 / OC-05",
       "tests": "T-12, T-14, T-24, IT-05",
       "code": "PatternTools, BoardEditor, PlacePatternCommand",
       "document": "capture.md#ssd"
@@ -99,8 +99,10 @@
   ],
   "evidence": "evidence/2026-11-26-integrated/results.json",
   "readme_only": [
-    "01-use-cases",
-    "02-classes",
-    "05-edit-states"
+    "02-classes"
+  ],
+  "readme_shared": [
+    "report/01-use-cases",
+    "report/05-edit-states"
   ]
 }
