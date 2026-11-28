@@ -21,11 +21,12 @@ loop 150ms마다
   System --> User : 재생선 이동, 지나가는 산 셀의 소리, 패드
 end
 
-User -> System : selectSpeed(Fast)
+User -> System : selectSpeed(Slow)
+note right : 틱 150ms 간격.\n세대 소리 사이 최소 간격(120ms)보다 길다
 loop 틱 간격마다, halt() 전까지
   [o-> System : tick()
   note left : 시계의 시간 이벤트
-  System --> User : 다음 세대의 판, 생성 화음과 소멸 타악기
+  System --> User : 다음 세대의 판,\n판이 바뀌었으면 생성 화음과 소멸 타악기
 end
 User -> System : halt()
 

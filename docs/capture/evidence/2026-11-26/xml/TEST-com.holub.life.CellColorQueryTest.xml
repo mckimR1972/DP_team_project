@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.holub.life.CellColorQueryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-11-26T07:24:41.197Z" hostname="DESKTOP-4CP7K21" time="0.106">
-  <properties/>
-  <testcase name="nestedQueryUsesRowAndColumnAcrossNeighborhoodBoundaries()" classname="com.holub.life.CellColorQueryTest" time="0.074"/>
-  <testcase name="deadResidentAndDummyHaveNoLivingColor()" classname="com.holub.life.CellColorQueryTest" time="0.003"/>
-  <testcase name="repeatedQueriesDoNotAdvanceAgeOrChangeCellState()" classname="com.holub.life.CellColorQueryTest" time="0.004"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

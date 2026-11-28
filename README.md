@@ -83,14 +83,17 @@ Gradle Wrapper가 지정된 Gradle과 테스트 라이브러리를 받으므로 
 
 | 문서 | 내용 |
 | --- | --- |
-| [docs/usecase-overview.png](docs/usecase-overview.png) | 전체 시스템 유스케이스 다이어그램: 원본 유스케이스와 다섯 확장 기능의 유스케이스(이름 끝 `(E)`)와 관계 |
+| [docs/usecase-overview.png](docs/usecase-overview.png) | 전체 시스템 유스케이스 다이어그램: 원본 유스케이스와 여섯 확장 기능의 유스케이스(이름 끝 `(E)`)와 관계 |
 | [docs/original-improvements.md](docs/original-improvements.md) | 원본 코드 대비 개선 사항: 기능 오류 수정, 구조 개선, 설계 개선, 원본 기능의 JUnit 테스트와 원본에서의 결과 |
 | [docs/color-gen/color-gen.md](docs/color-gen/color-gen.md) | 세대에 따른 셀 색 순환 기능: 요구사항과 유스케이스, 바뀐 코드, 패턴, 설계 결정과 대안, 테스트 |
-| [docs/color-gen/feature-color-gen-changes.md](docs/color-gen/feature-color-gen-changes.md) | 세대에 따른 셀 색 순환 기능의 변경 기록 |
 | [docs/color-gen/color-gen.md 4.4절](docs/color-gen/color-gen.md#44-판-전체를-다시-그리는-방법-화면-갱신-지연) | 색 순환 중 화면 갱신 지연: 문제 상황, 원인, 해결 방안 |
-| [docs/capture/capture.md](docs/capture/capture.md) | 팀 공유용 캡처 기능 명세·GoF·UML·연산 계약·대표 테스트 |
+| [docs/capture/capture.md](docs/capture/capture.md) | 캡처 기능 명세·GoF·UML·연산 계약·대표 테스트 |
 | [docs/capture/README.md](docs/capture/README.md) | 캡처 기능·설계 결정·통합·전체 테스트·도식과 검증 근거를 모은 상세 문서 |
 | [docs/freezing/freezing.md](docs/freezing/freezing.md) | 영역별 세대 고정(Freezing) 기능: 요구사항과 유스케이스, 바뀐 코드, UML 다이어그램, 패턴과 설계 결정, 테스트 |
+| [docs/statistics/statistics.md](docs/statistics/statistics.md) | 게임 통계 조회 기능: 기능 명세, 바뀐 코드, 구조와 동작, 패턴과 설계 결정, 테스트 |
+| [docs/sound-effects/sound-effects.md](docs/sound-effects/sound-effects.md) | 음향 효과 기능: 기능 요약, 기존 코드와 비교, 패턴과 대안, 테스트 |
+| [docs/drag-drawing/draw-cells-by-dragging.md](docs/drag-drawing/draw-cells-by-dragging.md) | 드래그 그리기 기능: 유스케이스와 명세, 바뀐 코드, 다른 기능과 맞물린 부분, 테스트 |
+| [docs/README.md](docs/README.md) | 문서 전체 목차 |
 
 ## GitHub 사용 규칙 (팀 공통)
 
