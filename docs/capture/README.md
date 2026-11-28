@@ -288,39 +288,39 @@
 
 | 항목 | 계약 |
 |---|---|
-| 연산 / 관련 UC | `BoardEditor.place(pattern, origin)` / E-02 |
+| 연산 / 관련 UC | `placeTemplate(origin)` / E-02. 구현은 `BoardEditor.place(pattern, origin)` |
 | 입력·사전조건 | 유효한 템플릿과 기준점. 정상 배치에는 템플릿 사각형 전체가 보드 안이고 guard가 false여야 함 |
 | 성공 사후조건 | A는 템플릿 생존 칸 중 기존에 죽어 있던 대상이다. B는 B∪A가 되고 A의 셀은 나이 0. 기존 생존 셀·투명 빈칸 밑 셀·색·나이는 보존. A가 있으면 true 반환 |
 | 이력·이벤트 | 작업 묶음 밖에서는 새 Command 한 건과 TEMPLATE 한 번. 묶음 안에서는 첫 성공을 한 건으로 저장하고 후속 A를 합친다. 알림은 작업 종료까지 미룬다. H는 최대 100건 |
 | 실패·무변경 | 범위 밖은 IllegalArgumentException. guard true 또는 A가 비었으면 false. B,H와 완료 알림에 변화 없음. UI는 fits/canPlace로 먼저 검사하고 안내 |
 | 근거 | T-03,T-04,T-10~T-12,T-15,T-23,IT-01,IT-02; D-04 |
 
-### OC-04 연속 작업 시작과 확정
+### OC-04 배치 작업 확정
 
 | 항목 | 계약 |
 |---|---|
-| 연산 / 관련 UC | `BoardEditor.beginStroke()` / `BoardEditor.endStroke()` / E-02 |
+| 연산 / 관련 UC | `finishPlacementStroke()` / E-02. 구현은 누를 때 `BoardEditor.beginStroke()`, 놓을 때 `BoardEditor.endStroke()` |
 | 사전조건 | 편집이 같은 EDT 흐름에서 직렬 실행된다. UI가 PLACE에서 왼쪽 버튼 누름을 받으면 작업 시작 |
 | 시작 사후조건 | 이전 작업이 있다면 먼저 끝내고 grouping=true. 시작 자체는 B나 새 H 항목을 만들지 않음 |
 | 종료 사후조건 | grouping=false, 현재 stroke 참조 초기화. 실제 추가가 있었으면 TEMPLATE 한 번과 true, 아니면 이벤트 없이 false. B와 이미 기록된 H는 유지 |
 | 중단 | 해제·포커스 상실·컴포넌트 제거·편집 모드 전환에서도 UI가 같은 종료 경로를 호출. 두 번째 종료는 중복 알림 없음 |
 | 근거 | T-12,T-14,T-18~T-23,IT-03,IT-04; D-04,D-05 |
 
-### OC-05 마지막 배치 Undo
+### OC-05 마지막 배치 되돌리기
 
 | 항목 | 계약 |
 |---|---|
-| 연산 / 관련 UC | `BoardEditor.undo()` / E-03 |
+| 연산 / 관련 UC | `undoPlacement()` / E-03. 구현은 `BoardEditor.undo()` |
 | 사전조건 | H가 외부 편집 이전의 유효한 이력이다. 실제 일반 셀 변경·세대 진행·Clear/Load 성공·프리징 영역 선택 시작은 기존 H를 무효화한다 |
 | 성공 사후조건 | 활성 작업을 먼저 확정하고 H의 마지막 Command를 제거한다. 그 명령의 A만 죽여 B를 B−A로 만든다. 이전 셀의 나이·색은 유지. TEMPLATE_UNDO 한 번 |
 | 빈 이력·진행 중 작업 | 확정 후 H가 비면 무변경. 진행 중 변경 작업을 Undo하면 TEMPLATE 후 TEMPLATE_UNDO가 순서대로 발생할 수 있음. 일반 UI의 stopStamping이 먼저 확정하므로 중복 알림 없음 |
 | 근거 | T-03,T-10~T-12,T-19,T-24,IT-02,IT-05; D-04 |
 
-### OC-06 편집 종료
+### OC-06 캡처·배치 편집 종료
 
 | 항목 | 계약 |
 |---|---|
-| 연산 / 관련 UC | `PatternTools.cancel()` / E-01, E-02 (공통 종료 흐름) |
+| 연산 / 관련 UC | `finishTemplateEditing()` / E-01, E-02 (공통 종료 흐름). 구현은 `PatternTools.cancel()` |
 | 입력·사전조건 | Esc·오른쪽 클릭·편집 끝내기 또는 숨겨진 도구의 탭 전환. DRAW에서도 호출 가능 |
 | 편집 중 사후조건 | 전역 해제 리스너 제거와 Timer 정지 후 현재 작업 확정, 선택·기준점·미리보기 초기화, DRAW 전환. 적용된 B와 H는 유지하고 시계는 정지 상태. 자동 재개하지 않음 |
 | DRAW에서 호출 | 즉시 반환. 시계·보드·이력에 부작용 없음. 일반 모드의 Esc가 실행 중 시뮬레이션을 멈추지 않음 |
@@ -653,7 +653,7 @@ java "-Djava.awt.headless=true" "-DPLANTUML_LIMIT_SIZE=8192" -jar /path/to/plant
 
 공통 테마 변경이 일부 그림에만 반영되지 않도록 항상 모든 그림을 다시 만든다. 다른 OS에서는 `theme.puml`의 `defaultFontName`을 설치된 한글 폰트로 바꾼다.
 
-Smetana 내장 레이아웃을 사용하므로 별도 Graphviz가 필요 없다. 내용은 로컬에서 렌더링한다. [PlantUML의 Smetana 설명](https://plantuml.com/smetana02)
+대부분의 그림은 Smetana 내장 레이아웃을 사용하므로 Graphviz가 필요 없다. 다만 `report/01-use-cases`와 `report/05-edit-states` 두 장은 배치를 위해 `!pragma layout dot`을 쓰므로, 이 두 장을 다시 만들 때는 Graphviz가 필요하다. 내용은 로컬에서 렌더링한다. [PlantUML의 Smetana 설명](https://plantuml.com/smetana02)
 
 폴더 규칙: 공유 문서는 `capture.md`, 상세 문서는 `README.md`, 원본·PNG는 `diagrams/` 바로 아래, 실행 증거는 `evidence/<실행일>/`에 둔다. 원본 수정 → PNG 전체 재생성 → 그림 검토 순서로 관리한다. 두 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다.
 
