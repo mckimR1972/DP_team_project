@@ -2,7 +2,7 @@ To honour the JVM settings for this build a single-use Daemon process will be fo
 Daemon will be stopped at the end of the build 
 
 > Task :compileJava
-Note: C:\Users\Ibelieve\OneDrive - �߾Ӵ��б�\���� ȭ��\Notebook\ChatGPT\[Life Game]\DP_team_project-capture-integrated-check\src\com\holub\ui\MenuSite.java uses or overrides a deprecated API.
+Note: <project-root>\src\com\holub\ui\MenuSite.java uses or overrides a deprecated API.
 Note: Recompile with -Xlint:deprecation for details.
 Note: Some input files use unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
@@ -812,7 +812,7 @@ SoundSettingsTest > changingAnInstrumentNotifiesTheListener() PASSED
 > Task :patternUiTest
 PASS 17 Swing integration checks: place, bounds, reverse drag, save dialog, reload, undo, escape, draw, tick, cancel.
 
-[Incubating] Problems report is available at: file:///C:/Users/Ibelieve/OneDrive%20-%20%EC%A4%91%EC%95%99%EB%8C%80%ED%95%99%EA%B5%90/%EB%B0%94%ED%83%95%20%ED%99%94%EB%A9%B4/Notebook/ChatGPT/%5BLife%20Game%5D/DP_team_project-capture-integrated-check/build/reports/problems/problems-report.html
+[Incubating] Problems report is available at: <project-root>/build/reports/problems/problems-report.html
 
 BUILD SUCCESSFUL in 2m 23s
 4 actionable tasks: 4 executed

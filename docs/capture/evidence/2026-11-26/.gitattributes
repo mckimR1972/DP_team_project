@@ -1,2 +1,0 @@
-# Preserve the exact JUnit output bytes used by results.json hashes.
-*.xml -text

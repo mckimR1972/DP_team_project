@@ -471,7 +471,6 @@ IT-01~IT-06의 실제 검사 연결은 [테스트 계획](#verification)에 있�
 | 별도 Swing 실행기 | **17 checks 통과** (JUnit 수에 포함하지 않음) |
 
 [결과 JSON](evidence/2026-11-26-integrated/results.json), [전체 콘솔 기록](evidence/2026-11-26-integrated/verification.log), [원본 JUnit XML](evidence/2026-11-26-integrated/xml)에 수치·메서드·검증값을 보관한다. 아래 화면 4개는 같은 실행에서 생성한 원본 이미지다.
-[같은 날의 이전 실행](evidence/2026-11-26/results.json), [이전 통합 검사](evidence/2026-11-23/results.json), [초기 145회 기록](evidence/2026-11-18/results.json)은 별도 실행의 과거 증거다. 원본을 보존하며 실행 수를 합산하지 않는다.
 
 | 같은 실행의 화면 | 확인할 내용 |
 |---|---|

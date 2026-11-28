@@ -1,3 +1,0 @@
-# Preserve exact bytes and hashes of the original Gradle evidence.
-*.xml -text -whitespace
-*.log -text -whitespace
