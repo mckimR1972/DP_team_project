@@ -37,6 +37,6 @@
 
 ## 3. 참고
 
-- **원본 유스케이스(UC-01 ~ UC-07)**: Edit Cells, Run / Halt Game, Step One Generation, Clear Board, Store / Load Board, Exit Game, Advance Generation은 목표와 메인 성공 시나리오가 원본과 같으므로 따로 명세하지 않았다. 확장이 끼어드는 확장 지점은 전체 유스케이스 다이어그램에 적었고, 확장 기능 때문에 결과가 달라진 부분은 각 기능 문서의 연산 계약에 사후 조건으로 적었다.
+- **원본 유스케이스(UC-01 ~ UC-07)**: Edit Cells, Run / Halt Game, Step One Generation, Clear Board, Store / Load Board, Exit Game은 목표와 메인 성공 시나리오가 원본과 같으므로 따로 명세하지 않았다. Advance Generation만은 확장 유스케이스가 붙는 확장 지점 두 곳을 보이려고 [색 순환](color-gen/color-gen.md)과 [Freezing](freezing/freezing.md) 문서의 1.2절에 같은 명세를 두었다. 확장이 끼어드는 확장 지점은 전체 유스케이스 다이어그램에 적었고, 확장 기능 때문에 결과가 달라진 부분은 각 기능 문서의 연산 계약에 사후 조건으로 적었다.
 - **괄호 안의 ID**: 캡처의 E-01 ~ E-03과 음향의 UC-S1 ~ UC-S3은 각 기능 문서 안에서 쓰는 유스케이스 ID다. 위 표의 UC-08 ~ UC-21과 같은 유스케이스를 가리킨다.
 - **비기능 요구사항**: 각 문서의 비기능 요구사항 가운데 확장 유스케이스에 묶이지 않는 것(예: 음향의 N1 ~ N5, Freezing의 NFR-3, NFR-5, NFR-6)은 표에 적지 않았다. 각 문서의 요구사항 절에 있다.
