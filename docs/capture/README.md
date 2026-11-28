@@ -634,13 +634,13 @@ T-15/T-23은 주입한 Predicate 계약 검사다. 실제 프리징 관리자를
 
 ## 문서와 그림 관리
 
-그림 산출물은 PlantUML `.puml` 원본과 PNG 6쌍이다. `theme.puml`은 공통 흑백 설정이다. `diagrams/manifest.json`은 도식과 요구사항·검사 연결을, `diagrams/artifacts.json`은 재생성한 입력·PNG의 해시와 크기를 관리한다. SVG·PDF와 인쇄용 합본은 관리하지 않는다.
+그림 산출물은 PlantUML `.puml` 원본과 PNG 10쌍이다. `theme.puml`은 공통 흑백 설정이다. SVG·PDF와 인쇄용 합본은 관리하지 않는다.
 
 다이어그램은 다른 기능의 문서와 같은 표기로 그린다. 유스케이스는 담당 범위·경계 하나·사용자 액터·영어 동사형 이름·`(E)`·확장 지점과 조건을 통일한다. 클래스는 아이콘과 패턴 역할 스테레오타입을 빼고 타입·가시성·다중성·합성을 표시한다. `void`는 생략하고 안쪽 타입은 바깥 타입으로 한정한다. 연관의 역할 이름은 가시성 기호 없는 필드 이름을 쓴다. GoF 역할은 본문 표에서 설명한다.
 
 ### PNG 다시 생성하기
 
-JDK 17+, Python 3.10+ 표준 라이브러리, PlantUML 1.2026.10 JAR, 설치된 한글 폰트가 필요하다. 도구 바이너리는 저장소에 넣지 않는다. [공식 배포](https://github.com/plantuml/plantuml/releases/tag/v1.2026.10)에서 받은 JAR의 SHA-256:
+JDK 17+, PlantUML 1.2026.10 JAR, 설치된 한글 폰트가 필요하다. 도구 바이너리는 저장소에 넣지 않는다. [공식 배포](https://github.com/plantuml/plantuml/releases/tag/v1.2026.10)에서 받은 JAR의 SHA-256:
 
 ```text
 e9bc9e6b2eb715e8c0c929f3dcb5fc1923be13f37599b09c293c66d354e88686
@@ -649,36 +649,14 @@ e9bc9e6b2eb715e8c0c929f3dcb5fc1923be13f37599b09c293c66d354e88686
 저장소 루트에서 실행한다. 아래 JAR 경로는 자신의 설치 경로로 바꾼다.
 
 ```powershell
-python docs/capture/tools/build_diagrams.py --jar C:\tools\plantuml-1.2026.10.jar --all
+java "-Djava.awt.headless=true" "-DPLANTUML_LIMIT_SIZE=8192" -jar /path/to/plantuml-1.2026.10.jar -charset UTF-8 -tpng "docs/capture/diagrams/0*.puml" "docs/capture/diagrams/report/*.puml"
 ```
 
-공통 테마 변경이 일부 그림에만 반영되지 않도록 항상 6개를 모두 다시 만든 뒤 해시를 기록한다. PNG가 렌더러의 크기 제한에 닿으면 잘림 가능성으로 실패한다. 다른 OS에서는 `theme.puml`의 `defaultFontName`을 설치된 한글 폰트로 바꾼다.
+공통 테마 변경이 일부 그림에만 반영되지 않도록 항상 모든 그림을 다시 만든다. 다른 OS에서는 `theme.puml`의 `defaultFontName`을 설치된 한글 폰트로 바꾼다.
 
 Smetana 내장 레이아웃을 사용하므로 별도 Graphviz가 필요 없다. 내용은 로컬에서 렌더링한다. [PlantUML의 Smetana 설명](https://plantuml.com/smetana02)
 
-폴더 규칙: 공유 문서는 `capture.md`, 상세 문서는 `README.md`, 원본·PNG는 `diagrams/` 바로 아래, 실행 증거는 `evidence/<실행일>/`에 둔다. 원본 수정 → PNG 전체 재생성 → 그림 검토 → 문서 검증 순서로 관리한다. 두 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다.
-
-### Markdown·링크·증거 다시 검증하기
-
-이 단계는 기록된 JUnit XML·실행 로그·스크린샷과 현재 소스의 일치를 확인한다. JUnit을 새로 실행하지는 않는다. 기능 검사 명령은 [검증 방법](#verification)에 있다.
-
-Python 검증기는 표준 라이브러리만 사용한다. 브라우저 검증은 Node.js, `marked` 17.0.5, `playwright` 1.62.1과 Chrome 또는 Edge가 필요하다. 다른 브라우저 실행 파일은 `CAPTURE_BROWSER`로 지정한다.
-
-```powershell
-npm install --no-save --prefix build/capture-docs/deps marked@17.0.5 playwright@1.62.1
-$env:NODE_PATH = (Resolve-Path 'build/capture-docs/deps/node_modules').Path
-node docs/capture/tools/verify_markdown.cjs
-python docs/capture/tools/verify_documents.py
-```
-
-- 저장소 README와 `docs`의 로컬 파일·그림·문서 앵커 링크를 확인한다. 외부 웹사이트 전체의 가용성은 검사하지 않는다.
-- 두 문서의 연산 계약 6개·유스케이스 이름 5개, 구현 심볼·Java 인용·대표 JUnit 8개를 대조한다.
-- 유스케이스의 범위·경계·이름·확장 표기, 클래스의 인터페이스·합성·다중성·표시한 멤버의 실제 Java 타입을 확인한다.
-- 두 Markdown을 GFM으로 변환한 브라우저에서 본문 그림 12개의 로딩·목차·가로 잘림을 검사한다. GitHub 서버 화면과 동일하다고 가정하지 않는다.
-- 원본 XML 30개의 JUnit 375회, 별도 Swing 17 checks 로그·결과 화면 해시와 기준 코드 유지 여부를 검사한다.
-- PNG 6개와 원본·테마·생성기의 해시, 기록된 PNG 크기와 렌더러 제한을 검사한다. 제거한 형식이 다이어그램 폴더에 다시 생기면 실패한다.
-
-미리보기와 화면 기록은 `build/capture-docs/preview/`, 검사 결과는 `build/capture-docs/verification.json`에 생성한다. 재생성 가능한 미리보기는 Git에 넣지 않는다. 자동 검사 뒤에도 PNG 6개와 본문 그림의 한글·겹침·가독성을 직접 확인한다.
+폴더 규칙: 공유 문서는 `capture.md`, 상세 문서는 `README.md`, 원본·PNG는 `diagrams/` 바로 아래, 실행 증거는 `evidence/<실행일>/`에 둔다. 원본 수정 → PNG 전체 재생성 → 그림 검토 순서로 관리한다. 두 문서는 같은 R/E/ADR/IF/T/IT/D 식별자와 코드·검증 기준을 사용한다.
 
 ### UML과 코드의 정합성 기준
 
