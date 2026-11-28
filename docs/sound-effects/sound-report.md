@@ -28,7 +28,7 @@ MIDI 신시사이저를 열 수 없는 환경에서는 `Sound disabled: ...` 한
 
 그림 S-1. 사운드를 붙이기 전 클래스 구조 (Holub 원본 코드)
 
-Holub 원본의 `Universe`는 `Clock.Listener`로 틱을 받아 `outermostCell.transition()`을 부르고 화면을 다시 그리기만 한다. 사운드를 붙이려고 보니 두 가지가 없었다. 하나는 어떤 셀이 생기고 사라졌는지 밖에 알리는 통로이고, 다른 하나는 r행 c열 셀이 살아 있는지 묻는 연산이다. `Cell` 주석에 따르면 `isAlive()`는 "이 블록 안에 산 셀이 하나라도 있는가"를 묻는 연산이라 소리를 정하는 데는 쓸 수 없었다. r행 c열을 묻는 연산은 드래그 그리기 기능이 `isAliveAt()`으로 더해 두어서, 사운드는 그것을 그대로 썼다(3.3).
+Holub 원본의 `Universe`는 `Clock.Listener`로 틱을 받아 `outermostCell.transition()`을 부르고 화면을 다시 그리기만 한다. 사운드를 붙이려고 보니 어떤 셀이 생기고 사라졌는지 밖에 알리는 통로도, r행 c열 셀이 살아 있는지 묻는 연산도 없었다. `Cell` 주석에 따르면 `isAlive()`는 "이 블록 안에 산 셀이 하나라도 있는가"를 묻는 연산이라 소리를 정하는 데는 쓸 수 없었다. r행 c열을 묻는 연산은 드래그 그리기 기능이 `isAliveAt()`으로 더해 두어서, 사운드는 그것을 그대로 썼다(3.3).
 
 ### 2.2 바꾼 곳
 
@@ -40,7 +40,7 @@ Holub 원본의 `Universe`는 `Clock.Listener`로 틱을 받아 `outermostCell.t
 | `Life` | 생성자에 `SoundEffects.install(universe);` 한 줄을 더했다 |
 | 새 패키지 `com.holub.life.sound` | `SoundEffects`(리스너, 재생 예약, 메뉴), `NoteMapper`(셀을 음으로 바꾸기), `RepeatTracker`(반복 판단), `SoundSettings`(설정 값), `SoundSettingsDialog`(설정 창) |
 
-`Cell`, `Neighborhood`, `Resident`는 고치지 않았다. 판의 셀을 좌표로 읽을 때는 드래그 그리기 기능이 더한 `isAliveAt(row, column)`을 쓴다(3.3).
+`Cell`, `Neighborhood`, `Resident`는 고치지 않았다. 판의 셀을 좌표로 읽을 때는 `isAliveAt(row, column)`을 쓴다(3.3).
 
 틱 처리는 이렇게 바뀌었다.
 
@@ -82,7 +82,7 @@ notifyBoardChanged( BoardChangeEvent.Kind.GENERATION, before );  // 통계와 �
 
 이 구조가 실제로 도움이 된 것은 통계 기능을 합칠 때였다. 사운드 전용이던 `GenerationListener`가 통계와 함께 쓰는 `BoardChangeListener`와 `BoardChangeEvent`로 바뀌었다(통합 작업은 통계 담당이 했다). 그런데도 사운드 쪽에서 고친 곳은 `SoundEffects`의 수신부 30줄 정도였고, `NoteMapper`, `RepeatTracker`, `SoundSettings`는 그대로였다. 재생선이 판을 읽는 방식도 이때 바뀌었다. 처음에는 sound-notes 스레드가 150ms마다 `universe.liveCells()`를 직접 불렀는데, 그러면 이벤트 스레드가 셀을 바꾸는 동안 다른 스레드가 같은 `Cell` 트리를 읽게 된다. 편집, Clear, Load 때도 이벤트가 오게 되면서 재생선은 마지막 이벤트의 복사본(`latestCells`)을 읽도록 바뀌었고, 판을 읽는 스레드와 바꾸는 스레드가 겹치지 않게 됐다.
 
-대신 틱마다 64×64 판을 전이 전과 후에 한 번씩 읽는다. 화면을 다시 그리는 비용보다 작아서 그대로 두었다. 그리고 리스너는 Swing 이벤트 스레드에서 불리기 때문에 리스너가 오래 걸리면 화면도 같이 멈춘다. 이 조건이 다음의 Command 구조로 이어졌다.
+대신 틱마다 64×64 판을 전이 전과 후에 한 번씩 읽는다. 화면을 다시 그리는 비용보다 작아서 그대로 두었다. 그리고 리스너는 Swing 이벤트 스레드에서 불리기 때문에 리스너가 오래 걸리면 화면도 같이 멈춘다.
 
 ### 3.2 Command: 소리를 예약 명령으로 만들기
 
@@ -172,7 +172,7 @@ public boolean isAliveAt(int row, int column)
 |---|---|---|
 | Load/Store용 Memento(`createMemento()`)를 다시 쓰기 | 이미 있는 저장 경로를 그대로 쓴다 | 부를 때마다 판 전체를 산 셀 목록(`LinkedList`)으로 복사하고, 칸 하나를 물을 때도 그 목록을 처음부터 찾는다. `Neighborhood.transfer()`가 `activeEdges`를 바꿔서, 저장할 때만 쓰던 경로를 매 틱 부르게 된다 |
 | `Universe`가 `boolean[][]`을 따로 보관 | 셀 트리를 거치지 않고 배열만 읽는다 | 클릭, Clear, Load, 세대 진행 때마다 실제 셀과 맞춰야 하고, 한 곳만 빠져도 소리와 화면이 어긋난다 |
-| 드래그 그리기 기능이 더한 `isAliveAt()` 쓰기 (선택) | 셀 상태의 원본이 한 곳이고 기존 Composite 구조를 따른다. 사운드 쪽에서 `Cell` 계층을 고치지 않는다 | 칸 하나를 읽을 때마다 호출이 세 번 이어진다 |
+| `isAliveAt()` 쓰기 (선택) | 셀 상태의 원본이 한 곳이고 기존 Composite 구조를 따른다. 사운드 쪽에서 `Cell` 계층을 고치지 않는다 | 칸 하나를 읽을 때마다 호출이 세 번 이어진다 |
 
 ### 4.3 소리의 시간차를 어떻게 낼까
 
@@ -203,7 +203,7 @@ public boolean isAliveAt(int row, int column)
 
 | 패턴 | 검토한 곳 | 적용하지 않은 이유 | 다시 검토할 조건 |
 |---|---|---|---|
-| Strategy | 소리를 내는 기능 5개(생성음, 대량 생성, 소멸 타악기, 패드, 재생선)를 각각 객체로 나눠 공통 인터페이스 뒤에 두기 | `SoundEffects`에는 설정을 확인하는 분기가 10곳 있는데, 기능을 객체로 나눠도 그중 5곳만 목록을 도는 확인 한 줄로 바뀌고 코드 진행, 스트럼, 반복 페이드, 작은 흔들림에 걸린 5곳은 남는다. 대량 생성은 생성음이 고른 화음을 받아 쓰고, 악기를 적용하는 방식도 기능마다 다르다(채널 악기 바꾸기, 패드는 누르던 음을 끊고 바꾸기, 타악기는 악기 번호를 건반 번호로 쓰기). 이 값과 방식을 담을 인터페이스부터 정해야 하는데, 기능이 5개로 정해져 있어서 이번에는 남겨 두었다 | 소리를 내는 기능을 새로 추가할 때. MIDI 채널 16개 중 9개(생성음 5개, 나머지 네 기능 1개씩)를 쓰고 있어서 채널 배정도 같이 정해야 한다 |
+| Strategy | 소리를 내는 기능 5개(생성음, 대량 생성, 소멸 타악기, 패드, 재생선)를 각각 객체로 나눠 공통 인터페이스 뒤에 두기 | `SoundEffects`에는 설정을 확인하는 분기가 10곳 있는데, 기능을 객체로 나눠도 그중 5곳만 목록을 도는 확인 한 줄로 바뀌고 코드 진행, 스트럼, 반복 페이드, 작은 흔들림에 걸린 5곳은 남는다. 대량 생성은 생성음이 고른 화음을 받아 쓰고, 악기를 적용하는 방식도 기능마다 다르다(채널 악기 바꾸기, 패드는 누르던 음을 끊고 바꾸기, 타악기는 악기 번호를 건반 번호로 쓰기). 이 값과 방식을 담을 인터페이스부터 정해야 하는데, 기능이 5개로 정해져 있어서 적용하지 않았다 | 소리를 내는 기능을 새로 추가할 때. MIDI 채널 16개 중 9개(생성음 5개, 나머지 네 기능 1개씩)를 쓰고 있어서 채널 배정도 같이 정해야 한다 |
 | State | 반복 페이드(원래 크기, 줄어드는 중, 무음), Sound On/Off, 코드 진행 | 그림 S-5처럼 페이드의 세 상태는 하는 일이 같고 소리 크기(gain = 1 - 반복 횟수/12)만 다르다. On/Off는 `boolean` 하나이고, 코드 진행은 5음과 패드 화음 표에서 한 줄을 고르는 인덱스 하나다. 상태마다 동작이 달라지는 Freezing 영역은 팀에서 State 패턴으로 구현했다 | 상태마다 하는 일이 달라질 때 |
 | Singleton | `SoundEffects` | `Universe`와 `Clock`은 Singleton이지만, 사운드는 `Life`에서 한 번 만들면 되고 다른 곳에서 찾을 일이 없다. 전역 접근점을 두는 대신 `install(universe)`로 무엇에 의존하는지 드러냈다 | 다른 기능이 사운드에 직접 요청해야 할 때 |
 
@@ -290,7 +290,7 @@ void everyPitchIsInCMajor()
 | `NoteMapperTest.fullBoardStaysWithinVoiceLimitAndValidMidiRange` | 셀이 아주 많이 생겨도 소리가 과하지 않은지 | 64×64 판 전체가 한꺼번에 생겨도 정확히 5음만 나오고, 세기는 1~127이며, 같은 음이 겹치지 않는다 |
 | `RepeatTrackerTest.oscillatorFadesToSilence` | 진동자처럼 같은 변화가 되풀이되면 조용해지는지 | 두 변화를 16세대 동안 번갈아 넣는 동안 볼륨이 한 번도 커지지 않고 마지막에 0이 된다 |
 | `SoundSettingsTest.turningOneFeatureOffLeavesTheOthersOn` | 설정 항목이 서로 독립적인지 | 스트럼을 꺼도 재생선은 켜진 상태 그대로다 |
-| `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 사운드가 판을 읽을 때 쓰는 `isAliveAt()`(드래그 그리기 기능이 더함)이 여러 겹 판에서 좌표를 제대로 찾는지 | 두 겹으로 나뉜 판에서 클릭한 3행 2열만 `true`이고, 행과 열을 바꾼 2행 3열은 `false`다 |
+| `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 사운드가 판을 읽을 때 쓰는 `isAliveAt()`이 여러 겹 판에서 좌표를 제대로 찾는지 | 두 겹으로 나뉜 판에서 클릭한 3행 2열만 `true`이고, 행과 열을 바꾼 2행 3열은 `false`다 |
 | `UniverseStoreTest.playheadIsDrawnOverTheBoardAndCanBeRemoved` | 재생선이 판 위에 보이고 지워지는지 | 판을 이미지로 그려 재생선 자리의 픽셀이 초록색(0, 170, 80)이고, `-1`로 지우면 그 픽셀이 바뀐다 |
 | `SoundEffectsIntegrationTest.realBlinkerUpdatesStatisticsAndSchedulesBirthAndDeathSoundsOnce` | 실제 세대 진행이 Observer를 거쳐 소리로 이어지는지 | 블링커를 그리는 동안은 예약이 없다. 한 틱 뒤 생성 화음이 나고 타악기는 정확히 한 번 친다. 같은 이벤트로 통계도 세대 1로 바뀐다 |
 | `SoundEffectsIntegrationTest.stableAndEmptyGenerationsNeverScheduleGenerationSounds` | 변화가 없는 세대는 조용한지 | 블록(2×2)만 있는 판과 빈 판에서 여러 틱을 진행해도 예약된 소리가 없다 |
@@ -325,9 +325,9 @@ void everyPitchIsInCMajor()
 
 ---
 
-# 공통 장에 넣을 사운드 내용
+# 공통 장의 사운드 부분
 
-아래는 팀 보고서의 공통 장(유스케이스, 기능 간 연동, 테스트, 결론)에서 사운드 부분으로 쓸 내용이다.
+팀 보고서의 공통 장(유스케이스, 기능 간 연동, 테스트, 결론) 가운데 사운드에 해당하는 내용이다.
 
 ## 유스케이스 (사운드 부분)
 
@@ -359,6 +359,6 @@ void everyPitchIsInCMajor()
 
 ## 결론 (사운드 부분)
 
-게임 쪽에서 사운드를 아는 곳은 `Life`의 `install()` 한 줄뿐이라, 이 줄을 빼면 소리만 빠지고 게임은 그대로 돈다. 통계와 같은 이벤트로 합칠 때 사운드 쪽은 수신부 30줄 정도만 고쳤고, 판을 읽을 때는 드래그 그리기 기능이 더한 `isAliveAt()`을 그대로 써서 `Cell` 계층을 고치지 않았다. 소리를 예약 명령으로 만든 덕분에 소리의 타이밍도 장치 없이 숫자로 테스트할 수 있었다.
+게임 쪽에서 사운드를 아는 곳은 `Life`의 `install()` 한 줄뿐이라, 이 줄을 빼면 소리만 빠지고 게임은 그대로 돈다. 통계와 같은 이벤트로 합칠 때 사운드 쪽은 수신부 30줄 정도만 고쳤고, 판을 읽을 때는 `isAliveAt()`을 그대로 써서 `Cell` 계층을 고치지 않았다. 소리를 예약 명령으로 만든 덕분에 소리의 타이밍도 장치 없이 숫자로 테스트할 수 있었다.
 
 한계도 있다. 소리를 내는 기능을 새로 더하려면 지금은 `SoundEffects`를 고쳐야 한다(Strategy를 적용하지 않음). 설정은 파일에 저장하지 않아 프로그램을 다시 켜면 처음 값으로 돌아간다. Medium(70ms)이나 Fast(30ms) 속도에서는 세대 소리 사이 최소 간격(120ms) 때문에 일부 세대의 소리를 건너뛴다. Clear나 Load는 반복 기록을 지우지 않아서, 같은 자리에 같은 진동자를 다시 그리면 처음부터 작게 들리거나 아예 들리지 않을 수 있다. `SoundEffects`는 재생선을 그리려고 `Universe.setPlayhead()`를 직접 부르고, 이벤트에 통계용 값이 들어 있어서 통계 쪽 변경이 사운드에 영향을 줄 수 있다. 실제 음색과 어울림은 자동 테스트로 확인할 수 없어서 직접 들어 확인했다.

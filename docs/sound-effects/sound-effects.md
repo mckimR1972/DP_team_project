@@ -33,7 +33,7 @@
 - 판의 세로 64행을 C3부터 3옥타브(15음)로 나눠서, 위쪽 셀일수록 높은 음을 낸다. 열 위치는 스테레오 좌우(pan 0~127)로 바꾼다.
 - 음계는 현재 코드에 어울리는 5음만 쓴다. 어떤 셀들이 동시에 생겨도 불협화음이 나지 않게 하려고 이렇게 했다.
 - 코드는 C → Am → F → G 순서로 돈다. 재생선이 한 바퀴(16스텝, 약 2.4초) 돌 때마다 다음 코드로 넘어간다.
-- 셀이 아무리 많이 생겨도 한 세대에 최대 5음만 내고, 음이 많을수록 한 음의 세기를 낮춘다.
+- 생성 화음은 셀이 아무리 많이 생겨도 최대 5음이고, 음이 많을수록 한 음의 세기를 낮춘다. 한 세대에 12개 이상 생기면 그 화음을 한 옥타브 위에서 조금 작게 한 번 더 겹치므로(대량 생성 레이어), 이때는 최대 10음이 난다.
 - 속도를 Fast로 두면 틱이 너무 촘촘해서 소리가 뭉친다. 그래서 세대 소리 사이에 최소 120ms 간격을 두고, 그보다 빨리 온 세대는 건너뛴다.
 
 ### 1.3 설정 항목
@@ -133,7 +133,7 @@ SoundEffects.install(universe);
 | `SoundSettings` | 기능별 on/off와 선택한 악기를 들고 있다 | 없음 |
 | `SoundSettingsDialog` | 설정 창. 항목마다 체크박스와 악기 선택 상자 | Swing |
 
-`SoundEffects`만 `public`이고 나머지는 패키지 안에서만 보인다. `Universe`와 `Cell` 계층은 사운드 패키지를 import하지 않는다. 게임 쪽에서 사운드를 아는 곳은 프로그램 시작점인 `Life`의 `install()` 한 줄뿐이다.
+`SoundEffects`만 `public`이고 나머지는 패키지 안에서만 보인다. `Universe`와 `Cell` 계층은 사운드 패키지를 import하지 않는다.
 
 ## 3. 구조와 동작
 
@@ -179,7 +179,7 @@ SoundEffects.install(universe);
 | 캡처·템플릿 | 배치는 `TEMPLATE`, 되돌리기는 `TEMPLATE_UNDO` 이벤트 | 세대 소리 없이 다음 재생선 스텝부터 바뀐 판을 연주한다. 캡처·배치 편집 중에는 세대가 진행되지 않으므로 세대 소리도 없다 | `nonGenerationEventUpdatesSweepWithoutGenerationSounds` |
 | 드래그 그리기 | 셀이 실제로 바뀐 마우스 입력마다 `EDIT` 이벤트 | 그리는 동안은 조용하고, 그린 셀을 재생선이 바로 연주한다 | `nonGenerationEventUpdatesSweepWithoutGenerationSounds`, `disabledSoundStillReceivesEditsForTheNextSweep` |
 
-색을 소리에 반영할지(예: 셀 색에 따라 악기나 음높이를 바꾸기)는 팀에서 기능 간 조합을 정리할 때 색 기능 코드를 보고 정하기로 했던 항목이다. 지금 구현에는 넣지 않았고, 사운드는 셀이 살아 있는지만 본다.
+셀 색에 따라 악기나 음높이를 바꾸는 것은 이번 범위에 넣지 않았다([sound-effects-spec.md](sound-effects-spec.md) 1.6절). 사운드는 셀이 살아 있는지만 본다.
 
 ## 4. 적용한 설계 패턴
 
@@ -199,7 +199,7 @@ SoundEffects.install(universe);
 
 재생선은 처음에는 pull 방식이었다. 게임이 멈춰 있어도 판을 읽어야 해서 스케줄러 스레드가 150ms마다 `universe.liveCells()`를 직접 불렀다. 그런데 이러면 이벤트 스레드가 셀을 바꾸는 동안 다른 스레드가 같은 `Cell` 트리를 읽게 된다. 공통 이벤트로 바뀌면서 편집, Clear, Load 때도 이벤트가 오게 되었으므로, 재생선도 마지막 이벤트의 복사본을 읽는 push 방식으로 바뀌었다. 판을 읽는 스레드와 바꾸는 스레드가 겹치지 않게 된 것이 이 변경의 이점이다.
 
-남은 결합도 있다. Subject는 Observer를 모르지만 `SoundEffects`는 재생선을 그리려고 `Universe.setPlayhead()`를 직접 부른다. 이벤트에는 통계만 쓰는 색 목록과 `COLOR_POLICY_CHANGED` 종류도 들어 있어서, 통계 쪽 요구로 이벤트가 바뀌면 사운드도 영향을 받을 수 있다. 또 리스너는 Swing 이벤트 스레드에서 불리기 때문에 오래 걸리면 화면과 입력이 같이 멈춘다. 이 조건 때문에 아래 Command 구조가 필요했다.
+남은 결합도 있다. Subject는 Observer를 모르지만 `SoundEffects`는 재생선을 그리려고 `Universe.setPlayhead()`를 직접 부른다. 이벤트에는 통계만 쓰는 색 목록과 `COLOR_POLICY_CHANGED` 종류도 들어 있어서, 통계 쪽 요구로 이벤트가 바뀌면 사운드도 영향을 받을 수 있다. 또 리스너는 Swing 이벤트 스레드에서 불리기 때문에 오래 걸리면 화면과 입력이 같이 멈춘다.
 
 ### 4.2 Command
 
@@ -240,7 +240,7 @@ Command 클래스를 따로 만들지 않고 람다로 썼다. 지나간 소리�
 | Composite | `Neighborhood` |
 | Leaf | `Resident` |
 
-판은 원래 8×8 `Neighborhood` 안에 8×8 `Neighborhood`가 들어 있는 Composite 구조다. 드래그 그리기 기능이 여기에 `isAliveAt()`을 더하면서 같은 구조를 따랐고, 사운드는 이 연산을 그대로 쓴다. `Neighborhood`는 좌표를 나눠서 하위 셀에 넘기고, `Resident`는 자기 상태를 답한다. `Universe`의 `liveCells()`는 `outermostCell.isAliveAt(row, column)`만 부르면 되고, 판이 몇 단계로 중첩돼 있는지 알 필요가 없다. 판 바깥의 이웃을 대신하는 `Cell.DUMMY`도 `Cell`을 구현해서 `isAliveAt()`을 갖지만(항상 `false`), 트리에 들어가지 않으므로 Leaf로 보지 않았다.
+판은 원래 8×8 `Neighborhood` 안에 8×8 `Neighborhood`가 들어 있는 Composite 구조다. `isAliveAt()`도 이 구조를 따라, `Neighborhood`는 좌표를 나눠서 하위 셀에 넘기고 `Resident`는 자기 상태를 답한다. `Universe`의 `liveCells()`는 `outermostCell.isAliveAt(row, column)`만 부르면 되고, 판이 몇 단계로 중첩돼 있는지 알 필요가 없다. 판 바깥의 이웃을 대신하는 `Cell.DUMMY`도 `Cell`을 구현해서 `isAliveAt()`을 갖지만(항상 `false`), 트리에 들어가지 않으므로 Leaf로 보지 않았다.
 
 대신 칸 하나를 읽을 때마다 바깥 `Neighborhood`, 안쪽 `Neighborhood`, `Resident` 순서로 세 번 호출이 이어진다. 세대 알림 때문에 틱마다 판(4096칸)을 두 번 읽게 되지만, 화면을 다시 그리는 비용에 비하면 작아서 그대로 두었다.
 
@@ -275,7 +275,7 @@ Holub 코드의 Load/Store용 Memento(`createMemento()`, `transfer()`)를 쓰는
 
 `Universe`가 따로 `boolean[][]`을 들고 있는 방법도 있었다. 이러면 클릭, Clear, Load, 세대 진행이 있을 때마다 실제 셀과 맞춰 줘야 한다. 한 군데라도 빠지면 소리와 화면이 어긋난다.
 
-결국 드래그 그리기 기능이 `Cell`에 더한 `isAliveAt()`을 쓰기로 했다. 셀 상태의 원본이 한 곳에만 있고 기존 Composite 구조를 그대로 따라가며, 사운드 쪽에서 `Cell` 계층을 고치지 않아도 된다.
+그래서 `Cell`의 `isAliveAt()`(2.2)으로 읽기로 했다. 셀 상태의 원본이 한 곳에만 있고 기존 Composite 구조를 그대로 따라가며, 사운드 쪽에서 `Cell` 계층을 고치지 않아도 된다.
 
 ### 5.3 음을 시간차를 두고 어떻게 낼까
 
@@ -309,11 +309,13 @@ Holub 코드의 Load/Store용 Memento(`createMemento()`, `transfer()`)를 쓰는
 
 하나로 합치는 쪽을 골랐다. 사운드 쪽에서는 수신부만 바꾸면 됐고(4.1), 이전 판과 비교하는 일을 `Universe`에 두기로 한 처음 결정(5.1)과도 맞는다.
 
-### 5.7 아직 정리하지 못한 부분
+### 5.7 소리를 내는 기능을 객체로 나눌까
 
 지금 `SoundEffects` 안에는 `settings.isOn(...)`으로 설정을 확인하는 곳이 10군데 있다. 소리를 내는 기능 5개(생성음, 대량 생성, 소멸 타악기, 패드, 재생선)를 각각 객체로 나눠 공통 인터페이스 뒤에 두면(Strategy), 그중 5곳은 목록을 돌며 켜졌는지 확인하는 한 줄로 바뀐다. 나머지 5곳은 코드 진행, 스트럼, 반복 페이드, 작은 흔들림(2곳)처럼 여러 기능에 함께 걸리는 조절 항목이라 그대로 남는다.
 
-나누기 어려운 이유는 세 가지다. 첫째, 기능끼리 값을 주고받는다. 현재 코드(`chord`)와 반복 페이드 값(`gain`)을 여러 기능이 같이 쓰고, 생성음에서 고른 화음을 대량 생성 레이어가 다시 받아 쓴다. 둘째, 악기를 적용하는 방식이 다르다. 생성음, 대량 생성, 재생선, 패드는 채널 악기를 바꾸는데(`programChange`) 패드는 그 전에 누르고 있던 음을 끊어야 하고, 타악기는 채널 9에서 악기 번호를 건반 번호로 쓴다. 셋째, MIDI 채널이 모자랄 수 있다. 채널은 16개인데 생성음이 5개(음마다 좌우 위치를 따로 주려고), 나머지 네 기능이 1개씩 모두 9개를 이미 쓰고 있어서, 새 기능에 필요한 채널 수와 배정도 함께 정해야 한다. 인터페이스를 정하려면 이 값과 방식, 채널 배정을 어떻게 넘길지부터 정해야 해서, 이번에는 동작을 먼저 맞추고 이 정리는 남겨 두었다. 소리를 내는 기능을 새로 추가하게 되면 가장 먼저 할 정리다.
+하지만 기능끼리 값을 주고받는다. 현재 코드(`chord`)와 반복 페이드 값(`gain`)을 여러 기능이 같이 쓰고, 생성음에서 고른 화음을 대량 생성 레이어가 다시 받아 쓴다. 악기를 적용하는 방식도 기능마다 다르다. 생성음, 대량 생성, 재생선, 패드는 채널 악기를 바꾸는데(`programChange`) 패드는 그 전에 누르고 있던 음을 끊어야 하고, 타악기는 채널 9에서 악기 번호를 건반 번호로 쓴다. 공통 인터페이스를 만들려면 이 값과 방식을 어떻게 넘길지부터 정해야 하는데, 소리를 내는 기능은 5개로 정해져 있어서 나누지 않고 `SoundEffects` 안에 두었다.
+
+대신 소리를 내는 기능을 새로 더하려면 `SoundEffects`를 고쳐야 한다. 그때는 이 구조를 다시 정하면서 MIDI 채널 배정도 같이 정해야 한다. 채널은 16개인데 지금 생성음이 5개(음마다 좌우 위치를 따로 주려고), 나머지 네 기능이 1개씩 모두 9개를 쓰고 있다.
 
 ## 6. 테스트
 
@@ -336,7 +338,7 @@ Holub 코드의 Load/Store용 Memento(`createMemento()`, `transfer()`)를 쓰는
 | `SoundEffectsIntegrationTest` | 17 | 통계 기능을 합칠 때 추가. 실제 `Universe`, `Statistics`와 연결한 `SoundEffects` |
 | `FreezingSoundIntegrationTest` | 3 | Freezing 기능을 합칠 때 추가. 고정된 셀과 소리 |
 
-사운드 작업에서 추가한 테스트는 31개다(`NoteMapperTest` 23, `RepeatTrackerTest` 3, `SoundSettingsTest` 3, `UniverseStoreTest` 2). `NeighborhoodTest`의 `isAliveAt` 테스트는 드래그 그리기 기능에서 작성했지만, 사운드가 판을 읽을 때 쓰는 연산이라 위 표에 함께 적었다. 이와 별도로 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. 이후 다른 기능을 합치면서 `SoundEffects`를 실제로 실행하는 통합 테스트 20개가 더해졌다.
+사운드 작업에서 추가한 테스트는 31개다(`NoteMapperTest` 23, `RepeatTrackerTest` 3, `SoundSettingsTest` 3, `UniverseStoreTest` 2). `NeighborhoodTest`의 `isAliveAt` 테스트는 사운드가 판을 읽을 때 쓰는 연산을 확인하므로 위 표에 함께 적었다. 이와 별도로 원래 있던 테스트 32개(`ResidentTest` 18, `NeighborhoodTest` 11, `UniverseStoreTest` 3)는 코드를 고친 뒤에도 그대로 통과해서 기존 동작이 깨지지 않았음을 확인했다. 이후 다른 기능을 합치면서 `SoundEffects`를 실제로 실행하는 통합 테스트 20개가 더해졌다.
 
 아래 캡처는 모두 2026-11-26 16:58(KST)에 `./gradlew test --rerun`으로 돌린 결과다. 화면 맨 위에도 실행 날짜와 명령을 적었다.
 
@@ -385,7 +387,7 @@ Holub 코드의 Load/Store용 Memento(`createMemento()`, `transfer()`)를 쓰는
 | | `endingChordIsAboveThePadOfTheSameChord` | 마무리 화음은 3음이고, 첫 음이 같은 코드 패드의 첫 음보다 두 옥타브 위다 (F 코드로 확인) |
 | 설정 | `SoundSettingsTest` 3개 | 처음엔 모두 켜짐 + 첫 번째 악기, 스트럼을 꺼도 재생선은 그대로, 악기를 바꾸면 리스너가 딱 한 번 불림 |
 | 판 읽기 | `UniverseStoreTest.liveCellsSnapshotIsIndexedByRowThenColumn` | 스냅샷이 `[행][열]` 순서다 |
-| | `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 판 복사가 쓰는 `isAliveAt()`(드래그 그리기 기능에서 더함)이 2단계로 중첩된 판에서 클릭한 (3, 2)만 살아 있다고 답하고, 행과 열을 바꾼 (2, 3)은 `false`다 |
+| | `NeighborhoodTest.isAliveAtFindsResidentThroughNestedNeighborhoods` | 판 복사가 쓰는 `isAliveAt()`이 2단계로 중첩된 판에서 클릭한 (3, 2)만 살아 있다고 답하고, 행과 열을 바꾼 (2, 3)은 `false`다 |
 | 실제 세대와 연결 (통합) | `realBlinkerUpdatesStatisticsAndSchedulesBirthAndDeathSoundsOnce` | 블링커를 그리는 동안은 예약이 없고, 한 틱 뒤 생성 화음과 타악기 한 번이 예약된다 |
 | | `stableAndEmptyGenerationsNeverScheduleGenerationSounds` | 블록만 있는 판과 빈 판은 틱을 진행해도 조용하다 |
 | | `nonGenerationEventUpdatesSweepWithoutGenerationSounds` (작업 종류 7개) | 편집, Clear, Load, 템플릿, 색 변경 등은 세대 소리 없이 재생선 판만 바꾼다 |
@@ -399,7 +401,7 @@ Holub 코드의 Load/Store용 Memento(`createMemento()`, `transfer()`)를 쓰는
 
 ### 6.4 테스트 코드 예시
 
-고른 음이 C장조 음계를 벗어나지 않는지 보는 테스트다. 여러 셀이 함께 생겨도 덜 부딪히게 하려고 5음을 C장조 안에서 고른 설계가 지켜지는지 본다. 코드 4개와 64행을 모두 돌면서 나오는 음이 C장조 7음 안에 있는지 확인한다. 실패하면 어느 코드의 몇 번째 행인지 메시지로 나온다.
+여러 셀이 함께 생겨도 덜 부딪히도록 5음을 C장조 안에서 골랐다. 아래 테스트는 코드 4개와 64행을 모두 돌면서 고른 음이 C장조 7음 안에 있는지 확인한다. 실패하면 어느 코드의 몇 번째 행인지 메시지로 나온다.
 
 ```java
 @Test
@@ -457,7 +459,7 @@ void isAliveAtFindsResidentThroughNestedNeighborhoods() {
 
 사운드를 처음 붙일 때는 `SoundEffects`와 세대 변화 발행에 JUnit 테스트가 없었다. `SoundEffects`는 실제 `Synthesizer`와 시간에 맞춰 도는 스케줄러를 쓰기 때문에 테스트하려면 둘 다 가짜로 바꿀 방법이 필요했다. 이 부분은 통계 기능을 합칠 때 `SoundEffectsIntegrationTest`가 신시사이저와 스케줄러를 Mockito로 바꿔 채웠고, 이벤트 발행은 `UniverseEventsTest`가 확인한다.
 
-지금 남은 것은 두 가지다. 하나는 실제 장치에서 나는 소리다. 음색, 음량, 악기를 바꿨을 때 실제로 다르게 들리는지는 자동 테스트로 확인할 수 없어서 6.5처럼 직접 확인해야 한다. 다른 하나는 설정 창(`SoundSettingsDialog`)의 체크박스와 선택 상자가 설정 값을 바꾸는 연결이다. `SoundSettingsTest`는 설정 값만 확인하므로, 이 연결은 6.5에서 재생선과 패드를 꺼 보며 직접 확인했다.
+지금도 자동 테스트가 없는 것은 실제 장치에서 나는 소리와 설정 창의 연결이다. 음색, 음량, 악기를 바꿨을 때 실제로 다르게 들리는지는 자동 테스트로 확인할 수 없어서 6.5처럼 직접 확인해야 한다. 설정 창(`SoundSettingsDialog`)의 체크박스와 선택 상자가 설정 값을 바꾸는지는 `SoundSettingsTest`가 보지 않는다. 이 테스트는 설정 값만 확인하므로, 이 연결은 6.5에서 재생선과 패드를 꺼 보며 직접 확인했다.
 
 ## 7. 실행 방법
 
