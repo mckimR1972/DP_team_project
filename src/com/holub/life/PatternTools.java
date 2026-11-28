@@ -208,8 +208,9 @@ final class PatternTools {
     }
 
     JPanel controls() { return controls; }
-    // Same integration signature as the open freezing PR. The model also
-    // enforces this guard for every stamp, not just mousePressed.
+    // Universe installs a guard that rejects placements overlapping a
+    // frozen region. The model also enforces it for every stamp, not just
+    // mousePressed.
     void setPlacementGuard(java.util.function.Predicate<Rectangle> guard) {
         editor.setPlacementGuard(guard);
     }

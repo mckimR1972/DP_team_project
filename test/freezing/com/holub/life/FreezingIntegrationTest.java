@@ -486,7 +486,7 @@ class FreezingIntegrationTest {
 
     @Test
     void aTemplateWhoseEmptyMarginAloneOverlapsIsRejectedWhole() throws Exception {
-        // capture/test-plan.md IT-01. Glider rows: ".O." "..O" "OOO": its upper-left cell is empty.
+        // docs/capture/capture.md IT-01. Glider rows: ".O." "..O" "OOO": its upper-left cell is empty.
         LifeTestSupport.onEdt(() -> {
             LifeTestSupport.freezing().install(new Rectangle(20, 20, 1, 1), 50);
             chooseTemplate("Glider");
@@ -504,7 +504,7 @@ class FreezingIntegrationTest {
 
     @Test
     void startingAnAreaSelectionDuringAHeldStrokeEndsTheStroke() throws Exception {
-        // capture/test-plan.md IT-03.
+        // docs/capture/capture.md IT-03.
         LifeTestSupport.onEdt(() -> {
             chooseBlinker();
             events.clear();

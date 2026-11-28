@@ -16,4 +16,4 @@ e9bc9e6b2eb715e8c0c929f3dcb5fc1923be13f37599b09c293c66d354e88686
 java "-Djava.awt.headless=true" "-DPLANTUML_LIMIT_SIZE=8192" -jar /path/to/plantuml-1.2026.10.jar -charset UTF-8 -tpng "docs/capture/diagrams/0*.puml" "docs/capture/diagrams/report/*.puml"
 ```
 
-Smetana 내장 레이아웃으로 모든 PNG를 생성한다. 표기 규칙은 [문서와 그림 관리](../README.md#artifacts), 그림 설명은 [UML과 도식](../README.md#diagrams)에 있다.
+공통 테마(`theme.puml`)는 Smetana 내장 레이아웃을 쓴다. `report/01-use-cases`와 `report/05-edit-states` 두 장만 `!pragma layout dot`으로 배치하므로 Graphviz가 필요하다. 표기 규칙은 [문서와 그림 관리](../README.md#artifacts), 그림 설명은 [UML과 도식](../README.md#diagrams)에 있다.

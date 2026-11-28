@@ -28,9 +28,9 @@ interface Cell <<interface>> {
 }
 PatternTools "1" --> "1" BoardEditor : editor
 PatternTools "1" --> "1" PatternLibrary : library
-PatternLibrary "0..*" --> "0..*" PatternTemplate : patterns
+PatternLibrary "1" --> "0..*" PatternTemplate : patterns
 BoardEditor "0..*" --> "1" Cell : board
 BoardEditor ..> PatternTemplate : <<create>>
-BoardEditor "0..1" --> "0..100" PlacePatternCommand : history
+BoardEditor "1" --> "0..100" PlacePatternCommand : history
 PlacePatternCommand "0..*" --> "1" PatternTemplate : pattern
 @enduml
