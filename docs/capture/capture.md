@@ -320,6 +320,10 @@ Glider의 빈 모서리만 실제 동결 영역과 겹치도록 배치한다. �
 | 실행일 | 2026-11-26 (Asia/Seoul) |
 | 환경 | Windows, JDK 17.0.6+10, Gradle 9.5.1, JUnit Jupiter 6.0.3, Mockito 5.23.0 |
 
+Pattern 계열 6개 클래스만 실행한 결과는 다음과 같다.
+
+![패턴 캡처 및 템플릿 배치 테스트 결과](evidence/test-capture.png)
+
 ```powershell
 .\gradlew.bat test patternUiTest --rerun-tasks --no-daemon --console=plain
 ```

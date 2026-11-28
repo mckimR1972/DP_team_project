@@ -806,6 +806,12 @@ void singleStepDisplaysActualBlinkerBirthsAndDeaths() throws Exception {
 | 프리즈 | 90 | 고정·해제·나이 유지와 통계·색상·사운드 연결. |
 | 합계 | **375** | **모두 통과** |
 
-![전체 JUnit 실행 요약과 클래스별 결과](screenshots/test-results.png)
+![전체 JUnit 실행 요약과 클래스별 결과](evidence/test-results.png)
 
 *그림 5-1. 전체 JUnit 실행 결과. 실행일: 2026-11-26.*
+
+통계 핵심 6개 클래스만 실행한 결과는 다음과 같다.
+
+![통계 핵심 6개 클래스의 JUnit 실행 결과](evidence/test-statistics.png)
+
+*그림 5-2. 통계 핵심 6개 클래스의 JUnit 실행 결과.*
