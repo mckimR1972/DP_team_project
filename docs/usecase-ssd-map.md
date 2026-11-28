@@ -2,7 +2,7 @@
 
 확장 유스케이스마다 그 유스케이스를 그린 시스템 시퀀스 다이어그램(SSD) 그림과, 그림을 설명하는 절, 그림에 나오는 시스템 연산을 모았다. 유스케이스 ID는 [유스케이스와 명세·요구사항 대응표](usecase-traceability.md)와 같다.
 
-통계(UC-11 View Statistics(E))와 드래그 그리기(UC-08 Draw Cells by Dragging(E))는 아직 SSD가 없어 이 표에서 뺐다.
+통계(UC-11 View Statistics(E))는 시스템 상태를 바꾸지 않고 다른 연산이 끝난 뒤에 결과를 보여 주기만 하며, 드래그 그리기(UC-08 Draw Cells by Dragging(E))는 새 시스템 연산 없이 Edit Cells의 입력 방식만 넓혔으므로 SSD를 그리지 않았다.
 
 ## 1. 읽는 법
 
