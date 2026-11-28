@@ -1,6 +1,6 @@
 # 사운드 이펙트
 
-담당: [이름]
+담당: 한호석
 
 ## 1. 기능 목적과 동작
 
@@ -319,7 +319,7 @@ void everyPitchIsInCMajor()
 
 ## 7. 담당
 
-담당: [이름]
+담당: 한호석
 
 사운드 패키지 전체, `Universe`의 첫 변화 발행 구조(`GenerationListener`)와 재생선 표시(`setPlayhead()`), 사운드 작업에서 추가한 테스트 31개(`NoteMapperTest` 23, `RepeatTrackerTest` 3, `SoundSettingsTest` 3, `UniverseStoreTest` 2), 사운드 문서(설계 문서, 기능 명세, UML)를 맡았다. 통합 테스트 20개(`SoundEffectsIntegrationTest` 17, `FreezingSoundIntegrationTest` 3)는 통계와 Freezing 기능을 합칠 때 더해졌다.
 

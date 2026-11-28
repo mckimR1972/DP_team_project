@@ -8,7 +8,6 @@
 | 캡처 공유용 | [capture.md](capture/capture.md) | 팀 보고서용 기능 명세·GoF·유스케이스·UML·연산 계약·대표 테스트 |
 | 캡처 상세 | [캡처 상세 문서](capture/README.md) | 설계 결정·통합·전체 테스트·도식·검증 근거 |
 | 세대별 색상 | [color-gen/color-gen.md](color-gen/color-gen.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
-| 세대별 색상 구현 이력 | [color-gen/feature-color-gen-changes.md](color-gen/feature-color-gen-changes.md) | 커밋 단위 변경 이유·대안·검증 |
 | 화면 갱신 지연 | [color-gen.md 4.4절](color-gen/color-gen.md#44-판-전체를-다시-그리는-방법-화면-갱신-지연) | 원인 분석과 대안 비교 |
 | 원본 대비 개선 | [original-improvements.md](original-improvements.md) | 원본 코드의 오류 수정, 구조·설계 개선, 원본 기능의 테스트 |
 | 사운드 이펙트 | [sound-effects.md](sound-effects/sound-effects.md) | 기능 요약, 기존 코드와 비교, 패턴·대안, 테스트 |
